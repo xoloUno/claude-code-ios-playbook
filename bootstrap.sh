@@ -914,6 +914,14 @@ echo "🌐 Creating GitHub repo..."
 gh repo create "$ORG/$REPO_NAME" --private --source=. --push
 gh repo view "$ORG/$REPO_NAME" --json name >/dev/null || { echo "❌ GitHub repo creation failed"; exit 1; }
 echo "✓ GitHub repo created and pushed"
+# --- Verify project compiles ---
+echo "🔨 Verifying project compiles..."
+xcodegen generate --quiet 2>/dev/null
+if xcodebuild build -scheme "$APP_NAME" -destination 'generic/platform=iOS Simulator' -quiet 2>/dev/null; then
+  echo "✓ Build verified"
+else
+  echo "⚠️  Build verification failed — project may need manual fixes. Run 'xcodebuild build' for details."
+fi
 echo ""
 echo "✅ $APP_NAME bootstrapped successfully!"
 echo ""

@@ -10,6 +10,7 @@ No terminal experience assumed. Every step tells you exactly what to do.
 - [Starting a Claude Code Session](#starting-a-claude-code-session)
 - [The Manual Steps After Bootstrap](#the-manual-steps-after-bootstrap)
 - [Day-to-Day Workflow Summary](#day-to-day-workflow-summary)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -161,8 +162,11 @@ Save the file after editing. That's it — don't change anything else in the scr
 2. Navigate to your Code folder by pasting this and pressing Return:
 
 ```
-cd '~/Code'
+cd ~/Code
 ```
+
+> **Note:** Replace `~/Code` with wherever you keep your projects. The playbook
+> examples use `~/Code` throughout — substitute your actual path if different.
 
 3. Run the bootstrap script:
 
@@ -356,3 +360,21 @@ Here's what a typical evening coding session looks like:
 
 That's the whole workflow. Everything else (linting, secret scanning, conventional
 commits, dependency updates) happens automatically in the background.
+
+---
+
+## Troubleshooting
+
+Common issues you might hit during setup:
+
+| Problem | Fix |
+|---|---|
+| `brew: command not found` | Install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`. Follow the post-install instructions to add Homebrew to your PATH. |
+| `xcodegen: command not found` after install | Close and reopen Terminal, or run `eval "$(/opt/homebrew/bin/brew shellenv)"` |
+| `gh auth login` fails | Make sure you have a GitHub account. If using 2FA, select "Login with a web browser" when prompted. |
+| Bootstrap script permission denied | Run `chmod +x _playbook/bootstrap.sh` then try again |
+| `xcrun: error: unable to find utility` | Install Xcode command line tools: `xcode-select --install` |
+| Ruby/bundler errors during Fastlane | macOS system Ruby is too old. Install Homebrew Ruby: `brew install ruby`, then prepend to PATH: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH"` |
+| Certificate import fails (`.p12`) | Ensure the password matches. Try importing via Keychain Access app (File → Import Items) instead of command line. |
+| `gitleaks: command not found` in commit hook | The hook uses full paths, so run `brew install gitleaks`. If still failing, check `/opt/homebrew/bin/gitleaks` exists. |
+| Build fails after Xcode update | Run `xcodebuild -runFirstLaunch` and check Xcode → Settings → Components for required iOS platform downloads. |

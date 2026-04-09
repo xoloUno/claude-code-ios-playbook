@@ -260,7 +260,7 @@ them — don't let dependencies go stale.
 
 ## ⚠️ WWDC25 & iOS 26 Awareness — Read This First
 
-**Current date context: March 2026. The current shipping OS is iOS 26 (released fall 2025).**
+**Current date context: April 2026. The current shipping OS is iOS 26 (released fall 2025).**
 
 Claude Code's training data predates WWDC25 (June 9–13, 2025). Before writing any code
 that touches new frameworks, use the **apple-docs MCP tool** to verify the current API.
@@ -407,7 +407,7 @@ requirement. Always use iPhone 14 Plus (or iPhone 13 Pro Max) for the mandatory 
 After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
 in `project.yml` to the next minor version. ASC closes the version train on approval —
 new TestFlight builds will be rejected until the version is incremented. See
-`ios-project-playbook.md` §5.5 for details.
+`ios-project-playbook.md` §6.5 for details.
 
 ### Cloud Session Limitations
 
@@ -418,29 +418,17 @@ new TestFlight builds will be rejected until the version is incremented. See
 
 ### Available Plugins & MCP Servers
 
-This project has the following Claude Code extensions available in local sessions:
+Local sessions have access to: **XcodeBuildMCP** (builds, tests, simulators),
+**Xcode MCP Bridge** (previews, docs search, diagnostics — requires Xcode running),
+**Apple Docs MCP** (API verification), **GitHub MCP** (CI status, PRs), and
+**Context7** (third-party library docs).
 
-- **XcodeBuildMCP** — use for building, testing, and simulator management.
-  Prefer this over raw `xcodebuild` shell commands.
-- **GitHub MCP** — use for checking CI status, reading Actions logs,
-  creating issues and PRs.
-- **Apple Docs MCP** — use to look up Apple framework APIs before writing
-  code. Replaces web search for API verification.
-- **Apple Platform Build Tools** — reference docs for xcrun ecosystem.
-  Consult the Agent Skill when composing complex xcodebuild commands.
-- **Xcode MCP Bridge** — Apple's native bridge (Xcode 26.3+). Provides
-  documentation search, render previews, and deep IDE integration. Requires
-  Xcode running with MCP Tools enabled in Settings → Intelligence.
-- **Context7** — fetch current docs for third-party libraries (TelemetryDeck,
-  Sentry, etc.) when training data may be stale.
+See `_playbook/claude-code-plugins-setup.md` for full setup instructions, tier
+recommendations, and troubleshooting.
 
 Cloud sessions do not have access to MCP tools. Use GitHub Actions for
-build verification in cloud sessions (push to branch → Build Check workflow).
-For API verification in cloud sessions, fall back to web search on
-developer.apple.com.
-
-**Telegram channel:** Start with `claude --channels plugin:telegram@claude-plugins-official`
-to enable mobile monitoring of long-running sessions via Telegram DM.
+build verification (push to branch → Build Check workflow). For API
+verification in cloud sessions, fall back to web search on developer.apple.com.
 
 ---
 

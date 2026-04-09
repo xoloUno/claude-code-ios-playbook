@@ -17,6 +17,7 @@ copy-pasting terminal output or switching windows.
 - [Tier 3 — Situationally Useful](#tier-3--situationally-useful)
 - [Keeping Everything Up to Date](#keeping-everything-up-to-date)
 - [Quarterly Plugin Maintenance](#quarterly-plugin-maintenance-jan--apr--jul--oct)
+- [Notable Tool Updates](#notable-tool-updates-april-2026)
 - [What NOT to Install](#what-not-to-install-and-why)
 - [Verifying Your Setup](#verifying-your-setup)
 - [Adding to Your CLAUDE.md Template](#adding-to-your-claudemd-template)
@@ -66,11 +67,13 @@ claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=ghp_YOUR_TOKEN_HERE -- npx
 
 ---
 
-### 2. XcodeBuildMCP
+### 2. XcodeBuildMCP (v2.0.7)
 
-The most impactful MCP server for iOS development. Claude Code can trigger
-Xcode builds, read structured error output, run tests, and manage simulators
-— all without you touching the terminal.
+The most impactful MCP server for iOS development. 59 tools across builds,
+testing, simulator management, debugging, and UI automation. Claude Code can
+trigger Xcode builds, read structured error output, run tests, and manage
+simulators — all without you touching the terminal. Integrates natively with
+Xcode 26.3's agent support.
 
 **Install:**
 
@@ -93,6 +96,10 @@ claude mcp add --transport stdio XcodeBuildMCP \
 - List and boot simulators
 - Install and launch on simulator
 - All in a tight fix-build-fix loop without you intervening
+
+> **Tip:** Use `XCODEBUILDMCP_DYNAMIC_TOOLS=true` to enable dynamic tool loading —
+> reduces context window usage by only loading tools relevant to the current task.
+> Use `XCODEBUILDMCP_ENABLED_WORKFLOWS` to selectively enable workflow categories.
 
 **Verify it works:** Open Claude Code in a project directory and ask:
 "Build this project for iPhone 17 Pro simulator and show me any errors."
@@ -236,7 +243,8 @@ Apple's bridge requires Xcode running but gives you previews, documentation
 search, and deeper IDE integration (20 tools). Use both — Claude Code will
 pick the right one based on the task.
 
-**Note:** Apple's MCP bridge is newer and less documented. XcodeBuildMCP is
+**Note:** Apple's MCP bridge is now generally available with Xcode 26.3 and
+co-designed with Anthropic for Claude Agent integration. XcodeBuildMCP is
 the more battle-tested option. Start with XcodeBuildMCP as your primary
 build tool and add the Xcode bridge for documentation search and previews.
 
@@ -318,6 +326,27 @@ build-and-run loop. Add `xc-interact` when you need UI verification.
 
 ---
 
+### 9. Context7 MCP (Third-Party Library Docs)
+
+Fetches version-specific documentation for **non-Apple** third-party libraries
+directly into Claude Code sessions. Apple Docs MCP (Tier 1) handles Apple
+frameworks — Context7 handles everything else: RevenueCat, Lottie, Firebase,
+or any SPM dependency where Claude's training data may be stale.
+
+**Install:**
+
+```bash
+claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
+```
+
+**When it's useful:**
+- Working with RevenueCat SDK (API changes between versions)
+- Integrating any new SPM dependency you haven't used before
+- When Claude Code generates code with methods that don't exist
+  (hallucinated APIs) — Context7 grounds it in real docs
+
+---
+
 ## Tier 3 — Situationally Useful
 
 ### 9. Telegram Plugin (Official Anthropic)
@@ -356,35 +385,7 @@ when you're done" from anywhere.
 
 ---
 
-### 10. Context7 MCP (Third-Party Library Docs)
-
-Fetches version-specific documentation for **non-Apple** third-party libraries
-directly into Claude Code sessions. The Apple Docs MCP (Tier 1) handles Apple
-frameworks — Context7 handles everything else: RevenueCat, Lottie, Firebase,
-or any SPM dependency where Claude's training data may be stale.
-
-**Install:**
-
-```bash
-claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
-```
-
-**When it's useful:**
-- Working with RevenueCat SDK (API changes between versions)
-- Integrating any new SPM dependency you haven't used before
-- When Claude Code generates code with methods that don't exist
-  (hallucinated APIs) — Context7 grounds it in real docs
-
-**Two tools it exposes:**
-- `resolve-library-id` — looks up a library
-- `query-docs` — fetches specific documentation sections
-
-Less critical for pure Apple frameworks (your CLAUDE.md API verification
-rule handles that), but valuable for third-party libraries.
-
----
-
-### 11. Axiom iOS Plugin (Community)
+### 10. Axiom iOS Plugin (Community)
 
 13 production-ready skills for Swift/Xcode development from a community
 marketplace. Covers common iOS patterns, architecture decisions, and
@@ -409,7 +410,7 @@ and want Claude Code to have deeper iOS-specific pattern knowledge.
 
 ---
 
-### 12. claude-superpowers (Swift-Focused Community Collection)
+### 11. claude-superpowers (Swift-Focused Community Collection)
 
 A curated collection of Claude Code plugins and skills specifically for
 Swift development, code migration, and AI-assisted workflows.
@@ -514,6 +515,16 @@ Then:
 If any MCP server shows "disconnected" or any plugin shows errors,
 investigate that specific one. Everything else is likely fine.
 
+**Troubleshooting MCP connection issues:**
+
+| Problem | Fix |
+|---|---|
+| Server shows "disconnected" | Restart Claude Code. If it persists, run `claude mcp list` to verify config, then `claude mcp remove <name>` and re-add |
+| `npx` servers fail to start | Check Node.js is installed (`node --version`). Update npm: `npm install -g npm@latest` |
+| Xcode MCP Bridge won't connect | Ensure Xcode 26.3+ is running with a project open. Try `xcrun mcpbridge` manually in Terminal to see errors |
+| XcodeBuildMCP shows errors | Check `xcodebuild -version` works. Run `xcodebuild -runFirstLaunch` after Xcode updates |
+| GitHub MCP auth fails | Re-authenticate: `gh auth login` and update the token in your MCP config |
+
 ### If You Want to Automate the Reminder
 
 Add this to your iOS Project Playbook or personal task list:
@@ -529,6 +540,19 @@ Add this to your iOS Project Playbook or personal task list:
 - [ ] Check GitHub repos of installed MCP servers for activity
 - [ ] Remove anything that's broken or superseded
 ```
+
+---
+
+## Notable Tool Updates (April 2026)
+
+- **Betterleaks** — the original Gitleaks creator launched [Betterleaks](https://github.com/AikidoSec/betterleaks)
+  (v1.1.0) as a drop-in successor. Same CLI flags and config files, but better recall
+  (98.6% vs 70.4%) and composite rules for fewer false positives. Gitleaks still works,
+  but consider migrating: `brew install betterleaks` and replace `gitleaks` in your
+  `lefthook.yml`.
+- **Fastlane `match` caching** — Fastlane 2.232+ includes intelligent caching in `match`
+  (up to 100x faster profile retrieval) and automatic certificate renewal. If you use
+  `match` for signing, update Fastlane for a significant speedup.
 
 ---
 

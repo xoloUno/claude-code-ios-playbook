@@ -4,7 +4,7 @@ Master operational guide for solo indie iOS development. Covers the full lifecyc
 project creation to App Store submission. Written for Claude Code to follow — every step
 is concrete, copy-pasteable, and tested.
 
-**Last verified:** March 2026 (Xcode 26.3, macOS 26, GitHub Actions `macos-26` runners)
+**Last verified:** April 2026 (Xcode 26.3, macOS 26, GitHub Actions `macos-26` runners)
 
 > **This repo is public.** Never hardcode real credentials, Team IDs, names, emails,
 > domains, or org names. Use generic placeholders (`YOUR_TEAM_ID`, `com.example.*`,
@@ -17,10 +17,14 @@ is concrete, copy-pasteable, and tested.
 - [Phase 2: StoreKit 2 Subscriptions Setup](#phase-2-storekit-2-subscriptions-setup)
 - [Phase 3: Development Conventions](#phase-3-development-conventions)
 - [Phase 4: Adding Features & Extensions](#phase-4-adding-features--extensions)
-- [Phase 4.5: Screenshot Workflow](#phase-45-screenshot-workflow)
-- [Phase 5: App Store Submission](#phase-5-app-store-submission)
+- [Phase 5: Screenshot Workflow](#phase-5-screenshot-workflow)
+- [Phase 6: App Store Submission](#phase-6-app-store-submission)
 - [ASC Field Location Cheat Sheet](#asc-field-location-cheat-sheet)
-- [Phase 6: Post-Launch Monitoring](#phase-6-post-launch-monitoring-add-when-app-is-live)
+- [Phase 7: Post-Launch Monitoring](#phase-7-post-launch-monitoring-add-when-app-is-live)
+- [Appendix A: Why These Tools](#appendix-a-why-these-tools)
+- [Appendix B: Decision Trees](#appendix-b-decision-trees)
+- [Appendix C: Maintaining the Playbook](#appendix-c-maintaining-the-playbook)
+- [Appendix D: Glossary](#appendix-d-glossary)
 
 ---
 
@@ -164,7 +168,7 @@ building. This prevents version drift between `project.yml` and the generated `.
 | `Missing required icon file` | No 1024x1024 PNG in asset catalog | Add icon before first TestFlight upload |
 | `Missing Info.plist CFBundleIconName` | Info.plist missing icon key | XcodeGen handles this — regenerate project |
 | `Invalid bundle... orientations` | Missing iPad orientations | Already in bootstrap `project.yml` |
-| App Store validation rejects alpha channel | Icon PNG has transparency | Strip with PIL (see Phase 5) |
+| App Store validation rejects alpha channel | Icon PNG has transparency | Strip with PIL (see Phase 6) |
 | `gitleaks: command not found` in pre-commit | Claude Code sessions don't inherit full shell PATH | Use full Homebrew paths in `lefthook.yml` (see fix below) |
 
 ### 1.6 Local TestFlight Deploy Setup
@@ -393,6 +397,11 @@ If you do have a backend that gates features on subscription status:
 | **Purchases work in sim but not TestFlight** | StoreKit Configuration still active in scheme | Uncheck it in Release/Archive scheme options |
 | **`Transaction.currentEntitlements` empty after purchase** | Not awaiting the async sequence correctly | Use `for await` loop, not `.first` |
 | **"Cannot connect to iTunes Store"** | Paid Applications Agreement inactive | Accept in ASC → Business |
+| **Promotional offer not applying** | Missing JWS authentication | JWS is now required for promotional offers and introductory offer eligibility APIs (back-deployed to iOS 15). See Apple's [StoreKit updates](https://developer.apple.com/documentation/updates/storekit). |
+
+> **New in iOS 26:** `SubscriptionOfferView` provides a built-in SwiftUI view for
+> merchandising auto-renewable subscriptions. Check Apple Developer Documentation
+> before building a custom offer UI.
 
 ### 2.6 Sandbox Testing
 
@@ -449,7 +458,7 @@ Always include a scope like `docs(legal): fix typo`.
 
 ### 3.3 Code Style
 
-- Swift 6 strict concurrency — `@MainActor` on view models, `async/await` everywhere
+- Swift 6.2 strict concurrency (mandatory as of Xcode 26) — `@MainActor` on view models, `async/await` everywhere
 - No third-party UI libraries — SwiftUI + system components only
 - ViewModels use `@Observable` (not `ObservableObject`)
 - No force unwraps — `guard let` / `if let` always
@@ -470,7 +479,23 @@ a structured category filter), drop temporary `print("[TAG] …")` calls with a 
 Faster iteration than fighting Console.app's subsystem filters. Strip them in a follow-up
 commit once the path is verified.
 
-### 3.4 WWDC25 & iOS 26 Awareness
+### 3.4 Swift 6.2 Concurrency Model
+
+As of Xcode 26, strict concurrency is **mandatory** — data race safety is enforced by the
+compiler, not opt-in. Key concepts:
+
+- **`nonisolated(nonsending)` is the default.** Nonisolated async functions run on the
+  caller's actor. A function called from `@MainActor` stays on `@MainActor` — no implicit
+  hop to the cooperative pool. This eliminates the most common class of concurrency errors.
+- **`@concurrent`** — use this annotation when a function should explicitly run off the
+  caller's actor (e.g., CPU-heavy work that would block the main thread).
+- **Approachable Concurrency** is enabled by default in new Xcode 26 projects. For existing
+  projects, enable it incrementally — it changes runtime behavior (where code runs), not just
+  compile-time diagnostics. Swift 6.2 provides migration fix-its.
+- **`@MainActor` on view models** remains the correct pattern — the new defaults reinforce
+  this by keeping downstream calls on MainActor automatically.
+
+### 3.5 WWDC25 & iOS 26 Awareness
 
 Claude Code's training predates WWDC25. Before writing code using any framework introduced
 at or after WWDC25, search Apple Developer Documentation to verify current APIs.
@@ -479,7 +504,7 @@ Key changes: iOS version jumped 18 → 26 (skipped 19–25). Liquid Glass design
 automatically. SceneKit soft-deprecated. Metal 4 introduced. FoundationModels framework for
 on-device AI. SF Symbols 7.
 
-### 3.5 Cloud vs Local Session Capabilities
+### 3.6 Cloud vs Local Session Capabilities
 
 **Cloud sessions CAN:** Edit Swift files, commit/push, plan architecture, write features.
 
@@ -657,7 +682,7 @@ authorization, CoreLocation permissions. If init can fail, don't trust that it s
 
 ---
 
-## Phase 4.5: Screenshot Workflow
+## Phase 5: Screenshot Workflow
 
 Screenshots are required for App Store submission and are the single biggest factor in
 conversion. This workflow handles the full pipeline: automated capture on simulators,
@@ -718,133 +743,36 @@ override_status_bar(true)
 concurrent_simulators(true)
 ```
 
-**UI Test file** (in your UI Test target):
-
-```swift
-import XCTest
-
-@MainActor
-class ScreenshotTests: XCTestCase {
-
-    private lazy var app: XCUIApplication = {
-        let application = XCUIApplication()
-        application.launchArguments.append("-FASTLANE_SNAPSHOT")
-        return application
-    }()
-
-    override func setUp() async throws {
-        continueAfterFailure = false
-        setupSnapshot(app)
-        app.launch()
-    }
-
-    func testCaptureScreenshots() {
-        captureLightModeScreenshots()
-        captureDarkModeScreenshots()
-    }
-
-    private func captureLightModeScreenshots() {
-        sleep(1)
-
-        // Screenshot 1: Home screen / main view
-        snapshot("01_HomeScreen")
-
-        // Screenshot 2: Navigate to key feature
-        // app.buttons["feature-button"].tap()
-        // sleep(1)
-        snapshot("02_KeyFeature")
-
-        // Screenshot 3: Detail view or result
-        // app.cells.firstMatch.tap()
-        // sleep(1)
-        snapshot("03_DetailView")
-
-        // Screenshot 4: Settings or secondary feature
-        // app.tabBars.buttons["Settings"].tap()
-        // sleep(1)
-        snapshot("04_Settings")
-    }
-
-    private func captureDarkModeScreenshots() {
-        // Screenshot 5: Key screen in dark mode
-        XCUIDevice.shared.appearance = .dark
-        sleep(2)
-        snapshot("05_HomeScreenDark")
-
-        // Restore light mode
-        XCUIDevice.shared.appearance = .light
-    }
-}
-```
-
-**Mock/demo data tip:** Use the `-FASTLANE_SNAPSHOT` launch argument to detect when
-running under snapshot and load compelling demo data instead of an empty state:
-
-```swift
-// In your app code
-if ProcessInfo.processInfo.arguments.contains("-FASTLANE_SNAPSHOT") {
-    // Load demo data that makes screenshots look great
-}
-```
-
-**Run capture:**
+The `snapshot init` command generates a `ScreenshotTests.swift` template. Customize it
+to navigate through your app's key screens, calling `snapshot("01_ScreenName")` at each.
+Use `-FASTLANE_SNAPSHOT` launch argument to detect snapshot mode and load demo data.
 
 ```bash
 # Capture all screenshots across all devices
 bundle exec fastlane snapshot
-
-# Or add a Fastlane lane
-# lane :screenshots do
-#   capture_screenshots
-# end
-# Then: bundle exec fastlane screenshots
 ```
 
-After running, `fastlane/screenshots/` will contain all raw PNGs organized by language
-and device, plus an HTML summary page for quick review.
+After running, `fastlane/screenshots/` contains all raw PNGs organized by language
+and device, plus an HTML summary page for review.
 
-**Alternative: Manual capture with XcodeBuildMCP**
-
-If you haven't set up UI Tests yet, XcodeBuildMCP can capture screenshots on demand
-during a Claude Code session:
-
-```
-# In Claude Code (local session):
-"Build and run the app on iPhone 17 Pro simulator, navigate to the home screen,
-and take a screenshot. Then do the same on iPhone 14 Plus and iPad Pro 13-inch."
-```
-
-This is faster for one-off captures but doesn't scale like Fastlane `snapshot` does.
+> **Quick alternative:** If you haven't set up UI Tests yet, XcodeBuildMCP can capture
+> screenshots on demand during a Claude Code session — faster for one-off captures but
+> doesn't scale like `snapshot`.
 
 ### Step 2: Design and Frame Screenshots
 
 Raw simulator screenshots won't convert users. Add device frames, captions, and
-branded backgrounds using one of these free tools:
+branded backgrounds:
 
-**Recommended: AppMockUp Studio** — https://app-mockup.com
-- Free, web-based, no account required
-- Modern device frames (iPhone 16/17 Pro, iPad Pro, clay and real styles)
-- Panoramic backgrounds that connect across your screenshot set
-- Drag-and-drop positioning, text overlays, logo placement
-- Export at exact ASC-required resolutions
+| Tool | Cost | Notes |
+|---|---|---|
+| **[AppMockUp Studio](https://app-mockup.com)** (recommended) | Free | Web-based, no account, modern device frames, panoramic backgrounds, exports at ASC resolutions |
+| [AppDrift](https://appdrift.co) | Free | Batch export, no watermarks, AI translation for localized captions |
+| [AppLaunchpad](https://theapplaunchpad.com) | Free tier | 150+ device frames, auto-generates all sizes from one design |
 
-**Alternative: AppDrift** — https://appdrift.co
-- Free drag-and-drop editor, all device frames, batch export, no watermarks
-- AI translation for localized captions (pay-as-you-go)
-- Good for generating all required sizes from one design
-
-**Alternative: AppLaunchpad** — https://theapplaunchpad.com
-- 150+ device frames including latest models
-- Auto-generates prices for other device sizes from one design
-- Free tier with 3 templates
-
-**Design tips that affect conversion:**
-- Lead with your core value prop, not a settings screen
-- First 2–3 screenshots matter most — treat them as a mini-story
-- Large, readable text captions (visible even at thumbnail size in search results)
-- Use your app's accent color as the background theme for brand consistency
-- Put the actual app UI inside device frames — Apple rejects pure marketing mockups
-  without real in-app screenshots
+**Design tips:** Lead with your core value prop, not settings. First 2–3 screenshots are
+a mini-story. Use large readable captions (visible at thumbnail size). Real in-app UI
+inside device frames — Apple rejects pure marketing mockups.
 
 ### Step 3: Export and Upload
 
@@ -899,7 +827,7 @@ screenshots regularly across multiple apps.
 
 ---
 
-## Phase 5: App Store Submission
+## Phase 6: App Store Submission
 
 > **Note:** Many steps in this phase require human action in App Store Connect or the
 > Apple Developer Portal. When Claude Code is guiding you
@@ -907,7 +835,7 @@ screenshots regularly across multiple apps.
 > project root so you have a persistent checklist that survives across sessions.
 > See the CLAUDE.md template's "Manual Tasks Handoff Rule" for details.
 
-### 5.1 Pre-Submission Checklist
+### 6.1 Pre-Submission Checklist
 
 **Legal & Hosting:**
 - [ ] Privacy policy finalized in `docs/privacy.html` — all placeholders replaced
@@ -960,7 +888,7 @@ screenshots regularly across multiple apps.
 
 Minimum 1 screenshot per required size. The 6.5" and iPad 13" categories use older device
 resolutions — do not substitute newer devices (e.g. iPhone 17 Pro is 6.3", not 6.5").
-See **Phase 4.5: Screenshot Workflow** below for the full capture-and-design pipeline.
+See **Phase 5: Screenshot Workflow** below for the full capture-and-design pipeline.
 
 **Build & Code:**
 - [ ] `MARKETING_VERSION` set to `1.0.0` in `project.yml`
@@ -978,7 +906,7 @@ bg.paste(img, mask=img.split()[3])
 bg.save('AppIcon.png', 'PNG')
 ```
 
-### 5.2 App Privacy Questionnaire Guidance
+### 6.2 App Privacy Questionnaire Guidance
 
 **Apps with native StoreKit 2 subscriptions + HealthKit (no third-party analytics):**
 - Collect data? **Yes**
@@ -991,7 +919,7 @@ bg.save('AppIcon.png', 'PNG')
 
 **Age rating for health logging apps:** Medical/Treatment = **None**, Health/Wellness = **Yes** → 9+ rating.
 
-### 5.3 Submission Day
+### 6.3 Submission Day
 
 1. Run `/deploy` from a local Claude Code session (or `bundle exec fastlane beta` manually)
 2. Wait for processing (~5–30 min)
@@ -1011,7 +939,7 @@ To test the core flow:
 No account or sign-in is required. [Any special notes about permissions, trial, etc.]
 ```
 
-### 5.4 Post-Submission
+### 6.4 Post-Submission
 
 ```bash
 git tag -a v1.0.0 -m "App Store v1 submission"
@@ -1022,7 +950,7 @@ Monitor: typical review 24–48 hours. If rejected, fix and resubmit.
 
 After approval with `automatic_release: false`: manually release in ASC when ready.
 
-### 5.5 Post-Release Version Bump
+### 6.5 Post-Release Version Bump
 
 **Immediately after a version is approved and released on the App Store**, bump
 `MARKETING_VERSION` in `project.yml` to the next minor version:
@@ -1043,7 +971,7 @@ This is a blocking error — no builds can be uploaded until the version is bump
 - Commit as: `chore(version): bump to X.Y.0 for post-release development`
 - Add to `MANUAL-TASKS.md` if the session that triggers the release can't do it immediately
 
-### 5.6 Common Rejection Reasons
+### 6.6 Common Rejection Reasons
 
 | Reason | Guideline | Prevention |
 |---|---|---|
@@ -1086,12 +1014,12 @@ This is a blocking error — no builds can be uploaded until the version is bump
 
 ---
 
-## Phase 6: Post-Launch Monitoring (Add When App is Live)
+## Phase 7: Post-Launch Monitoring (Add When App is Live)
 
 Don't set up analytics before you have something to measure. Add these when your app
 is live on the App Store or has active TestFlight users.
 
-### 6.1 Recommended Analytics Stack (Free Tier)
+### 7.1 Recommended Analytics Stack (Free Tier)
 
 | Category | Tool | Free Tier | Setup Time |
 |---|---|---|---|
@@ -1128,7 +1056,7 @@ subscription cohort analysis, peer group benchmarks (conversion rate, proceeds p
 offer performance tracking, and an Analytics Reports API for offline analysis. Use up to 7
 simultaneous filters for drill-down. See the [Analytics Guide](https://developer.apple.com/help/app-store-connect-analytics/).
 
-### 6.2 Future Automation Worth Considering
+### 7.2 Future Automation Worth Considering
 
 These aren't in the bootstrap script because they add complexity that isn't justified
 until you're managing multiple apps or have a meaningful user base:
@@ -1146,3 +1074,104 @@ checks (lint, secret scanning) on free Linux minutes. Requires Xcode 26.3+ and a
 **Periphery** — dead code detection. Run `brew install periphery && periphery scan
 --setup` monthly before releases to find unused types and functions. Keeps the codebase
 lean as it grows.
+
+---
+
+## Appendix A: Why These Tools
+
+| Tool | Why this one | Alternatives considered |
+|---|---|---|
+| **XcodeGen** | YAML project definition, never touch `.pbxproj`. Clean diffs, no merge conflicts on project files. | Tuist (Swift-based config, better for large modular projects but heavier), manual `.pbxproj` (merge conflicts are brutal) |
+| **Fastlane** | De facto iOS automation standard. One command for signing, building, uploading. Huge community and plugin ecosystem. | Xcode Cloud (25 free hrs/month but limited customization), manual `xcodebuild` (works but tedious at scale) |
+| **SwiftLint** | Standard Swift linter, 200+ rules, 30% faster in recent versions. Catches style issues pre-commit. | swift-format (Apple's official formatter, but fewer rules and less community adoption) |
+| **Lefthook** | Fast Go binary, parallel hook execution, no runtime dependencies. Config is one YAML file. | Husky (Node.js dependency — overkill for a Swift project), pre-commit (Python dependency) |
+| **Gitleaks** | Catches secrets in staged files before commit. Simple, fast, no config needed for common patterns. | Betterleaks (successor by original Gitleaks creator — better recall, drop-in replacement, recommended for new projects) |
+| **GitHub Actions** | Free for public repos, generous minutes for private. `macos-26` runners with Xcode 26.3. | Xcode Cloud (limited customization), Bitrise (free tier exists, iOS-focused), CircleCI |
+| **Conventional Commits** | Machine-parseable commit messages. Enables automated changelogs, semantic versioning. Enforced by Lefthook hook. | Free-form commits (no tooling integration) |
+
+## Appendix B: Decision Trees
+
+### StoreKit 2 vs. RevenueCat
+
+```
+Do you need cross-platform subscriptions (iOS + Android)?
+├── Yes → RevenueCat (handles both platforms, server-side entitlements)
+└── No → Do you need server-side entitlement validation?
+    ├── Yes, and I don't want to build a backend → RevenueCat
+    └── No, or I have a backend → Native StoreKit 2
+```
+
+### Cloud vs. Local Claude Code Session
+
+```
+What do you need to do?
+├── Write Swift code, plan architecture, commit/push → Cloud session works
+├── Build, test on Simulator, run Fastlane → Local session required
+├── Modify project structure (new targets, entitlements) → Local session required
+└── Deploy to TestFlight → Local session (/deploy) or CI (push to main)
+```
+
+### XcodeBuildMCP vs. Xcode MCP Bridge
+
+```
+Is Xcode running?
+├── No → XcodeBuildMCP (works standalone via xcodebuild CLI, 59 tools)
+└── Yes → Both complement each other:
+    ├── Xcode MCP Bridge → previews, documentation search, diagnostics (20 tools)
+    └── XcodeBuildMCP → builds, simulator management, UI automation (59 tools)
+```
+
+## Appendix C: Maintaining the Playbook
+
+### When Xcode updates
+
+After installing a new Xcode version:
+
+1. Run `xcodebuild -runFirstLaunch` to install simulator runtimes and developer tools
+2. Check Xcode → Settings → Components for required iOS platform downloads
+3. Verify your project compiles: `xcodebuild build -scheme YourApp -destination 'generic/platform=iOS'`
+4. If using XcodeGen, regenerate: `xcodegen generate`
+5. If CI fails, check GitHub's [runner images changelog](https://github.com/actions/runner-images) for the latest `macos-*` runner and Xcode version
+
+### When iOS ships a new major version
+
+1. Update `MINIMUM_IOS` in `bootstrap.sh` (for new projects only — don't bump existing apps without testing)
+2. Update `ios-project-playbook.md` date stamp and verify all tool versions
+3. Check for new StoreKit, CloudKit, or SwiftUI APIs that affect playbook guidance
+4. Review WWDC session notes for framework deprecations
+
+### Local debugging without Claude Code
+
+If Claude Code is unavailable and you need to debug locally:
+
+```bash
+# Build and run
+xcodebuild build -scheme YourApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+
+# Run tests
+xcodebuild test -scheme YourApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+
+# Lint
+/opt/homebrew/bin/swiftlint lint --strict
+
+# Deploy to TestFlight
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+set -a && source .env.fastlane && set +a
+bundle exec fastlane beta
+```
+
+## Appendix D: Glossary
+
+| Term | What it is |
+|---|---|
+| **XcodeGen** | Generates `.xcodeproj` from a human-readable `project.yml`. Eliminates merge conflicts on project files. |
+| **Fastlane** | Ruby-based automation toolkit for iOS builds, code signing, and App Store uploads. |
+| **SwiftLint** | Linter that enforces Swift code style and catches common mistakes. |
+| **Lefthook** | Git hooks manager — runs linters and checks before commits. Written in Go, no dependencies. |
+| **Gitleaks / Betterleaks** | Pre-commit secret scanners — catch API keys and credentials before they're committed. |
+| **Conventional Commits** | Commit message format (`type(scope): description`) that enables automated tooling. |
+| **ASC** | App Store Connect — Apple's portal for managing apps, TestFlight, and App Store submissions. |
+| **MCP** | Model Context Protocol — standard for connecting AI assistants (like Claude Code) to external tools. |
+| **XcodeBuildMCP** | MCP server that gives Claude Code access to Xcode build, simulator, and debugging tools (59 tools). |
+| **Xcode MCP Bridge** | Apple's native MCP server shipped with Xcode 26.3. Provides previews, docs search, diagnostics (20 tools). |

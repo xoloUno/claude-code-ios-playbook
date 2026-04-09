@@ -1,5 +1,9 @@
 # Claude Code iOS Playbook
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform](https://img.shields.io/badge/platform-iOS_26+-blue.svg)](https://developer.apple.com/ios/)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
+
 A complete operational playbook for building and shipping iOS apps as a solo indie
 developer using [Claude Code](https://docs.anthropic.com/en/docs/claude-code). One
 script bootstraps a full Xcode project with CI/CD, code signing, linting, pre-commit

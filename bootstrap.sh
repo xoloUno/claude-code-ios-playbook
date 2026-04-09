@@ -879,6 +879,12 @@ Fallback if local build/upload fails:
 - Trigger the GitHub Actions workflow: `gh workflow run release.yml`
 - Monitor: `gh run list --workflow=release.yml --limit 1`
 RELEASECMD
+# --- /inbox slash command (log lessons to playbook inbox) ---
+INBOX_CMD_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.claude/commands/inbox.md"
+if [[ -f "$INBOX_CMD_SRC" ]]; then
+  cp "$INBOX_CMD_SRC" .claude/commands/inbox.md
+  echo "✓ /inbox slash command added"
+fi
 # --- Claude Code rules (path-scoped, auto-loaded) ---
 PLAYBOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RULES_SRC="$PLAYBOOK_DIR/.claude/rules"

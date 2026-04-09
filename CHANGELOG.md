@@ -8,19 +8,26 @@ in your project to adopt the change.
 
 ---
 
-## 2026-04-09 — Add cross-project playbook inbox for lessons learned
+## 2026-04-09 — Add cross-project playbook inbox with slash commands
 
 **What changed:** New `inbox.md` file in the playbook root serves as a shared inbox where
-Claude Code sessions in any bootstrapped project can dump lessons learned, gotchas,
-suggestions, and patterns. A new `.claude/rules/playbook-inbox.md` rule tells sessions
-when and how to write entries. `bootstrap.sh` substitutes the absolute playbook path into
-the rule at project creation time.
+Claude Code sessions in any bootstrapped project can log lessons learned, gotchas,
+suggestions, and patterns. Two slash commands drive the workflow:
 
-Designed for periodic curation: open a Claude Code session in `_playbook/`, review entries,
-and synthesize worthwhile ones into playbook/template/rule changes.
+- **`/inbox {lesson}`** — available in every bootstrapped project. Logs a structured
+  entry (date, project, category, context, lesson, suggested action) to the playbook's
+  `inbox.md`. Can be run with an argument or interactively.
+- **`/curate`** — available in the `_playbook/` directory. Walks through inbox entries
+  one by one, recommends adopt/defer/discard, makes adopted changes to playbook files,
+  and cleans up processed entries.
+
+A `.claude/rules/playbook-inbox.md` rule provides guidance on what qualifies as inbox-worthy.
+`bootstrap.sh` substitutes the absolute playbook path into the rule and copies the `/inbox`
+command at project creation time.
 
 **Playbook files affected:** `inbox.md` (new), `.claude/rules/playbook-inbox.md` (new),
-`bootstrap.sh`
+`.claude/commands/inbox.md` (new), `.claude/commands/curate.md` (new), `bootstrap.sh`,
+`.claude/rules/code-style.md` (slash commands table)
 
 **How to upgrade your project:**
 
@@ -28,6 +35,8 @@ and synthesize worthwhile ones into playbook/template/rule changes.
    `.claude/rules/`
 2. Replace `PLAYBOOK_PATH` in the copied file with the absolute path to your
    `_playbook/` directory (e.g. `~/Code/_playbook`)
+3. Copy `.claude/commands/inbox.md` from the playbook into your project's
+   `.claude/commands/`
 
 ---
 

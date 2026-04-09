@@ -42,6 +42,7 @@ hooks — no bypass.
 | `/review` | Reviews staged changes for concurrency, accessibility, privacy |
 | `/deploy` | Builds, signs, and uploads to TestFlight from local machine |
 | `/release` | Syncs metadata, builds, and uploads to App Store Connect |
+| `/inbox {lesson}` | Logs a lesson learned to the shared playbook inbox |
 
 ## Dependabot (`.github/dependabot.yml`)
 

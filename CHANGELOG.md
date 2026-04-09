@@ -8,6 +8,29 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-09 — Add cross-project playbook inbox for lessons learned
+
+**What changed:** New `inbox.md` file in the playbook root serves as a shared inbox where
+Claude Code sessions in any bootstrapped project can dump lessons learned, gotchas,
+suggestions, and patterns. A new `.claude/rules/playbook-inbox.md` rule tells sessions
+when and how to write entries. `bootstrap.sh` substitutes the absolute playbook path into
+the rule at project creation time.
+
+Designed for periodic curation: open a Claude Code session in `_playbook/`, review entries,
+and synthesize worthwhile ones into playbook/template/rule changes.
+
+**Playbook files affected:** `inbox.md` (new), `.claude/rules/playbook-inbox.md` (new),
+`bootstrap.sh`
+
+**How to upgrade your project:**
+
+1. Copy `.claude/rules/playbook-inbox.md` from the playbook into your project's
+   `.claude/rules/`
+2. Replace `PLAYBOOK_PATH` in the copied file with the absolute path to your
+   `_playbook/` directory (e.g. `~/Code/_playbook`)
+
+---
+
 ## 2026-04-09 — Restructure CLAUDE-TEMPLATE.md: extract rules to .claude/rules/
 
 **What changed:** CLAUDE-TEMPLATE.md reduced from 542 lines to ~190 lines. All operational

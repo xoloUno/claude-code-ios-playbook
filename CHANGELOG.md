@@ -8,6 +8,44 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-09 — Restructure CLAUDE-TEMPLATE.md: extract rules to .claude/rules/
+
+**What changed:** CLAUDE-TEMPLATE.md reduced from 542 lines to ~190 lines. All operational
+rules (git workflow, build/deploy, code style, WWDC25, session checklists, manual tasks,
+work log) extracted into path-scoped `.claude/rules/` files that Claude Code loads
+automatically by glob match. Two new rules added:
+
+- **session-health.md** — context window awareness, proactive checkpointing, crash recovery
+- **git-workflow.md** — now includes git timing guidance (commit early and often)
+
+The core CLAUDE-TEMPLATE.md retains only project identity: overview, tech stack, UI
+direction, data models, monetization, scope rules, key decisions, and App Store metadata.
+
+`bootstrap.sh` updated to copy `.claude/rules/` files into bootstrapped projects.
+
+**Playbook files affected:** `CLAUDE-TEMPLATE.md`, `bootstrap.sh`, `.claude/rules/` (new)
+
+**How to upgrade your project:**
+
+1. Create `.claude/rules/` directory in your project root
+2. Copy all `.md` files from the playbook's `.claude/rules/` into your project's
+   `.claude/rules/`
+3. Remove the following sections from your project's `CLAUDE.md` (they now live in rules):
+   - Code Style & Conventions
+   - Automated Quality Tools
+   - WWDC25 & iOS 26 Awareness
+   - Git & Version History
+   - Build & Deploy
+   - Session Startup Checklist / Session End Checklist
+   - Manual Tasks Handoff Rule
+   - Work Log Rule
+4. Add a note near the top of your `CLAUDE.md` pointing to `.claude/rules/`:
+   > Operational rules (git workflow, build/deploy, code style, WWDC25, session checklists,
+   > manual tasks, work log, session health) live in `.claude/rules/` and are loaded
+   > automatically by path glob. Do not duplicate them here.
+
+---
+
 ## 2026-04-09 — Public release: PII scrub + .env.playbook pattern
 
 **What changed:** Scrubbed all personal identifiers, Apple Developer credentials,

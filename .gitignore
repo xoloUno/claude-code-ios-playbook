@@ -1,5 +1,6 @@
-# Claude Code
-.claude/
+# Claude Code (ignore everything except rules/)
+.claude/*
+!.claude/rules/
 
 # Local credentials (never commit)
 .env.playbook

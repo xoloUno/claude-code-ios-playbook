@@ -879,6 +879,17 @@ Fallback if local build/upload fails:
 - Trigger the GitHub Actions workflow: `gh workflow run release.yml`
 - Monitor: `gh run list --workflow=release.yml --limit 1`
 RELEASECMD
+# --- Claude Code rules (path-scoped, auto-loaded) ---
+RULES_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.claude/rules"
+if [[ -d "$RULES_SRC" ]]; then
+  mkdir -p .claude/rules
+  for rule in "$RULES_SRC"/*.md; do
+    cp "$rule" .claude/rules/
+  done
+  echo "✓ Claude Code rules copied to .claude/rules/"
+else
+  echo "⚠️  No .claude/rules/ found in playbook — skipping rule generation"
+fi
 # --- Install Lefthook hooks ---
 if command -v lefthook &> /dev/null; then
   lefthook install

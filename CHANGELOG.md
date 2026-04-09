@@ -8,6 +8,55 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-09 — Session lifecycle commands, /upgrade, testing + privacy rules
+
+**What changed:** Major expansion of slash commands and rules:
+
+**New slash commands:**
+- **`/status`** — automated session startup briefing (replaces the startup checklist rule).
+  Shows project state, branch, last session summary, flags for uncommitted changes,
+  pending manual tasks, stale rules, and open Dependabot PRs.
+- **`/wrapup`** — automated session end (replaces the end checklist rule). Commits,
+  updates CLAUDE.md Current State, writes WORKLOG entry, updates release notes, pushes.
+- **`/upgrade`** — syncs a project with playbook changes. Reads CHANGELOG.md, identifies
+  entries newer than the project's `.playbook-version` marker, walks through each change
+  with apply/skip/manual recommendations.
+- **`/context-health`** — session hygiene gauge. Reports uncommitted files/lines, push
+  status, WORKLOG freshness. Recommends checkpoint when indicators are high.
+
+**New rules:**
+- **`testing.md`** — testing strategy for solo indie v1 (what to test, what to skip,
+  Swift Testing conventions, no-mock persistence philosophy)
+- **`privacy-manifest.md`** — when and how to update PrivacyInfo.xcprivacy, required
+  reason API categories, third-party SDK guidance
+
+**Removed:**
+- **`session-checklists.md`** — replaced by `/status` and `/wrapup` commands
+
+**Other changes:**
+- `bootstrap.sh` now copies all playbook slash commands (except `/curate`) into projects
+- `bootstrap.sh` creates `.playbook-version` file for `/upgrade` tracking
+- Slash commands table in `code-style.md` updated with all 10 commands
+
+**Playbook files affected:** `.claude/commands/` (4 new), `.claude/rules/` (2 new, 1 removed),
+`bootstrap.sh`, `.claude/rules/code-style.md`
+
+**How to upgrade your project:**
+
+1. Delete `.claude/rules/session-checklists.md` (replaced by commands)
+2. Copy new rules from playbook `.claude/rules/`: `testing.md`, `privacy-manifest.md`
+3. Copy new commands from playbook `.claude/commands/`: `status.md`, `wrapup.md`,
+   `upgrade.md`, `context-health.md`
+4. Create `.playbook-version` in project root with today's date:
+   ```
+   # Last synced with playbook CHANGELOG
+   2026-04-09
+   ```
+5. Update the slash commands table in `.claude/rules/code-style.md` (add `/status`,
+   `/wrapup`, `/upgrade`, `/context-health`)
+
+---
+
 ## 2026-04-09 — Add cross-project playbook inbox with slash commands
 
 **What changed:** New `inbox.md` file in the playbook root serves as a shared inbox where

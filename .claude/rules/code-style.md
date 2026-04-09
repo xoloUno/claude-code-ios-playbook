@@ -37,12 +37,16 @@ hooks — no bypass.
 
 | Command | What it does |
 |---|---|
+| `/status` | Session startup briefing — branch, state, flags, what's next |
+| `/wrapup` | Session end — commit, update CLAUDE.md, WORKLOG, push |
 | `/feature {name}` | Scaffolds View + ViewModel + Tests for a new feature |
 | `/test {target}` | Generates Swift Testing tests with @Test macros |
 | `/review` | Reviews staged changes for concurrency, accessibility, privacy |
 | `/deploy` | Builds, signs, and uploads to TestFlight from local machine |
 | `/release` | Syncs metadata, builds, and uploads to App Store Connect |
 | `/inbox {lesson}` | Logs a lesson learned to the shared playbook inbox |
+| `/upgrade` | Syncs project with latest playbook changes via CHANGELOG |
+| `/context-health` | Session hygiene gauge — uncommitted work, push status |
 
 ## Dependabot (`.github/dependabot.yml`)
 

@@ -879,14 +879,18 @@ Fallback if local build/upload fails:
 - Trigger the GitHub Actions workflow: `gh workflow run release.yml`
 - Monitor: `gh run list --workflow=release.yml --limit 1`
 RELEASECMD
-# --- /inbox slash command (log lessons to playbook inbox) ---
-INBOX_CMD_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.claude/commands/inbox.md"
-if [[ -f "$INBOX_CMD_SRC" ]]; then
-  cp "$INBOX_CMD_SRC" .claude/commands/inbox.md
-  echo "✓ /inbox slash command added"
+# --- Copy playbook slash commands (except curate, which is playbook-only) ---
+PLAYBOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CMDS_SRC="$PLAYBOOK_DIR/.claude/commands"
+if [[ -d "$CMDS_SRC" ]]; then
+  for cmd in "$CMDS_SRC"/*.md; do
+    cmd_name=$(basename "$cmd")
+    [[ "$cmd_name" == "curate.md" ]] && continue  # playbook-only command
+    cp "$cmd" .claude/commands/"$cmd_name"
+  done
+  echo "✓ Playbook slash commands copied (/inbox, /status, /wrapup, /context-health, /upgrade)"
 fi
 # --- Claude Code rules (path-scoped, auto-loaded) ---
-PLAYBOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RULES_SRC="$PLAYBOOK_DIR/.claude/rules"
 if [[ -d "$RULES_SRC" ]]; then
   mkdir -p .claude/rules
@@ -901,6 +905,12 @@ if [[ -d "$RULES_SRC" ]]; then
 else
   echo "⚠️  No .claude/rules/ found in playbook — skipping rule generation"
 fi
+# --- Playbook version marker (for /upgrade command) ---
+cat > .playbook-version << 'PBVERSION'
+# Last synced with playbook CHANGELOG
+PBVERSION
+echo "$(date +%Y-%m-%d)" >> .playbook-version
+echo "✓ Playbook version marker created"
 # --- Install Lefthook hooks ---
 if command -v lefthook &> /dev/null; then
   lefthook install

@@ -1187,11 +1187,18 @@ Always include a scope like `docs(legal): fix typo`.
 - No comments explaining what — only why
 - Previews required for every SwiftUI View
 - System adaptive colors throughout — never hardcode `Color.black` / `Color.white`
+- Async init consumers re-verify preconditions — don't trust bootstrap state (see §4.4)
 
 **SwiftLint gotcha — whitespace after code removal:** When deleting a code block (e.g.
 removing a Section from a List), check for trailing blank lines before closing braces.
 SwiftLint's `vertical_whitespace_closing_braces` rule will reject the commit if an empty
 line sits before a `}`. Always clean up blank lines after removing code.
+
+**Debugging gotcha — `print()` beats `Logger` for temporary diagnostics:** When Xcode's
+console filter isn't surfacing your `Logger` categories (its filter is substring-based, not
+a structured category filter), drop temporary `print("[TAG] …")` calls with a unique prefix.
+Faster iteration than fighting Console.app's subsystem filters. Strip them in a follow-up
+commit once the path is verified.
 
 ### 3.4 WWDC25 & iOS 26 Awareness
 
@@ -1332,6 +1339,51 @@ StoreKit 2 is built into iOS — no SPM package needed. See Phase 2 for full set
 ### 4.3 Adding Other SPM Dependencies
 
 Same pattern — add under `packages` with version, add to target `dependencies`.
+
+### 4.4 CloudKit & Push Notifications
+
+CloudKit sync and silent push notifications for cross-device updates are commonly deployed
+together. This section covers gotchas learned across multiple projects — not full setup.
+Apple's CloudKit documentation covers the happy path; this is what it doesn't tell you.
+
+#### Common CloudKit Pitfalls
+
+| Problem | Cause | Fix |
+|---|---|---|
+| **"Invalid bundle ID for container"** on zone creation | Dev portal's container-to-bundle allowlist is stale | Dev portal → App ID → iCloud → Configure → **uncheck** the container → Save → wait 30 s → **re-check** → Save → download manual profiles in Xcode. This forces Apple's backend to regenerate the allowlist record. Not documented in Apple's official docs. |
+| **Simulator CloudKit is flaky** (random failures, `cloudd` cache corruption) | Simulator's CloudKit stack is unreliable for development | Use a **physical device** for all CloudKit dev work. Plan for this from day one — don't waste hours debugging `cloudd` cache state on Simulator. |
+| **Can't remove a field from Production schema** | CloudKit Production schemas are **append-only** | Do a dead-code audit on every synced model field **before** clicking Deploy Schema Changes. Dead fields in Production are permanent. |
+| **`CKError.unknownItem` on first fetch** | Development env uses schema-on-write — a record type with zero saved records doesn't exist yet | Catch `.unknownItem` in any fetch-all-on-bootstrap code and treat it as an empty result set. Without this, first-ever bootstrap on a fresh container throws mid-pipeline. |
+| **Push notifications broken in Debug builds** | `aps-environment` hardcoded to `production` in entitlements | Use `aps-environment: development` in source entitlements. Xcode automatically substitutes `production` at archive/distribution time. Hardcoding `production` breaks Debug + Simulator builds. |
+
+#### Self-Healing Async Init
+
+When app bootstrap is async and can fail (CloudKit zone creation, StoreKit product fetch,
+HealthKit authorization), downstream mutation paths should **re-verify preconditions**
+rather than assume bootstrap succeeded. Concretely: a `push()` method should check
+account status and ensure the zone exists before calling `modifyRecords`, not just call
+`modifyRecords` blindly.
+
+```swift
+// Bad — assumes bootstrap always succeeded
+func push(_ record: CKRecord) async throws {
+    try await container.privateCloudDatabase.modifyRecords(saving: [record], deleting: [])
+}
+
+// Good — re-verifies preconditions on every call
+func push(_ record: CKRecord) async throws {
+    guard try await container.accountStatus() == .available else { return }
+    try await ensureZoneExists()   // no-ops if already created
+    try await container.privateCloudDatabase.modifyRecords(saving: [record], deleting: [])
+}
+```
+
+> This pattern is how Flara survived signing into iCloud mid-launch on a fresh device —
+> the first bootstrap failed (no account yet), but the first save self-healed by
+> re-running the zone-creation check.
+
+The same principle applies to any async capability: StoreKit product loading, HealthKit
+authorization, CoreLocation permissions. If init can fail, don't trust that it succeeded.
 
 ---
 

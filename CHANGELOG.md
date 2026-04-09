@@ -8,6 +8,30 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-08 — CloudKit & Push Notifications gotchas + async init pattern
+
+**What changed:** Added §4.4 covering CloudKit + Push Notifications integration
+gotchas learned from Flara and HVACApp projects. Also added async init and
+debugging tips to §3.3 Code Style.
+
+New coverage:
+- **CloudKit pitfalls table** — "Invalid bundle ID" fix, Simulator flakiness,
+  Production schema immutability, CKError.unknownItem on empty containers
+- **aps-environment rule** — use `development` in source; Xcode handles production
+- **Self-healing async init pattern** — mutation paths re-verify preconditions,
+  with Swift code example for CloudKit push
+- **print() debugging tip** — when Logger categories don't surface in Xcode console
+
+**Playbook files affected:** `ios-project-playbook.md`
+
+**How to upgrade your project:**
+
+These are reference sections — no project file changes needed. If your project
+uses CloudKit, review §4.4 for gotchas. The async init pattern (§4.4) and
+debugging tip (§3.3) apply to any project.
+
+---
+
 ## 2026-04-02 — Automated release lane with metadata and screenshots
 
 **What changed:** The release pipeline is now fully automated. Previously the `release`

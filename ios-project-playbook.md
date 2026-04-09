@@ -6,6 +6,10 @@ is concrete, copy-pasteable, and tested.
 
 **Last verified:** March 2026 (Xcode 26.3, macOS 26, GitHub Actions `macos-26` runners)
 
+> **This repo is public.** Never hardcode real credentials, Team IDs, names, emails,
+> domains, or org names. Use generic placeholders (`YOUR_TEAM_ID`, `com.example.*`,
+> `you@example.com`, `YourOrg`). Real values belong in `.env.playbook` (gitignored).
+
 ---
 
 ## Phase 0: Automated Project Bootstrap

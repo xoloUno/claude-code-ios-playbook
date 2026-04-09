@@ -8,10 +8,33 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-09 — Public release: PII scrub + .env.playbook pattern
+
+**What changed:** Scrubbed all personal identifiers, Apple Developer credentials,
+and hardcoded org/domain references to prepare the playbook for public GitHub release.
+
+- All Team IDs, ASC Key IDs, Issuer IDs, email, name, and domain replaced with
+  generic placeholders (`YOUR_TEAM_ID`, `com.example.*`, etc.)
+- Added `.env.playbook.example` — users copy to `.env.playbook` and fill in their
+  own values. `.env.playbook` is gitignored.
+- `bootstrap.sh` config section now has a comment pointing to `.env.playbook`
+- File paths using absolute `/Users/...` replaced with `~` shorthand
+- Example project names generalized to `MyApp`
+
+**Playbook files affected:** All files.
+
+**How to upgrade your project:**
+
+1. Copy `.env.playbook.example` to `.env.playbook` and fill in your Apple Developer
+   credentials (Team ID, ASC Key ID, Issuer ID, org, email, domain)
+2. Add `.env.playbook` to your global gitignore if not already covered
+
+---
+
 ## 2026-04-08 — CloudKit & Push Notifications gotchas + async init pattern
 
 **What changed:** Added §4.4 covering CloudKit + Push Notifications integration
-gotchas learned from Flara and HVACApp projects. Also added async init and
+gotchas learned across multiple projects. Also added async init and
 debugging tips to §3.3 Code Style.
 
 New coverage:

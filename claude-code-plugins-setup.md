@@ -213,7 +213,7 @@ The standout tools for you:
   transcripts. This is the most authoritative source possible — it's Apple's
   own search, not a third-party scraper.
 - **RenderPreview** — Claude Code can render SwiftUI previews and *see* the
-  result visually. For TerraView's UI work this means Claude can verify its
+  result visually. For your app's UI work this means Claude can verify its
   layout changes actually look right.
 - **BuildProject / GetBuildLog** — overlaps with XcodeBuildMCP but runs
   through Xcode's own build system rather than raw `xcodebuild`.
@@ -269,7 +269,7 @@ responsive patterns, design system thinking.
 
 **When to use:** Before building any new UI view, especially for apps where
 design quality matters (all of them, but particularly consumer-facing ones
-like Flara and LunchSpot).
+like consumer-facing apps).
 
 ---
 

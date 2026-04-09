@@ -22,8 +22,8 @@ is concrete, copy-pasteable, and tested.
 - Lefthook installed (`brew install lefthook`)
 - Gitleaks installed (`brew install gitleaks`)
 - GitHub CLI installed (`brew install gh`) and authenticated (`gh auth login`)
-- Team ID: `3UH727U953`
-- Developer: Erik Jimenez / hello@xolo.uno / domain: xolo.uno
+- Team ID: `YOUR_TEAM_ID` (set in `.env.playbook`)
+- Developer: Your Name / you@example.com / domain: example.com
 
 ### 0.2 One-Command Project Bootstrap
 
@@ -40,12 +40,12 @@ set -euo pipefail
 # CONFIGURE THESE FOUR VARIABLES
 # ═══════════════════════════════════════════════════════
 APP_NAME="MyApp"			# Display name and Xcode scheme
-BUNDLE_ID="uno.xolo.myapp"		# Reverse-domain bundle identifier
+BUNDLE_ID="com.example.myapp"		# Reverse-domain bundle identifier
 REPO_NAME="myapp-app"			# GitHub repository name
 MINIMUM_IOS="26.0"			# Deployment target
 # ═══════════════════════════════════════════════════════
-TEAM_ID="3UH727U953"
-ORG="xoloUno"
+TEAM_ID="YOUR_TEAM_ID"
+ORG="YourGitHubOrg"
 # ═══════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════
@@ -257,7 +257,7 @@ platform :ios do
           CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier) =>
             ENV["PROVISIONING_PROFILE_NAME"]
           # Add extension bundle IDs here if needed:
-          # "uno.xolo.appname.widgets" => "AppName Widgets App Store"
+          # "com.example.appname.widgets" => "AppName Widgets App Store"
         }
       }
     )
@@ -730,7 +730,7 @@ TEMPLATE="$SCRIPT_DIR/CLAUDE-TEMPLATE.md"
 if [[ -f "$TEMPLATE" ]]; then
   APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
   sed -e "s|\[APP_NAME\]|$APP_NAME|g" \
-      -e "s|\[uno\.xolo\.appname\]|$BUNDLE_ID|g" \
+      -e "s|\[com\.example\.appname\]|$BUNDLE_ID|g" \
       -e "s|\[appname\]|$APP_NAME_LOWER|g" \
       -e "s|\[REPO_NAME\]|$REPO_NAME|g" \
       "$TEMPLATE" > CLAUDE.md
@@ -888,16 +888,16 @@ building. This prevents version drift between `project.yml` and the generated `.
 
 Store your App Store Connect API key in a shared location (same key works across all apps):
 
-The `.p8` key file is stored at `~/Documents/Xcode/AuthKey_GXSJ996C83.p8` (shared
+The `.p8` key file is stored at `~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8` (shared
 across all apps). If starting fresh, download the key from App Store Connect → Users
 and Access → Integrations → App Store Connect API and save it there.
 
 In each project root, create `.env.fastlane` (already gitignored via `.env.*`):
 
 ```
-ASC_KEY_ID=GXSJ996C83
-ASC_ISSUER_ID=13ef7cd0-b5b7-46b4-991b-32d6ee6da1bd
-ASC_KEY_FILEPATH=/Users/erikj/Documents/Xcode/AuthKey_GXSJ996C83.p8
+ASC_KEY_ID=YOUR_ASC_KEY_ID
+ASC_ISSUER_ID=YOUR_ASC_ISSUER_ID
+ASC_KEY_FILEPATH=~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8
 ```
 
 These three values are identical across all apps — copy the same `.env.fastlane` into
@@ -1254,7 +1254,7 @@ update_code_signing_settings(
   path: "YourApp.xcodeproj",
   team_id: CredentialsManager::AppfileConfig.try_fetch_value(:team_id),
   profile_name: "YourApp Widgets App Store", # ← separate profile for extension
-  bundle_identifier: "uno.xolo.yourapp.widgets",
+  bundle_identifier: "com.example.yourapp.widgets",
   code_sign_identity: "Apple Distribution",
   targets: ["YourAppWidgets"]
 )
@@ -1268,8 +1268,8 @@ build_app(
   export_method: "app-store",
   export_options: {
     provisioningProfiles: {
-      "uno.xolo.yourapp" => ENV["PROVISIONING_PROFILE_NAME"],
-      "uno.xolo.yourapp.widgets" => "YourApp Widgets App Store"
+      "com.example.yourapp" => ENV["PROVISIONING_PROFILE_NAME"],
+      "com.example.yourapp.widgets" => "YourApp Widgets App Store"
     }
   }
 )
@@ -1318,7 +1318,7 @@ the extension's bundle ID and the same distribution certificate.
 #### Apple Developer Portal Checklist
 
 For each extension target:
-- [ ] Register the extension bundle ID (e.g. `uno.xolo.yourapp.widgets`)
+- [ ] Register the extension bundle ID (e.g. `com.example.yourapp.widgets`)
 - [ ] Create a provisioning profile for it (App Store distribution)
 - [ ] If using App Groups: register the group ID and enable on both app + extension bundle IDs
 - [ ] Base64-encode the profile and add as a GitHub secret
@@ -1652,7 +1652,7 @@ screenshots regularly across multiple apps.
 - [ ] App Privacy questionnaire completed and published
 - [ ] Privacy Policy URL entered (only appears AFTER publishing privacy questionnaire)
 - [ ] Support URL entered
-- [ ] Copyright filled (e.g. "2026 Erik Jimenez")
+- [ ] Copyright filled (e.g. "2026 Your Name")
 - [ ] Pricing set to **Free** (even with IAP subscriptions)
 - [ ] Content Rights answered ("No" if no third-party content)
 

@@ -11,10 +11,10 @@ Read it fully before writing any code or suggesting any architecture changes.
 ## Project Overview
 
 **App Name:** [APP_NAME]
-**Bundle ID:** [uno.xolo.appname]
+**Bundle ID:** [com.example.appname]
 **URL Scheme:** `[appname]://`
 **Xcode Scheme:** [APP_NAME]
-**Team ID:** 3UH727U953
+**Team ID:** YOUR_TEAM_ID
 **Platform:** iOS 26+ (iPhone first, no iPad or Mac targets in v1)
 **Developer:** Solo indie dev, 2–5 hrs/week available
 **Goal:** [e.g. Ship focused v1 to App Store within N weeks, reach $X/month MRR]
@@ -226,7 +226,7 @@ them — don't let dependencies go stale.
 
 **App name:** [APP_NAME]
 **Subtitle:** [30 char max]
-**Bundle ID:** [uno.xolo.appname]
+**Bundle ID:** [com.example.appname]
 
 **Target keywords:** [comma-separated keywords for ASO]
 
@@ -271,7 +271,7 @@ introduced after iOS 18.
 
 ## Git & Version History
 
-**Remote:** GitHub — `https://github.com/xoloUno/[REPO_NAME]`
+**Remote:** GitHub — `https://github.com/YourOrg/[REPO_NAME]`
 
 ### Branch Strategy
 

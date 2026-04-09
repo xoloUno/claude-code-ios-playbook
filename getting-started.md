@@ -113,7 +113,7 @@ Type `/exit` to leave Claude Code when done.
 
 ## Creating a New Project (Do This For Every New App)
 
-This is the part you'll repeat for TerraView, LunchSpot, and every future app.
+This is the part you'll repeat for every new app.
 
 ### Step 1: Create the bootstrap script file
 
@@ -138,9 +138,9 @@ You only create this file once. After that, you just edit 4 lines each time.
 Before each new project, open `bootstrap.sh` in TextEdit and change only these 4 lines near the top:
 
 ```
-APP_NAME="TerraView"
-BUNDLE_ID="uno.xolo.terraview"
-REPO_NAME="terraview-app"
+APP_NAME="MyApp"
+BUNDLE_ID="com.example.myapp"
+REPO_NAME="myapp"
 MINIMUM_IOS="26.0"
 ```
 
@@ -153,7 +153,7 @@ Save the file after editing. That's it — don't change anything else in the scr
 2. Navigate to your Code folder by pasting this and pressing Return:
 
 ```
-cd '/Users/erikj/Library/Mobile Documents/com~apple~CloudDocs/Code'
+cd '~/Code'
 ```
 
 3. Run the bootstrap script:
@@ -165,12 +165,12 @@ bash '_playbook/bootstrap.sh'
 4. Watch the output. It will print a bunch of lines as it creates files. At the end you should see:
 
 ```
-✅ TerraView bootstrapped successfully!
+✅ MyApp bootstrapped successfully!
 ```
 
 Followed by a list of manual steps. If you see any red error text, something went wrong — the error message usually tells you what.
 
-**What just happened:** The script created a `TerraView/` folder inside your Code folder with an entire Xcode project, Fastlane config, GitHub Actions workflows, SwiftLint config, pre-commit hooks, legal doc templates, and more. It also created a GitHub repo and pushed everything to it.
+**What just happened:** The script created a `MyApp/` folder inside your Code folder with an entire Xcode project, Fastlane config, GitHub Actions workflows, SwiftLint config, pre-commit hooks, legal doc templates, and more. It also created a GitHub repo and pushed everything to it.
 
 ### Step 4: Set up the pre-commit hooks
 
@@ -183,7 +183,7 @@ brew install lefthook
 Then run (from your project folder):
 
 ```
-cd '/Users/erikj/Library/Mobile Documents/com~apple~CloudDocs/Code/TerraView'
+cd '~/Code/MyApp'
 ```
 
 ```
@@ -199,13 +199,13 @@ bundle ID, and URL scheme filled in. The remaining project-specific sections (co
 core loop, tech stack, UI direction, scope list) are best filled in during your first
 Claude Code session.
 
-1. If you have a product spec from a previous Claude chat, download it (e.g., `TerraView_Spec.md`)
-   and drop it into your project folder: `iCloud Drive > Code > terraview-app`
+1. If you have a product spec from a previous Claude chat, download it (e.g., `MyApp_Spec.md`)
+   and drop it into your project folder: `iCloud Drive > Code > myapp`
 
 2. Start Claude Code (see "Starting a Claude Code Session" below)
 
 3. Tell it something like:
-   - "Fill in CLAUDE.md using the spec in TerraView_Spec.md" (if you have a spec), or
+   - "Fill in CLAUDE.md using the spec in MyApp_Spec.md" (if you have a spec), or
    - "Let's fill in the CLAUDE.md — here's what the app does: [describe your app]"
 
 4. Claude Code will fill in the sections, commit, and push — no manual git commands needed.
@@ -221,7 +221,7 @@ Every time you sit down to work on your project:
 2. Navigate to your project:
 
 ```
-cd '/Users/erikj/Library/Mobile Documents/com~apple~CloudDocs/Code/TerraView'
+cd '~/Code/MyApp'
 ```
 
 3. Start Claude Code:
@@ -268,26 +268,26 @@ what each one means and how to do it:
 - Go to https://developer.apple.com/account/resources/identifiers
 - Click the **+** button
 - Select "App IDs" → "App"
-- Enter description (e.g., "TerraView") and bundle ID (`uno.xolo.terraview`)
+- Enter description (e.g., "MyApp") and bundle ID (`com.example.myapp`)
 - Check any capabilities you need (e.g., HealthKit, App Groups)
 - Click Continue → Register
 
 **2. Create app record in App Store Connect**
 - Go to https://appstoreconnect.apple.com
 - Click My Apps → **+** → New App
-- Select iOS, enter name, select your bundle ID, set SKU (e.g., "terraview")
+- Select iOS, enter name, select your bundle ID, set SKU (e.g., "myapp")
 - Click Create
 
 **3. Create provisioning profile**
 - Go to https://developer.apple.com/account/resources/profiles
 - Click **+** → Distribution → App Store Connect
 - Select your bundle ID → select your distribution certificate
-- Name it exactly: `"TerraView App Store"`
+- Name it exactly: `"MyApp App Store"`
 - Download the `.mobileprovision` file
 - Base64 encode it (paste this in Terminal):
 
 ```
-base64 -i ~/Downloads/TerraView_App_Store.mobileprovision | pbcopy
+base64 -i ~/Downloads/MyApp_App_Store.mobileprovision | pbcopy
 ```
 
 (This copies the encoded text to your clipboard)
@@ -299,7 +299,7 @@ base64 -i ~/Downloads/TerraView_App_Store.mobileprovision | pbcopy
 | Name | Value |
 |---|---|
 | `PROVISIONING_PROFILE` | Paste the base64 text from step 3 (it's on your clipboard) |
-| `PROVISIONING_PROFILE_NAME` | `TerraView App Store` (exact name from step 3) |
+| `PROVISIONING_PROFILE_NAME` | `MyApp App Store` (exact name from step 3) |
 | `APP_STORE_CONNECT_API_KEY` | Contents of your `.p8` file (same across all apps) |
 | `ASC_KEY_ID` | Your API Key ID (same across all apps) |
 | `ASC_ISSUER_ID` | Your Issuer ID (same across all apps) |
@@ -315,12 +315,12 @@ paste them into each new project. If this is your first project, see Phase 1 in
 - In the project root, create a file called `.env.fastlane` (it's already gitignored):
 
 ```
-ASC_KEY_ID=GXSJ996C83
-ASC_ISSUER_ID=13ef7cd0-b5b7-46b4-991b-32d6ee6da1bd
-ASC_KEY_FILEPATH=/Users/erikj/Documents/Xcode/AuthKey_GXSJ996C83.p8
+ASC_KEY_ID=YOUR_ASC_KEY_ID
+ASC_ISSUER_ID=YOUR_ASC_ISSUER_ID
+ASC_KEY_FILEPATH=~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8
 ```
 
-- The `.p8` key lives at `~/Documents/Xcode/AuthKey_GXSJ996C83.p8` (shared across all apps)
+- The `.p8` key lives at `~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8` (shared across all apps)
 - The Key ID and Issuer ID are the same across all your apps — only `ASC_KEY_FILEPATH` could change if you move the key
 - This enables the `/deploy` slash command to upload to TestFlight from your machine
 - To test manually: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
@@ -338,7 +338,7 @@ ASC_KEY_FILEPATH=/Users/erikj/Documents/Xcode/AuthKey_GXSJ996C83.p8
 Here's what a typical evening coding session looks like:
 
 1. **Open Terminal**
-2. **Navigate:** `cd '/Users/erikj/Library/Mobile Documents/com~apple~CloudDocs/Code/TerraView'`
+2. **Navigate:** `cd '~/Code/MyApp'`
 3. **Start Claude Code:** `claude`
 4. **Tell it what to work on:** "Let's build the LAS file importer today"
 5. **Claude Code works** — it reads your CLAUDE.md, checks the spec, writes code, builds with XcodeBuildMCP, fixes errors, commits to a feature branch

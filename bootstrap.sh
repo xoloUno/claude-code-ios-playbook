@@ -3,13 +3,15 @@ set -euo pipefail
 # ═══════════════════════════════════════════════════════
 # CONFIGURE THESE FOUR VARIABLES
 # ═══════════════════════════════════════════════════════
-APP_NAME="TerraView"			# Display name and Xcode scheme
-BUNDLE_ID="uno.xolo.terraview"		# Reverse-domain bundle identifier
-REPO_NAME="terraview-app"			# GitHub repository name
+APP_NAME="MyApp"			# Display name and Xcode scheme
+BUNDLE_ID="com.example.myapp"		# Reverse-domain bundle identifier
+REPO_NAME="myapp"			# GitHub repository name
 MINIMUM_IOS="26.0"			# Deployment target
 # ═══════════════════════════════════════════════════════
-TEAM_ID="3UH727U953"
-ORG="xoloUno"
+# Edit these, or source from .env.playbook:
+#   source .env.playbook
+TEAM_ID="YOUR_TEAM_ID"
+ORG="YourGitHubOrg"
 # ═══════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════
@@ -270,7 +272,7 @@ platform :ios do
           CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier) =>
             ENV["PROVISIONING_PROFILE_NAME"]
           # Add extension bundle IDs here if needed:
-          # "uno.xolo.appname.widgets" => "AppName Widgets App Store"
+          # "com.example.appname.widgets" => "AppName Widgets App Store"
         }
       }
     )
@@ -889,7 +891,7 @@ TEMPLATE="$SCRIPT_DIR/CLAUDE-TEMPLATE.md"
 if [[ -f "$TEMPLATE" ]]; then
   APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
   sed -e "s|\[APP_NAME\]|$APP_NAME|g" \
-      -e "s|\[uno\.xolo\.appname\]|$BUNDLE_ID|g" \
+      -e "s|\[com\.example\.appname\]|$BUNDLE_ID|g" \
       -e "s|\[appname\]|$APP_NAME_LOWER|g" \
       -e "s|\[REPO_NAME\]|$REPO_NAME|g" \
       "$TEMPLATE" > CLAUDE.md

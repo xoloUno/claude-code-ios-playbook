@@ -1,6 +1,9 @@
 # Claude Code
 .claude/
 
+# Local credentials (never commit)
+.env.playbook
+
 # macOS
 .DS_Store
 ._*

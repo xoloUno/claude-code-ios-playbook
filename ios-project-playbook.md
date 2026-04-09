@@ -10,6 +10,18 @@ is concrete, copy-pasteable, and tested.
 > domains, or org names. Use generic placeholders (`YOUR_TEAM_ID`, `com.example.*`,
 > `you@example.com`, `YourOrg`). Real values belong in `.env.playbook` (gitignored).
 
+## Table of Contents
+
+- [Phase 0: Automated Project Bootstrap](#phase-0-automated-project-bootstrap)
+- [Phase 1: CI/CD Pipeline Setup](#phase-1-cicd-pipeline-setup)
+- [Phase 2: StoreKit 2 Subscriptions Setup](#phase-2-storekit-2-subscriptions-setup)
+- [Phase 3: Development Conventions](#phase-3-development-conventions)
+- [Phase 4: Adding Features & Extensions](#phase-4-adding-features--extensions)
+- [Phase 4.5: Screenshot Workflow](#phase-45-screenshot-workflow)
+- [Phase 5: App Store Submission](#phase-5-app-store-submission)
+- [ASC Field Location Cheat Sheet](#asc-field-location-cheat-sheet)
+- [Phase 6: Post-Launch Monitoring](#phase-6-post-launch-monitoring-add-when-app-is-live)
+
 ---
 
 ## Phase 0: Automated Project Bootstrap
@@ -194,22 +206,9 @@ for emergencies (e.g., local machine unavailable).
 
 **Key gotchas learned the hard way:**
 
-1. Never use cloud-managed signing on CI — manual signing with `update_code_signing_settings` is reliable.
-2. Fastlane runs from the `fastlane/` subdirectory — file paths are relative to that folder.
-3. Fastlane's `export_method` only accepts `"app-store"` (not `"app-store-connect"`).
-4. Provisioning profile name must match exactly in three places: Apple portal, `update_code_signing_settings`, and `export_options.provisioningProfiles`.
-5. Register your app in App Store Connect BEFORE the first CI build.
-6. The same distribution certificate works across all your apps.
-7. Always run `xcodegen generate` in CI if you use XcodeGen.
-8. After Xcode updates, `xcodebuild` may fail with "failed to load a required plug-in" —
-   run `xcodebuild -runFirstLaunch` to fix. This reinstalls simulator runtimes and
-   developer tools. Also check that the iOS platform is installed in Xcode → Settings →
-   Components if you get "iOS X.X is not installed" errors.
-9. **Homebrew Ruby is required for local fastlane** — macOS ships Ruby 2.6 which lacks
-   bundler 4.x. Always prepend `/opt/homebrew/opt/ruby/bin` to `PATH` before running
-   `bundle exec fastlane`. The `/deploy` slash command handles this automatically.
-10. **UTF-8 locale required for fastlane** — without `LC_ALL=en_US.UTF-8`, fastlane's
-    gym crashes with `invalid byte sequence in US-ASCII` when parsing Xcode build logs.
+1. **Never use cloud-managed signing on CI** — manual signing with `update_code_signing_settings` is reliable. Cloud signing randomly fails on headless runners.
+2. **Provisioning profile name must match in three places:** Apple Developer Portal, `update_code_signing_settings`, and `export_options.provisioningProfiles`. A mismatch in any one silently produces an unsigned build.
+3. **After Xcode updates,** `xcodebuild` may fail with "failed to load a required plug-in" — run `xcodebuild -runFirstLaunch` to fix. Check Xcode → Settings → Components if you get "iOS X.X is not installed" errors.
 
 ---
 

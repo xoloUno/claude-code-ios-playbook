@@ -6,6 +6,28 @@ Read it fully before writing any code or suggesting any architecture changes.
 > **Reference:** For CI/CD setup, StoreKit 2 subscription setup, and App Store submission
 > procedures, see `ios-project-playbook.md` in the `_playbook/` directory.
 
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Current State](#current-state)
+- [Tech Stack](#tech-stack)
+- [Target Project Structure](#target-project-structure)
+- [UI Direction](#ui-direction)
+- [Data Models](#data-models)
+- [Monetization](#monetization)
+- [Scope Rules](#scope-rules--enforce-these-strictly)
+- [Key Product Decisions](#key-product-decisions-dont-revisit-these)
+- [Code Style & Conventions](#code-style--conventions)
+- [Automated Quality Tools](#automated-quality-tools)
+- [App Store Metadata](#app-store-metadata-for-reference)
+- [WWDC25 & iOS 26 Awareness](#%EF%B8%8F-wwdc25--ios-26-awareness--read-this-first)
+- [Git & Version History](#git--version-history)
+- [Build & Deploy](#build--deploy)
+- [Session Startup Checklist](#session-startup-checklist)
+- [Session End Checklist](#session-end-checklist)
+- [Manual Tasks Handoff Rule](#manual-tasks-handoff-rule)
+- [Work Log Rule](#work-log-rule)
+
 ---
 
 ## Project Overview

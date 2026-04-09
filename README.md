@@ -6,6 +6,15 @@ script bootstraps a full Xcode project with CI/CD, code signing, linting, pre-co
 hooks, and App Store submission pipeline — then Claude Code handles the day-to-day
 development.
 
+## Table of Contents
+
+- [TL;DR](#tldr)
+- [What this is](#what-this-is)
+- [Who this is for](#who-this-is-for)
+- [Files](#files)
+- [Setup](#setup)
+- [Tech stack](#tech-stack)
+
 ## TL;DR
 
 1. Copy `.env.playbook.example` to `.env.playbook`, fill in your Apple Developer details

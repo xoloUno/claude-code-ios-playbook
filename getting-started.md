@@ -3,6 +3,14 @@
 A plain-language walkthrough for creating a new iOS project using the playbook.
 No terminal experience assumed. Every step tells you exactly what to do.
 
+## Table of Contents
+
+- [Before Your First Project (One-Time Setup)](#before-your-first-project-one-time-setup)
+- [Creating a New Project (Do This For Every New App)](#creating-a-new-project-do-this-for-every-new-app)
+- [Starting a Claude Code Session](#starting-a-claude-code-session)
+- [The Manual Steps After Bootstrap](#the-manual-steps-after-bootstrap)
+- [Day-to-Day Workflow Summary](#day-to-day-workflow-summary)
+
 ---
 
 ## Before Your First Project (One-Time Setup)

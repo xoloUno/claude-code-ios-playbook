@@ -9,6 +9,18 @@ GitHub Actions) — that infrastructure stays exactly as-is.
 simulators, check GitHub Actions logs, and review code — all without you
 copy-pasting terminal output or switching windows.
 
+## Table of Contents
+
+- [How It Works (Quick Primer)](#how-it-works-quick-primer)
+- [Tier 1 — Install These First](#tier-1--install-these-first)
+- [Tier 2 — Add When Comfortable](#tier-2--add-when-comfortable)
+- [Tier 3 — Situationally Useful](#tier-3--situationally-useful)
+- [Keeping Everything Up to Date](#keeping-everything-up-to-date)
+- [Quarterly Plugin Maintenance](#quarterly-plugin-maintenance-jan--apr--jul--oct)
+- [What NOT to Install](#what-not-to-install-and-why)
+- [Verifying Your Setup](#verifying-your-setup)
+- [Adding to Your CLAUDE.md Template](#adding-to-your-claudemd-template)
+
 ---
 
 ## How It Works (Quick Primer)

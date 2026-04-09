@@ -99,7 +99,7 @@ New additions:
    override_status_bar(true)
    ```
    **Important:** ASC requires iPhone 6.5" screenshots (1284x2778). iPhone 17 Pro
-   outputs 6.3" resolution — it does NOT satisfy this requirement. Use iPhone 14 Plus
+   outputs 6.3" resolution — it does NOT satisfy this requirement. Use iPhone 13 Pro Max
    or iPhone 14 Plus for the mandatory 6.5" size.
 
 3. Populate `fastlane/metadata/en-US/` files with real content (name, description,

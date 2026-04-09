@@ -162,11 +162,11 @@ Save the file after editing. That's it — don't change anything else in the scr
 2. Navigate to your Code folder by pasting this and pressing Return:
 
 ```
-cd ~/Code
+cd ~/Projects
 ```
 
-> **Note:** Replace `~/Code` with wherever you keep your projects. The playbook
-> examples use `~/Code` throughout — substitute your actual path if different.
+> **Note:** Replace `~/Projects` with wherever you keep your projects. The playbook
+> examples use `~/Projects` throughout — substitute your actual path if different.
 
 3. Run the bootstrap script:
 
@@ -195,7 +195,7 @@ brew install lefthook
 Then run (from your project folder):
 
 ```
-cd '~/Code/MyApp'
+cd '~/Projects/MyApp'
 ```
 
 ```
@@ -233,7 +233,7 @@ Every time you sit down to work on your project:
 2. Navigate to your project:
 
 ```
-cd '~/Code/MyApp'
+cd '~/Projects/MyApp'
 ```
 
 3. Start Claude Code:
@@ -350,7 +350,7 @@ ASC_KEY_FILEPATH=~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8
 Here's what a typical evening coding session looks like:
 
 1. **Open Terminal**
-2. **Navigate:** `cd '~/Code/MyApp'`
+2. **Navigate:** `cd '~/Projects/MyApp'`
 3. **Start Claude Code:** `claude`
 4. **Tell it what to work on:** "Let's build the LAS file importer today"
 5. **Claude Code works** — it reads your CLAUDE.md, checks the spec, writes code, builds with XcodeBuildMCP, fixes errors, commits to a feature branch

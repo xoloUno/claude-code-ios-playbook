@@ -8,6 +8,35 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-10 — Externalize config to env files, fix bootstrap path resolution
+
+**What changed:** `bootstrap.sh` no longer requires manual editing. All configuration is
+loaded from two gitignored env files:
+
+- **`.env.playbook`** — identity and credentials (Team ID, GitHub org, ASC keys). Set once.
+- **`.env.project`** — app-specific vars (APP_NAME, BUNDLE_ID, REPO_NAME, MINIMUM_IOS).
+  Edit before each bootstrap run.
+
+**Bug fixes:**
+- Fixed two `BASH_SOURCE[0]` relative path resolution bugs that caused bootstrap to fail
+  after `cd`-ing into the new project directory (lines 905 and 943). Both now use
+  `SCRIPT_DIR` resolved once at script start.
+
+**New files:**
+- **`.env.project.example`** — template for per-project config
+
+**Updated files:**
+- **`bootstrap.sh`** — sources env files, validates required vars, removed hardcoded placeholders
+- **`.gitignore`** — added `.env.project`
+- **`getting-started.md`** — updated one-time setup (add `.env.playbook` step) and
+  per-project workflow (use `.env.project` instead of editing script). Steps renumbered
+  from 5 to 4.
+
+**How to upgrade your project:** No project-side changes needed — this only affects the
+playbook's bootstrap workflow. Existing projects are unaffected.
+
+---
+
 ## 2026-04-09 — Session lifecycle commands, /upgrade, testing + privacy rules
 
 **What changed:** Major expansion of slash commands and rules:

@@ -5,6 +5,7 @@
 
 # Local credentials (never commit)
 .env.playbook
+.env.project
 
 # macOS
 .DS_Store

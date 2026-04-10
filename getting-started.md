@@ -118,44 +118,53 @@ Start Claude Code by typing `claude` in Terminal and pressing Return. Then insid
 
 Type `/exit` to leave Claude Code when done.
 
+### Set up your playbook credentials
+
+The playbook uses a local `.env.playbook` file for your identity and Apple credentials.
+This file is gitignored — it never leaves your machine.
+
+1. Open Terminal and run:
+
+```
+cd ~/Library/Mobile\ Documents/com~apple~CloudDocs/Code/_playbook
+cp .env.playbook.example .env.playbook
+```
+
+2. Open `.env.playbook` in a text editor and fill in your real values (Team ID, GitHub
+   username, ASC keys, etc.). The comments in the file tell you where to find each value.
+
+> **Tip:** Dotfiles (files starting with `.`) are hidden in Finder by default. Press
+> **Cmd+Shift+.** to toggle them visible.
+
 ---
 
 ## Creating a New Project (Do This For Every New App)
 
-This is the part you'll repeat for every new app.
+This is the part you'll repeat for every new app. You never need to edit `bootstrap.sh`
+itself — all configuration lives in env files.
 
-### Step 1: Create the bootstrap script file
+### Step 1: Set up `.env.project` for your new app
 
-You only create this file once. After that, you just edit 4 lines each time.
-
-1. Open **TextEdit** (search for it in Spotlight)
-
-2. Go to TextEdit menu → **Format** → **Make Plain Text** (important — rich text will break the script)
-
-3. Open the playbook file (`_playbook/ios-project-playbook.md`), find the section called "0.2 One-Command Project Bootstrap", and copy the entire code block — everything between the opening ` ```bash ` and the closing ` ``` `. It starts with `#!/bin/bash` and ends with the `echo` lines.
-
-4. Paste it into your TextEdit document.
-
-5. Save it as `bootstrap.sh` inside your `_playbook` folder:
-   - File → Save
-   - Navigate to: `iCloud Drive > Code > _playbook`
-   - Filename: `bootstrap.sh`
-   - If TextEdit tries to add `.txt`, uncheck "If no extension is provided, use .txt"
-
-### Step 2: Edit the 4 variables for your new app
-
-Before each new project, open `bootstrap.sh` in TextEdit and change only these 4 lines near the top:
+1. Open Terminal and run:
 
 ```
-APP_NAME="MyApp"
-BUNDLE_ID="com.example.myapp"
-REPO_NAME="myapp"
-MINIMUM_IOS="26.0"
+cd ~/Library/Mobile\ Documents/com~apple~CloudDocs/Code/_playbook
+cp .env.project.example .env.project
 ```
 
-Save the file after editing. That's it — don't change anything else in the script.
+2. Open `.env.project` in a text editor and fill in your app details:
 
-### Step 3: Run the script
+```
+APP_NAME=MyApp
+BUNDLE_ID=com.example.myapp
+REPO_NAME=myapp
+MINIMUM_IOS=26.0
+```
+
+Save the file. That's it — `bootstrap.sh` reads both `.env.playbook` (your identity)
+and `.env.project` (your app) automatically.
+
+### Step 2: Run the bootstrap script
 
 1. Open Terminal
 
@@ -184,7 +193,7 @@ Followed by a list of manual steps. If you see any red error text, something wen
 
 **What just happened:** The script created a `MyApp/` folder inside your Code folder with an entire Xcode project, Fastlane config, GitHub Actions workflows, SwiftLint config, pre-commit hooks, legal doc templates, and more. It also created a GitHub repo and pushed everything to it.
 
-### Step 4: Set up the pre-commit hooks
+### Step 3: Set up the pre-commit hooks
 
 If you saw `⚠️  Lefthook not installed` during bootstrap, install it now:
 
@@ -204,7 +213,7 @@ lefthook install
 
 If bootstrap completed without that warning, this step is already done — skip ahead.
 
-### Step 5: Customize CLAUDE.md (first Claude Code session)
+### Step 4: Customize CLAUDE.md (first Claude Code session)
 
 The bootstrap script already created `CLAUDE.md` in your project with your app name,
 bundle ID, and URL scheme filled in. The remaining project-specific sections (core problem,

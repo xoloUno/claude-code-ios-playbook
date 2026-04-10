@@ -3,15 +3,37 @@ set -euo pipefail
 # ═══════════════════════════════════════════════════════
 # CONFIGURE THESE FOUR VARIABLES
 # ═══════════════════════════════════════════════════════
-APP_NAME="MyApp"			# Display name and Xcode scheme
-BUNDLE_ID="com.example.myapp"		# Reverse-domain bundle identifier
-REPO_NAME="myapp"			# GitHub repository name
-MINIMUM_IOS="26.0"			# Deployment target
 # ═══════════════════════════════════════════════════════
-# Edit these, or source from .env.playbook:
-#   source .env.playbook
-TEAM_ID="YOUR_TEAM_ID"
-ORG="YourGitHubOrg"
+# CONFIG — loaded from env files, no need to edit this script
+# ═══════════════════════════════════════════════════════
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Identity (one-time setup)
+if [[ -f "$SCRIPT_DIR/.env.playbook" ]]; then
+  # shellcheck source=.env.playbook.example
+  source "$SCRIPT_DIR/.env.playbook"
+else
+  echo "⚠️  No .env.playbook found — copy .env.playbook.example and fill in your values."
+fi
+
+# Project (edit per project)
+if [[ -f "$SCRIPT_DIR/.env.project" ]]; then
+  # shellcheck source=.env.project.example
+  source "$SCRIPT_DIR/.env.project"
+else
+  echo "❌ No .env.project found — copy .env.project.example and fill in your app details."
+  exit 1
+fi
+
+# Fallbacks for identity vars (project vars have no fallback — they're required)
+TEAM_ID="${TEAM_ID:-YOUR_TEAM_ID}"
+ORG="${ORG:-YourGitHubOrg}"
+
+# Validate required project vars
+for var in APP_NAME BUNDLE_ID REPO_NAME; do
+  [[ -n "${!var:-}" ]] || { echo "❌ $var is not set in .env.project"; exit 1; }
+done
+MINIMUM_IOS="${MINIMUM_IOS:-26.0}"
 # ═══════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════
@@ -880,7 +902,7 @@ Fallback if local build/upload fails:
 - Monitor: `gh run list --workflow=release.yml --limit 1`
 RELEASECMD
 # --- Copy playbook slash commands (except curate, which is playbook-only) ---
-PLAYBOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLAYBOOK_DIR="$SCRIPT_DIR"
 CMDS_SRC="$PLAYBOOK_DIR/.claude/commands"
 if [[ -d "$CMDS_SRC" ]]; then
   for cmd in "$CMDS_SRC"/*.md; do
@@ -918,7 +940,6 @@ else
   echo "⚠️  Lefthook not installed. Run: brew install lefthook && lefthook install"
 fi
 # --- Generate CLAUDE.md from template ---
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE="$SCRIPT_DIR/CLAUDE-TEMPLATE.md"
 if [[ -f "$TEMPLATE" ]]; then
   APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')

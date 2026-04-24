@@ -650,6 +650,26 @@ Apple's CloudKit documentation covers the happy path; this is what it doesn't te
 | **Can't remove a field from Production schema** | CloudKit Production schemas are **append-only** | Do a dead-code audit on every synced model field **before** clicking Deploy Schema Changes. Dead fields in Production are permanent. |
 | **`CKError.unknownItem` on first fetch** | Development env uses schema-on-write — a record type with zero saved records doesn't exist yet | Catch `.unknownItem` in any fetch-all-on-bootstrap code and treat it as an empty result set. Without this, first-ever bootstrap on a fresh container throws mid-pipeline. |
 | **Push notifications broken in Debug builds** | `aps-environment` hardcoded to `production` in entitlements | Use `aps-environment: development` in source entitlements. Xcode automatically substitutes `production` at archive/distribution time. Hardcoding `production` breaks Debug + Simulator builds. |
+| **`CKQuery` fails on encrypted-only record types** | `encryptedValues` fields cannot be indexed; `CKQuery` requires at least one queryable field | Use `recordZoneChanges(since: nil)` for initial fetch — it uses change tracking with no indexing requirement. Works in Development but silently breaks in Production otherwise. |
+
+#### Sync Patterns
+
+**Debounce pushes to prevent concurrent race conditions.** When multiple mutations happen in
+quick succession (e.g., user starts a timer then sets severity), each `save()` triggers a
+separate CloudKit push. With `savePolicy: .changedKeys` (last-writer-wins), a stale push can
+complete last and overwrite the correct value. Fix: cancel-and-debounce — cancel any pending
+push Task on each `save()`, wait 500ms for mutations to settle, then push final state once.
+
+**Always implement three sync triggers.** `CKDatabaseSubscription` silent push notifications
+are unreliable — Apple deprioritizes them on low battery, and TestFlight/Development builds
+are flakier than Production. Never rely on push alone:
+
+1. **Silent push** via `CKDatabaseSubscription` — primary trigger
+2. **Polling fallback** — 15-second timer while app is in the foreground
+3. **Pull-to-refresh** on all list views — user-initiated
+
+The delta fetch (`recordZoneChanges` since last token) is cheap — it returns immediately if
+nothing changed.
 
 #### Self-Healing Async Init
 

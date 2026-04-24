@@ -8,6 +8,24 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-21 — CloudKit sync patterns added to §4.4
+
+**What changed:** Three lessons from the Flara project added to §4.4 CloudKit & Push
+Notifications in `ios-project-playbook.md`:
+
+- **CKQuery + encrypted fields pitfall** — new row in Common CloudKit Pitfalls table:
+  never use `CKQuery` on encrypted-only record types in Production; use
+  `recordZoneChanges(since: nil)` instead.
+- **Debounce push pattern** — cancel-and-debounce concurrent `save()` calls to prevent
+  last-writer-wins race conditions under `savePolicy: .changedKeys`.
+- **Three sync triggers** — always implement silent push + 15s polling + pull-to-refresh;
+  `CKDatabaseSubscription` alone is unreliable on TestFlight/low battery.
+
+**Affected files:** `ios-project-playbook.md`
+**Action needed in your project:** Review your CloudKit sync layer against these patterns.
+
+---
+
 ## 2026-04-10 — Externalize config to env files, fix bootstrap path resolution
 
 **What changed:** `bootstrap.sh` no longer requires manual editing. All configuration is

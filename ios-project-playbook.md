@@ -710,19 +710,32 @@ professional framing and design, and export at correct sizes.
 
 ### Required Device Sizes (blocks submission if missing)
 
+Per [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/),
+ASC accepts only two submission sizes as of 2026 — and auto-scales them to every
+smaller device category. Capture the top two, let Apple scale the rest.
+
 | ASC Size Label | Simulator Device | Resolution | Required? |
 |---|---|---|---|
-| iPhone 6.5" | iPhone 14 Plus | 1284 × 2778 | **Yes** — blocks "Add for Review" |
-| iPad 13" | iPad Pro 13-inch (M5) | 2064 × 2752 | **Yes** — blocks "Add for Review" |
-| iPhone 6.3" | iPhone 16/17 Pro | 1179 × 2556 | Optional — scales from 6.5" |
-| iPhone 6.9" | iPhone 16 Pro Max | 1260 × 2736 | Optional — can replace 6.5" requirement |
+| **iPhone 6.9"** | **iPhone 17 Pro Max** | **1320 × 2868** | **Yes** — or 6.5" as fallback |
+| **iPad 13"** | **iPad Pro 13-inch (M5)** | **2064 × 2752** | **Yes** if app supports iPad |
+| iPhone 6.5" | iPhone 14 Plus | 1284 × 2778 | Fallback only — required only if no 6.9" |
+| iPhone 6.3" | iPhone 17 Pro | 1179 × 2556 | **Not accepted** — scaling target only |
+| iPad Pro 11" | iPad Pro 11-inch | 1668 × 2388 | **Not accepted** — scaling target only |
 
-**Important:** ASC screenshot categories are defined by resolution, not device generation.
-iPhone 17 Pro outputs 6.3" resolution — it does NOT satisfy the 6.5" requirement. You
-must use iPhone 14 Plus (or iPhone 13 Pro Max) for the 6.5" category.
+**Important:** ASC auto-scales 6.9" submissions down to 6.5", 6.3", 6.1", and older
+sizes. A 13" iPad submission auto-scales to 11" iPad. **iPhone 6.3" (1179×2556) and
+iPad Pro 11" (1668×2388) are NOT accepted as submissions** — uploading only those
+sizes blocks "Add for Review." Capture on iPhone 17 Pro Max and iPad Pro 13-inch
+(M5); these are the only two simulators required.
 
-Minimum 1 screenshot per required size. Upload 3–5 on your primary size (6.5") for
-marketing impact. Add 6.3" or 6.9" screenshots optionally for newer device marketing.
+**If you need iPhone 17 Pro or iPad Pro 11" specifically as your marketing frame**
+(e.g., those are the devices most of your users have), route through Track B
+(AppMockUp Studio) — AppMockUp composites at ASC canonical resolutions regardless
+of source capture size, so you can show any device frame while meeting 6.9"/13"
+pixel requirements.
+
+Minimum 1 screenshot per required size. Upload 3–5 on the 6.9" primary for
+marketing impact.
 
 ### Step 1: Automated Capture with Fastlane Snapshot
 
@@ -742,11 +755,10 @@ Move `SnapshotHelper.swift` into your UI Test target.
 **Snapfile** (in `fastlane/` directory):
 
 ```ruby
-# Devices matching all three required ASC sizes
+# Only the two ASC-accepted submission sizes — Apple auto-scales to everything smaller
 devices([
-  "iPhone 17 Pro",             # 6.3" — primary marketing size
-  "iPhone 14 Plus",             # 6.5" — required for submission (1284x2778)
-  "iPad Pro 13-inch (M5)"     # 13"  — required even for iPhone-only
+  "iPhone 17 Pro Max",      # 6.9" — REQUIRED (1320×2868)
+  "iPad Pro 13-inch (M5)"   # 13"  — REQUIRED if app supports iPad (2064×2752)
 ])
 
 languages(["en-US"])
@@ -779,14 +791,69 @@ and device, plus an HTML summary page for review.
 > screenshots on demand during a Claude Code session — faster for one-off captures but
 > doesn't scale like `snapshot`.
 
-### Step 2: Design and Frame Screenshots
+### Step 2: Frame Screenshots
 
-Raw simulator screenshots won't convert users. Add device frames, captions, and
-branded backgrounds:
+Raw simulator screenshots won't convert users. Two tracks — pick based on how much
+marketing polish you need.
+
+#### Track A — Apple Frames CLI (recommended default)
+
+Federico Viticci's [Apple Frames CLI](https://github.com/viticci/frames-cli) applies
+the MacStories Apple Frames 4 device bezels from the command line. Free, open source,
+agent-friendly (`--json` mode + `FRAMES_ASSETS` env var), no Shortcuts.app dependency
+— it downloads its own asset pack (~40 MB) on first run.
+
+**One-time install:**
+
+```bash
+git clone https://github.com/viticci/frames-cli.git
+cd frames-cli && pip3 install Pillow
+mkdir -p ~/.local/bin
+ln -s "$(pwd)/frames" ~/.local/bin/frames
+frames setup          # downloads Apple Frames 4 assets from cdn.macstories.net
+```
+
+Ensure `~/.local/bin` is in your `PATH`. Verify with `frames --version`.
+
+**Optional Claude Code skill:** The repo ships a skill at `skill/SKILL.md`. Install
+once to `~/.claude/skills/frames-cli/SKILL.md` so Claude Code sessions have native
+awareness of flags and batch patterns.
+
+**Framing is automatic.** The bootstrapped `screenshots` lane calls `frame_screenshots`
+at the end, so `bundle exec fastlane screenshots` captures and frames in one command.
+Framed files land alongside the raw ones with a `_framed.png` suffix. To run framing
+standalone against already-captured screenshots: `bundle exec fastlane frame_screenshots`.
+
+**Manual invocation (without Fastlane):**
+
+```bash
+for dir in fastlane/screenshots/en-US/*/; do
+  frames -o "$dir" "$dir"*.png
+done
+```
+
+Delete raw PNGs before uploading, or use a separate output directory and point
+`deliver` there.
+
+**Device detection note:** The CLI auto-detects from pixel dimensions and picks the
+newest frame matching the resolution. A 1320×2868 screenshot (captured on iPhone
+17 Pro Max) auto-frames as iPhone 17 Pro Max — no mismatch, native 6.9" frame.
+A 2064×2752 iPad screenshot auto-frames as the matching iPad Pro 13" model.
+
+**Useful flags:**
+- `--color "Cosmic Orange"` / `-c random` — brand-matched or varied frame colors
+- `-b 3` — merge in batches (e.g., 15 shots → 5 merged panoramas)
+- `--json` — machine-readable output for pipelines
+- `frames list` / `frames info screenshot.png` — inspect supported devices and detect what a file is
+
+#### Track B — AppMockUp Studio (when you need captions + backgrounds)
+
+Apple Frames CLI only applies device bezels — no captions, no branded backgrounds.
+When conversion design matters, compose in a web tool instead:
 
 | Tool | Cost | Notes |
 |---|---|---|
-| **[AppMockUp Studio](https://app-mockup.com)** (recommended) | Free | Web-based, no account, modern device frames, panoramic backgrounds, exports at ASC resolutions |
+| **[AppMockUp Studio](https://app-mockup.com)** | Free | Web-based, no account, modern device frames, panoramic backgrounds, exports at ASC resolutions |
 | [AppDrift](https://appdrift.co) | Free | Batch export, no watermarks, AI translation for localized captions |
 | [AppLaunchpad](https://theapplaunchpad.com) | Free tier | 150+ device frames, auto-generates all sizes from one design |
 
@@ -835,15 +902,15 @@ fastlane/screenshots/en-US/
 
 ### Recommended Workflow by Project Stage
 
-| Stage | Capture | Design | Upload |
+| Stage | Capture | Frame | Upload |
 |---|---|---|---|
-| **First app / v1 launch** | Manual on 3 simulators (or XcodeBuildMCP) | AppMockUp Studio (free, 20 min) | Manual in ASC |
-| **Second app onward** | Fastlane `snapshot` (one command) | AppMockUp Studio | Manual in ASC |
-| **Mature workflow** | Fastlane `snapshot` | AppMockUp Studio or `frameit` | Fastlane `deliver` |
+| **First app / v1 launch** | Manual on 3 simulators (or XcodeBuildMCP) | Apple Frames CLI | Manual in ASC |
+| **Second app onward** | Fastlane `snapshot` | Apple Frames CLI (via `fastlane frame_screenshots`) | Fastlane `deliver` |
+| **Marketing-heavy app** | Fastlane `snapshot` | Apple Frames CLI + AppMockUp overlays for captions | Fastlane `deliver` |
 
-Don't over-engineer this on your first app. Manual capture + AppMockUp Studio gets you
-professional results in under 30 minutes. Add Fastlane automation when you're updating
-screenshots regularly across multiple apps.
+Don't over-engineer this on your first app. Raw capture + Apple Frames CLI gets you
+professional framed screenshots in under 5 minutes. Add AppMockUp captions and
+branded backgrounds later when you need marketing polish.
 
 ---
 
@@ -901,14 +968,15 @@ screenshots regularly across multiple apps.
 
 | Size | Simulator | Resolution | Required? |
 |---|---|---|---|
-| iPhone 6.5" | iPhone 14 Plus | 1284 × 2778 | **Yes** — blocks "Add for Review" if missing |
-| iPad 13" | iPad Pro 13" (M5) | 2064 × 2752 | **Yes** — blocks "Add for Review" if missing |
-| iPhone 6.3" | iPhone 16/17 Pro | 1179 × 2556 | Optional — scales from 6.5" |
-| iPhone 6.9" | iPhone 16 Pro Max | 1260 × 2736 | Optional — can replace 6.5" requirement |
+| iPhone 6.9" | **iPhone 17 Pro Max** | 1320 × 2868 | **Yes** — or 6.5" as fallback |
+| iPad 13" | **iPad Pro 13-inch (M5)** | 2064 × 2752 | **Yes** if app supports iPad |
+| iPhone 6.5" | iPhone 14 Plus | 1284 × 2778 | Fallback only — required if no 6.9" |
+| iPhone 6.3" | iPhone 17 Pro | 1179 × 2556 | **Not accepted** — scaling target only |
+| iPad Pro 11" | iPad Pro 11-inch | 1668 × 2388 | **Not accepted** — scaling target only |
 
-Minimum 1 screenshot per required size. The 6.5" and iPad 13" categories use older device
-resolutions — do not substitute newer devices (e.g. iPhone 17 Pro is 6.3", not 6.5").
-See **Phase 5: Screenshot Workflow** below for the full capture-and-design pipeline.
+Upload 6.9" + 13" iPad — ASC auto-scales these down to every smaller device.
+Uploading only 6.3" or 11" blocks "Add for Review." See **Phase 5: Screenshot
+Workflow** for the full capture-and-design pipeline.
 
 **Build & Code:**
 - [ ] `MARKETING_VERSION` set to `1.0.0` in `project.yml`

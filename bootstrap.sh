@@ -341,11 +341,19 @@ platform :ios do
     )
   end
 
-  desc "Capture screenshots on all required device sizes"
+  desc "Capture screenshots on all required device sizes and apply Apple Frames"
   lane :screenshots do
     capture_screenshots(
       scheme: Dir.glob("*.xcodeproj").first.sub(".xcodeproj", "") + "UITests"
     )
+    frame_screenshots
+  end
+
+  desc "Apply Apple Frames to captured screenshots (requires frames-cli on PATH)"
+  lane :frame_screenshots do
+    Dir.glob("../fastlane/screenshots/en-US/*/").each do |dir|
+      sh("frames -o #{dir.shellescape} #{dir.shellescape}*.png")
+    end
   end
 
   desc "Sync metadata to App Store Connect (no binary, no screenshots)"
@@ -651,11 +659,10 @@ precheck_include_in_app_purchases false
 DELIVERFILE
 # --- Fastlane Snapfile ---
 cat > fastlane/Snapfile << SNAPFILE
-# Devices matching ASC required screenshot sizes
+# Only the two ASC-accepted submission sizes — Apple auto-scales to everything smaller
 devices([
-  "iPhone 17 Pro",             # 6.3" — optional but good for marketing
-  "iPhone 14 Plus",         # 6.5" — REQUIRED for submission (1284x2778)
-  "iPad Pro 13-inch (M5)"     # 13"  — REQUIRED for submission (2064x2752)
+  "iPhone 17 Pro Max",        # 6.9" — REQUIRED for submission (1320x2868)
+  "iPad Pro 13-inch (M5)"     # 13"  — REQUIRED if app supports iPad (2064x2752)
 ])
 
 languages(["en-US"])

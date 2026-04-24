@@ -44,6 +44,8 @@ Local deploy saves ~250 GitHub Actions credits per upload and gives faster feedb
 /release
 
 # Individual lanes for granular control
+bundle exec fastlane screenshots         # Capture + frame in one command (chains frame_screenshots)
+bundle exec fastlane frame_screenshots   # Re-frame already-captured screenshots
 bundle exec fastlane upload_metadata     # Sync metadata only
 bundle exec fastlane upload_screenshots  # Upload screenshots only
 bundle exec fastlane release             # Build + upload binary with metadata
@@ -52,17 +54,28 @@ bundle exec fastlane release             # Build + upload binary with metadata
 Metadata lives in `fastlane/metadata/en-US/`. Edit those files before running `/release`.
 Screenshots go in `fastlane/screenshots/en-US/` — see `ios-project-playbook.md` §4.5.
 
-**Required screenshot simulators (ASC rejects wrong resolutions):**
+**Framing prerequisite:** Both `screenshots` and `frame_screenshots` shell out to
+[frames-cli](https://github.com/viticci/frames-cli), which must be on `PATH`.
+One-time install: clone the repo, `pip3 install --user Pillow`, symlink `frames`
+into `~/.local/bin/`, then run `frames setup` (or point at a pre-downloaded asset
+folder). The bundled Claude Code skill lives at `~/.claude/skills/frames-cli/SKILL.md`
+— install once globally for agent-native awareness. See Phase 5 of the playbook for
+the full flow.
+
+**Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 
 | ASC Category | Simulator | Resolution | Required? |
 |---|---|---|---|
-| iPhone 6.5" | **iPhone 14 Plus** | 1284 × 2778 | **Yes** — blocks "Add for Review" |
-| iPad 13" | **iPad Pro 13-inch (M5)** | 2064 × 2752 | **Yes** — blocks "Add for Review" |
-| iPhone 6.3" | iPhone 16/17 Pro | 1179 × 2556 | Optional |
-| iPhone 6.9" | iPhone 16 Pro Max | 1260 × 2736 | Optional |
+| **iPhone 6.9"** | **iPhone 17 Pro Max** | **1320 × 2868** | **Yes** — or 6.5" as fallback |
+| **iPad 13"** | **iPad Pro 13-inch (M5)** | **2064 × 2752** | **Yes** if app supports iPad |
+| iPhone 6.5" | iPhone 14 Plus | 1284 × 2778 | Fallback only |
+| iPhone 6.3" | iPhone 17 Pro | 1179 × 2556 | **Not accepted** — scaling target |
+| iPad Pro 11" | iPad Pro 11-inch | 1668 × 2388 | **Not accepted** — scaling target |
 
-ASC categories are resolution-based. iPhone 17 Pro is 6.3" — it does NOT satisfy the 6.5"
-requirement. Always use iPhone 14 Plus (or iPhone 13 Pro Max) for the mandatory 6.5" size.
+ASC accepts only 6.9" (iPhone) and 13" (iPad) as submissions per [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
+Uploading only 6.3" or 11" blocks "Add for Review." Apple auto-scales 6.9" down to
+every smaller iPhone size and 13" to 11" iPad. See `ios-project-playbook.md` §Phase 5
+for the full workflow.
 
 ## Version Lifecycle
 

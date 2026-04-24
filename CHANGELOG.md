@@ -8,6 +8,92 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-24 — Screenshot simulators updated to ASC's two accepted sizes
+
+**What changed:** Phase 5 and `bootstrap.sh` Snapfile now capture on only the two
+simulators whose output pixel dimensions ASC actually accepts as submissions:
+
+- **iPhone 17 Pro Max** (1320×2868, 6.9") — replaces iPhone 14 Plus
+- **iPad Pro 13-inch (M5)** (2064×2752) — unchanged
+
+Per [Apple's current screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/),
+6.9" is the primary required iPhone size (6.5" is a fallback when 6.9" is absent),
+and ASC auto-scales the 6.9" submission down to 6.5", 6.3", 6.1", and older sizes.
+Same scaling applies from iPad 13" → 11". Uploading only 6.3" iPhone or 11" iPad
+screenshots blocks "Add for Review."
+
+**Why this matters:**
+- One simulator run (two devices) replaces the previous three-device capture.
+- Apple Frames CLI has a native iPhone 17 Pro Max frame — auto-detection is exact,
+  no fallback to an older bezel.
+- Aligns with 2026 indie-dev consensus (Screenhance, FrameHero, SplitMetrics,
+  MobileAction guides all recommend capturing at the largest accepted size and
+  leaning on ASC auto-scale).
+
+**AppMockUp escape hatch:** If you want iPhone 17 Pro or iPad Pro 11" as your
+*visible* marketing frame (because those are your users' most common devices),
+route through Track B — AppMockUp composites at ASC canonical resolutions
+regardless of source capture size, so you can show any device while still meeting
+ASC's pixel-dimension requirement.
+
+**Affected files:** `ios-project-playbook.md` §Phase 5 (Required Device Sizes
+table, important note, Snapfile sample, Apple Frames CLI device-detection note),
+`bootstrap.sh` (Snapfile HEREDOC), `.claude/rules/build-deploy.md` (simulator
+table).
+
+**Action needed in your project:**
+1. Update `fastlane/Snapfile` — replace `iPhone 14 Plus` with `iPhone 17 Pro Max`.
+2. Delete any existing 6.5"-only screenshots in `fastlane/screenshots/en-US/iPhone 6.5" Display/`
+   after the next capture run (or let `clear_previous_screenshots(true)` handle it).
+3. If you had manually uploaded 6.3" or 11" screenshots to ASC, replace them with
+   the 6.9" / 13" sets on your next submission.
+
+---
+
+## 2026-04-23 — Chain frame_screenshots into screenshots lane
+
+**What changed:** The bootstrapped `screenshots` Fastfile lane now calls
+`frame_screenshots` at the end, so `bundle exec fastlane screenshots` captures AND
+frames in one command. Running framing standalone against pre-captured screenshots is
+still supported via `bundle exec fastlane frame_screenshots`.
+
+**Affected files:** `bootstrap.sh`, `ios-project-playbook.md` §Phase 5,
+`.claude/rules/build-deploy.md`
+
+**Action needed in your project:** If your Fastfile was bootstrapped with the earlier
+separate lanes, update the `screenshots` lane to call `frame_screenshots` after
+`capture_screenshots`. See `bootstrap.sh:344-350`.
+
+---
+
+## 2026-04-23 — Apple Frames CLI is the default framing tool
+
+**What changed:** Phase 5 Screenshot Workflow in `ios-project-playbook.md` now recommends
+Federico Viticci's [Apple Frames CLI](https://github.com/viticci/frames-cli) as the
+default framing step, replacing AppMockUp Studio as the first-choice tool. AppMockUp
+stays as "Track B" for marketing designs that need captions and branded backgrounds.
+
+- **New Track A (default) in Step 2** — install + setup instructions, Fastlane-friendly
+  one-liner, device-detection note (1284×2778 auto-frames as iPhone 13 Pro Max; no
+  iPhone 14 bezel exists in the library).
+- **New Fastfile lane `frame_screenshots`** in `bootstrap.sh` — runs `frames` on each
+  device subfolder under `fastlane/screenshots/en-US/`.
+- **Updated "Recommended Workflow by Project Stage" table** — Apple Frames CLI across
+  all stages; AppMockUp reserved for marketing-heavy apps.
+- **Removed `frameit` mention** — superseded by Apple Frames CLI.
+- **Optional Claude Code skill** — the CLI ships a skill at `skill/SKILL.md`; install
+  once to `~/.claude/skills/frames-cli/SKILL.md` for agent-native flag awareness.
+
+**Affected files:** `ios-project-playbook.md`, `bootstrap.sh`,
+`.claude/rules/build-deploy.md`
+
+**Action needed in your project:**
+1. Install the CLI: `git clone https://github.com/viticci/frames-cli.git && cd frames-cli && pip3 install Pillow && ln -s "$(pwd)/frames" ~/.local/bin/frames && frames setup`
+2. (Optional) Install the Claude Code skill from `frames-cli/skill/SKILL.md` to `~/.claude/skills/frames-cli/`
+3. If your Fastfile was bootstrapped before today, add the `frame_screenshots` lane (see `bootstrap.sh:350-355`) and call it between `fastlane snapshot` and `fastlane upload_screenshots`
+
+---
+
 ## 2026-04-21 — CloudKit sync patterns added to §4.4
 
 **What changed:** Three lessons from the Flara project added to §4.4 CloudKit & Push

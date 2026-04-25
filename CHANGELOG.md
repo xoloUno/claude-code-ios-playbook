@@ -8,6 +8,55 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-25 — Lock-screen + home-screen widget capture lane
+
+**What changed:** Added a `widget_screenshots` Fastlane lane and a companion
+`fastlane/capture_widgets.sh` helper to the bootstrap. The lane drives `xcrun
+simctl` plus a small AppleScript to do what Fastlane `snapshot` can't: capture
+the simulator's lock screen (with a Live Activity) and home screen (with a
+widget) for App Store screenshots.
+
+**How it works:**
+1. Boots the target simulator (default: iPhone 17 Pro Max), overrides the
+   status bar to 9:41 / full signal / charged.
+2. Launches the app with `-WIDGET_DEMO_MODE YES -FASTLANE_SNAPSHOT YES` so the
+   app can auto-start a deterministic Live Activity for capture (you wire the
+   launch-arg check into your `@main` App).
+3. Sends Cmd+L via AppleScript to lock the simulator, captures the lock screen
+   with the Live Activity visible.
+4. Goes home (Cmd+Shift+H), captures the home screen with the widget.
+5. Optionally chains `frame_screenshots` to apply Apple Frames.
+
+**One-time manual prep per simulator:** drop the widget on the home screen via
+the simulator UI once — the placement persists in the simulator's
+`CoreSimulator` data container across boots, so subsequent automated runs find
+the widget already in place.
+
+**Known limitations** (documented inline in §Phase 5):
+- Dynamic Island is a compositor overlay and doesn't appear in `simctl
+  screenshot` output — capture those on a real device.
+- StandBy mode requires a real device charging in landscape; no simulator path
+  on iOS 26.
+- Simulator must hold focus during the AppleScript `keystroke` calls (don't
+  run on a machine where you're actively typing).
+
+**Affected files:** `bootstrap.sh` (new `capture_widgets.sh` HEREDOC + new
+`widget_screenshots` lane in Fastfile), `ios-project-playbook.md` §Phase 5
+(new Step 2.5 section), `.claude/rules/build-deploy.md` (lane added to the
+quick reference list).
+
+**Action needed in your project:**
+1. Re-run `bootstrap.sh` against the project, or copy `fastlane/capture_widgets.sh`
+   from the playbook and add the `widget_screenshots` lane to your Fastfile.
+2. Add the `-WIDGET_DEMO_MODE` launch-arg branch in your `@main` App that
+   starts a canned `ActivityKit` activity.
+3. Manually place the widget on the home screen of each capture simulator
+   (one-time per device).
+4. Run `bundle exec fastlane widget_screenshots` to verify; outputs land at
+   `fastlane/screenshots/en-US/iPhone 6.9" Display/9{0,1}_*.png`.
+
+---
+
 ## 2026-04-25 — Doc fixes: `.env.project` flow + XcodeBuildMCP install command
 
 **What changed:** Two stale doc paths fixed after a Codex review pass.

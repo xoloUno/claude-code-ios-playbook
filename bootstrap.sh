@@ -261,6 +261,80 @@ cat > fastlane/Appfile << APPFILE
 app_identifier "$BUNDLE_ID"
 team_id "$TEAM_ID"
 APPFILE
+cat > fastlane/capture_widgets.sh << 'CAPTUREWIDGETS'
+#!/usr/bin/env bash
+# Capture lock-screen (Live Activity) and home-screen (widget) screenshots.
+#
+# Prereqs:
+#   • App must be built and installed on the target simulator (run beta/release
+#     lane first, or `xcodebuild build -destination` into the sim).
+#   • The home-screen widget must be placed ONCE manually on the simulator — this
+#     persists in simulator state across boots. (Simulator → long-press → add widget.)
+#   • App should honor launch arg -WIDGET_DEMO_MODE YES to auto-start a
+#     deterministic Live Activity for capture.
+#
+# Usage (called by `fastlane widget_screenshots`):
+#   ./fastlane/capture_widgets.sh "iPhone 17 Pro Max" com.example.app "fastlane/screenshots/en-US/iPhone 6.9\" Display"
+set -euo pipefail
+
+DEVICE="${1:?device name required (e.g. 'iPhone 17 Pro Max')}"
+BUNDLE_ID="${2:?bundle identifier required}"
+OUTPUT_DIR="${3:?output directory required}"
+
+mkdir -p "$OUTPUT_DIR"
+
+echo "📱 Booting $DEVICE…"
+xcrun simctl boot "$DEVICE" 2>/dev/null || true
+open -a Simulator
+xcrun simctl bootstatus "$DEVICE" -b >/dev/null
+
+echo "🕘 Overriding status bar (9:41, full signal, charged)…"
+xcrun simctl status_bar "$DEVICE" override \
+  --time "9:41" --batteryState charged --batteryLevel 100 \
+  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3
+
+echo "🚀 Launching $BUNDLE_ID with -WIDGET_DEMO_MODE YES…"
+xcrun simctl launch "$DEVICE" "$BUNDLE_ID" -WIDGET_DEMO_MODE YES -FASTLANE_SNAPSHOT YES >/dev/null
+sleep 4  # let Live Activity start + render
+
+echo "🔒 Locking screen (Cmd+L in Simulator)…"
+osascript <<'APPLESCRIPT'
+tell application "Simulator" to activate
+delay 0.4
+tell application "System Events" to keystroke "l" using command down
+APPLESCRIPT
+sleep 2
+
+LOCK_PNG="$OUTPUT_DIR/90_LockScreen_LiveActivity.png"
+echo "📸 Capturing lock screen → $LOCK_PNG"
+xcrun simctl io "$DEVICE" screenshot "$LOCK_PNG"
+
+echo "🔓 Unlocking (Cmd+Shift+H twice → home)…"
+osascript <<'APPLESCRIPT'
+tell application "Simulator" to activate
+delay 0.3
+tell application "System Events"
+  keystroke "h" using {command down, shift down}
+  delay 0.5
+  keystroke "h" using {command down, shift down}
+end tell
+APPLESCRIPT
+sleep 2
+
+HOME_PNG="$OUTPUT_DIR/91_HomeScreen_Widget.png"
+echo "📸 Capturing home screen → $HOME_PNG"
+xcrun simctl io "$DEVICE" screenshot "$HOME_PNG"
+
+echo ""
+echo "✅ Captured:"
+echo "   • $LOCK_PNG"
+echo "   • $HOME_PNG"
+echo ""
+echo "Next: run 'bundle exec fastlane frame_screenshots' to apply Apple Frames,"
+echo "or they'll be framed automatically if you invoked via widget_screenshots lane."
+CAPTUREWIDGETS
+chmod +x fastlane/capture_widgets.sh
+
 cat > fastlane/Fastfile << 'FASTFILE'
 default_platform(:ios)
 platform :ios do
@@ -354,6 +428,15 @@ platform :ios do
     Dir.glob("../fastlane/screenshots/en-US/*/").each do |dir|
       sh("frames -o #{dir.shellescape} #{dir.shellescape}*.png")
     end
+  end
+
+  desc "Capture lock-screen (Live Activity) and home-screen (widget) shots via simctl"
+  lane :widget_screenshots do |options|
+    device = options[:device] || "iPhone 17 Pro Max"
+    bundle_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+    output_dir = options[:output] || "fastlane/screenshots/en-US/iPhone 6.9\" Display"
+    sh("../fastlane/capture_widgets.sh #{device.shellescape} #{bundle_id.shellescape} #{output_dir.shellescape}")
+    frame_screenshots if options[:frame] != false
   end
 
   desc "Sync metadata to App Store Connect (no binary, no screenshots)"

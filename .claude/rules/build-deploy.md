@@ -46,6 +46,7 @@ Local deploy saves ~250 GitHub Actions credits per upload and gives faster feedb
 # Individual lanes for granular control
 bundle exec fastlane screenshots         # Capture + frame in one command (chains frame_screenshots)
 bundle exec fastlane frame_screenshots   # Re-frame already-captured screenshots
+bundle exec fastlane widget_screenshots  # Lock screen (Live Activity) + home screen (widget) via simctl
 bundle exec fastlane upload_metadata     # Sync metadata only
 bundle exec fastlane upload_screenshots  # Upload screenshots only
 bundle exec fastlane release             # Build + upload binary with metadata

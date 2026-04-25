@@ -871,6 +871,68 @@ When conversion design matters, compose in a web tool instead:
 a mini-story. Use large readable captions (visible at thumbnail size). Real in-app UI
 inside device frames — Apple rejects pure marketing mockups.
 
+### Step 2.5: Lock Screen (Live Activity) & Home Screen (Widget) Capture
+
+Fastlane `snapshot` drives UI tests — it can't reach the lock screen or home screen
+because those are SpringBoard, not your app. For Live Activity and widget marketing
+shots, use the `widget_screenshots` lane (bootstrap.sh installs it and a companion
+`fastlane/capture_widgets.sh` helper).
+
+**What it does:**
+1. Boots the target simulator and overrides the status bar (9:41, full signal).
+2. Launches your app with `-WIDGET_DEMO_MODE YES` so you can auto-start a Live
+   Activity in a deterministic state (wire this launch-arg check in your
+   `@main` app struct — start an `ActivityKit` activity with canned demo data).
+3. Locks the simulator via Cmd+L (AppleScript → Simulator.app), captures the
+   lock screen — the Live Activity is visible.
+4. Unlocks, goes home, captures the home screen with your widget.
+5. Optionally chains `frame_screenshots` to apply Apple Frames.
+
+**One-time manual setup per simulator:**
+
+Add the home-screen widget **once** via the simulator UI — long-press the home
+screen → `+` → find your widget → Add. This state persists in the simulator's
+`CoreSimulator` data container across boots and across `bundle exec fastlane` runs,
+so you only do it once per simulator device.
+
+For Live Activities, no manual setup is needed — the script triggers the activity
+via launch argument. Your app needs to honor it:
+
+```swift
+// In your @main App or AppDelegate
+if CommandLine.arguments.contains("-WIDGET_DEMO_MODE") {
+  Task { await LiveActivityDemoSeeder.start() }   // your seeder
+}
+```
+
+**Usage:**
+
+```bash
+# Default: iPhone 17 Pro Max → fastlane/screenshots/en-US/iPhone 6.9" Display/
+bundle exec fastlane widget_screenshots
+
+# Override device or skip auto-framing
+bundle exec fastlane widget_screenshots device:"iPhone 17 Pro Max" frame:false
+```
+
+**Output files:**
+- `90_LockScreen_LiveActivity.png` — full-resolution lock screen with Live Activity
+- `91_HomeScreen_Widget.png` — full-resolution home screen with widget
+
+Both land in the `iPhone 6.9" Display` directory by default, so `deliver` uploads
+them alongside the regular screenshots. The `9x_` prefix sorts them after your
+main in-app screens; rename to reorder.
+
+**Limitations:**
+- Simulator must be in the foreground during the AppleScript `keystroke` calls.
+  Don't run this on a machine where you're actively working — it'll steal focus.
+- Dynamic Island screenshots aren't supported by `simctl screenshot` (the
+  Dynamic Island is a compositor overlay, not part of the captured frame on
+  current simulators). Capture those on a real device via QuickTime screen
+  mirroring + screenshot.
+- StandBy mode screenshots require a real device charging in landscape — no
+  simulator path as of iOS 26.
+
 ### Step 3: Export and Upload
 
 Export from your design tool at the exact required resolutions. Then either:

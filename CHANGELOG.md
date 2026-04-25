@@ -8,6 +8,52 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-25 — Control Center capture lane (Control Widget apps)
+
+**What changed:** Added a `control_center_screenshot` Fastlane lane and a
+`fastlane/capture_control_center.sh` helper for apps that ship a Control
+Widget (ControlKit, iOS 18+). Control Center has no Simulator keyboard
+shortcut, so the lane drives a synthesized mouse swipe via Python's
+`Quartz CGEventPost` (PyObjC ships with Xcode Command Line Tools — no
+extra dep).
+
+**How it works:**
+1. Boots the target simulator, overrides the status bar (9:41 / full signal).
+2. Reads Simulator.app's window position via AppleScript.
+3. Runs an inline Python script that posts a 25-step left-mouse drag from
+   the top-right corner of the simulated screen down ~600pt, simulating
+   the user pulling Control Center down.
+4. Captures via `xcrun simctl io ... screenshot` once CC has settled.
+5. Dismisses with Cmd+Shift+H and chains `frame_screenshots` unless
+   `frame:false` is passed.
+
+**One-time prerequisite — Accessibility permission:** synthesized mouse
+events to another app require Accessibility permission. macOS prompts the
+first time you run the lane (or silently refuses and Control Center stays
+closed). Grant your terminal app access in **System Settings → Privacy &
+Security → Accessibility**.
+
+**When to use this:** only if your app ships a Control Widget. Without one,
+Control Center shows just iOS defaults — no app-specific marketing value.
+Skip the lane on apps that don't have a `ControlWidget` target.
+
+**Affected files:** `bootstrap.sh` (new `capture_control_center.sh` HEREDOC
++ new `control_center_screenshot` lane in Fastfile), `ios-project-playbook.md`
+§Phase 5 (new Step 2.6 with prerequisite walk-through and a troubleshooting
+table), `.claude/rules/build-deploy.md` (lane added to the quick reference).
+
+**Action needed in your project (Control Widget apps only):**
+1. Re-run `bootstrap.sh` against the project, or copy
+   `fastlane/capture_control_center.sh` over and paste the new lane into
+   the Fastfile.
+2. Grant Accessibility permission to your terminal app (one-time per machine).
+3. Run `bundle exec fastlane control_center_screenshot` to verify the swipe
+   actually opens Control Center. If it doesn't, recheck the Accessibility
+   permission — the script reports successfully but the gesture is suppressed
+   without it.
+
+---
+
 ## 2026-04-25 — Lock-screen + home-screen widget capture lane
 
 **What changed:** Added a `widget_screenshots` Fastlane lane and a companion

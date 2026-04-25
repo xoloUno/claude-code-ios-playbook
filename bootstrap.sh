@@ -335,6 +335,114 @@ echo "or they'll be framed automatically if you invoked via widget_screenshots l
 CAPTUREWIDGETS
 chmod +x fastlane/capture_widgets.sh
 
+cat > fastlane/capture_control_center.sh << 'CAPTURECC'
+#!/usr/bin/env bash
+# Capture iOS Control Center screenshot via simctl + Quartz mouse drag.
+#
+# Worth running only if your app ships a Control Widget (ControlKit, iOS 18+).
+# If not, Control Center shows only iOS defaults — no app-specific marketing value.
+#
+# Prereqs:
+#   • Your terminal app needs Accessibility permission to send synthesized mouse
+#     events. macOS prompts the first time you run this. Grant it in:
+#       System Settings → Privacy & Security → Accessibility → enable Terminal/iTerm
+#   • Swift on PATH (`/usr/bin/swift`, ships with Xcode Command Line Tools).
+#   • App built + installed on the target simulator if your Control Widget needs
+#     the host app installed to register itself.
+#
+# Usage (called by `fastlane control_center_screenshot`):
+#   ./fastlane/capture_control_center.sh "iPhone 17 Pro Max" "fastlane/screenshots/en-US/iPhone 6.9\" Display"
+set -euo pipefail
+
+DEVICE="${1:?device name required (e.g. 'iPhone 17 Pro Max')}"
+OUTPUT_DIR="${2:?output directory required}"
+mkdir -p "$OUTPUT_DIR"
+
+echo "📱 Booting $DEVICE…"
+xcrun simctl boot "$DEVICE" 2>/dev/null || true
+open -a Simulator
+xcrun simctl bootstatus "$DEVICE" -b >/dev/null
+
+echo "🕘 Overriding status bar (9:41, full signal, charged)…"
+xcrun simctl status_bar "$DEVICE" override \
+  --time "9:41" --batteryState charged --batteryLevel 100 \
+  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3
+
+# Make sure we're on home (not in any app)
+osascript <<'APPLESCRIPT'
+tell application "Simulator" to activate
+delay 0.4
+tell application "System Events" to keystroke "h" using {command down, shift down}
+APPLESCRIPT
+sleep 1
+
+# Read the Simulator window's screen position + size
+WIN_GEOM="$(osascript <<'APPLESCRIPT'
+tell application "System Events"
+  tell process "Simulator"
+    set winPos to position of window 1
+    set winSize to size of window 1
+    return ((item 1 of winPos) as text) & "," & ((item 2 of winPos) as text) & "," & ((item 1 of winSize) as text) & "," & ((item 2 of winSize) as text)
+  end tell
+end tell
+APPLESCRIPT
+)"
+IFS=',' read -r WIN_X WIN_Y WIN_W WIN_H <<< "$WIN_GEOM"
+echo "Simulator window: ${WIN_X},${WIN_Y}  ${WIN_W}×${WIN_H}"
+
+# Title bar ~28pt; swipe origin = right edge of status bar; pull down ~600pt
+TITLE_BAR=28
+START_X=$(( WIN_X + WIN_W - 40 ))
+START_Y=$(( WIN_Y + TITLE_BAR + 8 ))
+END_Y=$(( WIN_Y + TITLE_BAR + 600 ))
+
+echo "🔽 Swiping ($START_X, $START_Y) → ($START_X, $END_Y) to invoke Control Center…"
+osascript -e 'tell application "Simulator" to activate'
+sleep 0.4
+
+swift - "$START_X" "$START_Y" "$START_X" "$END_Y" <<'SWIFTEOF'
+import CoreGraphics
+import Foundation
+let args = CommandLine.arguments
+guard args.count >= 5,
+      let sx = Double(args[1]), let sy = Double(args[2]),
+      let ex = Double(args[3]), let ey = Double(args[4])
+else { fputs("usage: drag sx sy ex ey\n", stderr); exit(1) }
+func post(_ type: CGEventType, _ x: Double, _ y: Double) {
+    CGEvent(mouseEventSource: nil, mouseType: type,
+            mouseCursorPosition: CGPoint(x: x, y: y),
+            mouseButton: .left)?.post(tap: .cghidEventTap)
+}
+post(.leftMouseDown, sx, sy)
+Thread.sleep(forTimeInterval: 0.05)
+let steps = 25
+for i in 1...steps {
+    let t = Double(i) / Double(steps)
+    post(.leftMouseDragged, sx + (ex - sx) * t, sy + (ey - sy) * t)
+    Thread.sleep(forTimeInterval: 0.012)
+}
+post(.leftMouseUp, ex, ey)
+SWIFTEOF
+
+sleep 1.5  # let Control Center settle into open state
+
+CC_PNG="$OUTPUT_DIR/92_ControlCenter.png"
+echo "📸 Capturing Control Center → $CC_PNG"
+xcrun simctl io "$DEVICE" screenshot "$CC_PNG"
+
+# Dismiss Control Center
+osascript -e 'tell application "Simulator" to activate' \
+          -e 'tell application "System Events" to keystroke "h" using {command down, shift down}'
+
+echo ""
+echo "✅ Captured: $CC_PNG"
+echo ""
+echo "Tip: if Control Center didn't open, your terminal probably lacks Accessibility"
+echo "     permission. Grant it in System Settings → Privacy & Security → Accessibility,"
+echo "     then re-run."
+CAPTURECC
+chmod +x fastlane/capture_control_center.sh
+
 cat > fastlane/Fastfile << 'FASTFILE'
 default_platform(:ios)
 platform :ios do
@@ -436,6 +544,14 @@ platform :ios do
     bundle_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
     output_dir = options[:output] || "fastlane/screenshots/en-US/iPhone 6.9\" Display"
     sh("../fastlane/capture_widgets.sh #{device.shellescape} #{bundle_id.shellescape} #{output_dir.shellescape}")
+    frame_screenshots if options[:frame] != false
+  end
+
+  desc "Capture Control Center (with your Control Widget) via Quartz mouse drag"
+  lane :control_center_screenshot do |options|
+    device = options[:device] || "iPhone 17 Pro Max"
+    output_dir = options[:output] || "fastlane/screenshots/en-US/iPhone 6.9\" Display"
+    sh("../fastlane/capture_control_center.sh #{device.shellescape} #{output_dir.shellescape}")
     frame_screenshots if options[:frame] != false
   end
 

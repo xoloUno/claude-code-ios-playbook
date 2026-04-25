@@ -8,6 +8,39 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-25 — Doc fixes: `.env.project` flow + XcodeBuildMCP install command
+
+**What changed:** Two stale doc paths fixed after a Codex review pass.
+
+1. **`.env.project` flow** — `README.md` (TL;DR + Setup) and `ios-project-playbook.md`
+   §0.2 still told users to "edit `bootstrap.sh`" with `APP_NAME`, `BUNDLE_ID`, etc.
+   That path was deprecated when the script switched to reading `.env.playbook` +
+   `.env.project`. Both docs now point users at the env-file flow that
+   `getting-started.md` already documented correctly. README also gained a
+   `.env.project.example` row in the Files table.
+
+2. **XcodeBuildMCP install command** — `claude-code-plugins-setup.md` was missing
+   the trailing `mcp` subcommand on both `claude mcp add` snippets (lines 81 and
+   94). Current `xcodebuildmcp` is a multi-command CLI (`mcp`, `init`, `setup`,
+   `tools`, `simulator`, …) — without the `mcp` subcommand, the binary just
+   prints help and exits, so the MCP server never starts. `getting-started.md`
+   was already correct; both files are now in sync.
+
+**Affected files:** `README.md`, `ios-project-playbook.md` §0.2,
+`claude-code-plugins-setup.md`.
+
+**Action needed in your machine setup:**
+- If you ran the bare `claude mcp add ... xcodebuildmcp@latest` command from an
+  older copy of `claude-code-plugins-setup.md` and XcodeBuildMCP isn't actually
+  showing up in `/mcp` inside Claude Code, re-run with the trailing `mcp`:
+  ```bash
+  claude mcp remove XcodeBuildMCP
+  claude mcp add --transport stdio XcodeBuildMCP -- npx -y xcodebuildmcp@latest mcp
+  ```
+- No project-level changes — these are doc + per-machine MCP config fixes only.
+
+---
+
 ## 2026-04-24 — Screenshot simulators updated to ASC's two accepted sizes
 
 **What changed:** Phase 5 and `bootstrap.sh` Snapfile now capture on only the two

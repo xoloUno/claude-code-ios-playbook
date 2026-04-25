@@ -47,17 +47,27 @@ is concrete, copy-pasteable, and tested.
 
 ### 0.2 One-Command Project Bootstrap
 
-Run `bootstrap.sh` from the parent directory where you want the project folder created.
-Edit the variables at the top first — everything else is automatic.
+Run `bootstrap.sh` from the parent directory where you want the project folder
+created. Configuration lives in two env files — `bootstrap.sh` itself is never
+edited.
 
 ```bash
+# One-time per machine: identity + Apple Developer credentials
+cp _playbook/.env.playbook.example _playbook/.env.playbook
+# Per project: app name, bundle ID, repo name, deployment target
+cp _playbook/.env.project.example _playbook/.env.project
+# Edit both, then from the parent directory:
 bash '_playbook/bootstrap.sh'
 ```
 
-> **The script lives at `bootstrap.sh` in this repo.** Open it, edit the config
-> variables at the top (`APP_NAME`, `BUNDLE_ID`, `REPO_NAME`, `MINIMUM_IOS`,
-> `TEAM_ID`, `ORG`), save, and run. See `.env.playbook.example` for the values
-> that stay the same across projects.
+> **`.env.playbook`** holds values that stay the same across projects:
+> `TEAM_ID`, `ORG` (GitHub), and ASC API credentials.
+>
+> **`.env.project`** holds the per-project values you change for each new app:
+> `APP_NAME`, `BUNDLE_ID`, `REPO_NAME`, `MINIMUM_IOS`.
+>
+> The script hard-fails with `❌ No .env.project found` if the project file is
+> missing, so create it before running.
 
 **What the script creates:**
 - XcodeGen `project.yml` (single source of truth — never edit .pbxproj manually)

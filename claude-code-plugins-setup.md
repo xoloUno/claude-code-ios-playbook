@@ -78,8 +78,12 @@ Xcode 26.3's agent support.
 **Install:**
 
 ```bash
-claude mcp add --transport stdio XcodeBuildMCP -- npx -y xcodebuildmcp@latest
+claude mcp add --transport stdio XcodeBuildMCP -- npx -y xcodebuildmcp@latest mcp
 ```
+
+> The trailing `mcp` is the subcommand that starts the MCP server. The
+> `xcodebuildmcp` CLI is multi-command (also exposes `init`, `setup`, `tools`,
+> `simulator`, etc.) — without `mcp` it prints help and exits.
 
 **Optional environment variables for better performance:**
 
@@ -87,7 +91,7 @@ claude mcp add --transport stdio XcodeBuildMCP -- npx -y xcodebuildmcp@latest
 claude mcp add --transport stdio XcodeBuildMCP \
   --env INCREMENTAL_BUILDS_ENABLED=true \
   --env XCODEBUILDMCP_DYNAMIC_TOOLS=true \
-  -- npx -y xcodebuildmcp@latest
+  -- npx -y xcodebuildmcp@latest mcp
 ```
 
 **What it enables Claude Code to do:**

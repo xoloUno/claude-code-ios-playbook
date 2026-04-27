@@ -8,6 +8,62 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-27 — `/preflight` slash command + `verify-review` user-level skill
+
+**What changed:** Two new agent affordances to address recurring friction surfaced by
+`/insights`:
+
+1. **`/preflight` slash command (project-emitted)** — Pre-deploy gate that validates
+   simulator availability, ASC metadata character limits, metadata field completeness
+   per locale, git state, marketing version, and build number *before* `/deploy` or
+   `/release` runs. Catches the recurring trio of foot-guns (missing simulators,
+   char-limit overflows, forgotten `promotional_text`) before kicking off a long
+   build/upload cycle.
+
+2. **`verify-review` user-level skill (global)** — Forces grep-before-classify on every
+   external review finding (Codex output, lint reports, gh PR review comments, security
+   scan results). Each finding gets verified against the actual codebase and classified
+   `TRUE_POSITIVE` / `FALSE_POSITIVE` / `NEEDS_INFO` with evidence; no edits are made
+   until the user approves the classification. Lives at
+   `~/.claude/skills/verify-review/SKILL.md` so it activates across every repo, not
+   just iOS projects.
+
+**Bootstrap-emitted artifacts (new):**
+
+- `.claude/commands/preflight.md` — heredoc in `bootstrap.sh` next to `deploy.md` and
+  `release.md` (project-specific because it depends on the `fastlane/metadata/` and
+  `project.yml` paths).
+- `.claude/rules/code-style.md` Slash Commands table updated to list `/preflight`
+  between `/review` and `/deploy`.
+
+**To adopt in existing projects:**
+
+1. Run `/upgrade` to refresh `code-style.md` (table now lists `/preflight`).
+2. Copy the `preflight.md` heredoc body from `bootstrap.sh` into
+   `.claude/commands/preflight.md`, OR re-bootstrap a fresh project and copy the
+   generated file.
+3. Optional: add a "Run `/preflight` first; abort on FAIL" reminder at the top of
+   your project's `deploy.md` and `release.md` command files.
+
+**For `verify-review`** (one-time global install):
+
+```bash
+mkdir -p ~/.claude/skills/verify-review
+cp _playbook/reference/verify-review-SKILL.md ~/.claude/skills/verify-review/SKILL.md
+# (or write the file manually using the content from the skill file)
+```
+
+The skill activates automatically when you paste a review report, reference a PR review
+URL, or ask Claude to "address" / "fix" / "act on" / "triage" findings from an external
+tool.
+
+**Why this matters:** Insights data showed (a) three deploy sessions blocked by ASC
+char-limit violations or missing `promotional_text` fields, and (b) at least two
+sessions where Claude rubber-stamped Codex false-positives until the user pushed back.
+Both are mechanical to prevent with the right scaffolding.
+
+---
+
 ## 2026-04-27 — Track B replaced: appshot-cli + Apple Frames CLI (no more AppMockUp)
 
 **What changed:** §Phase 5 Track B (marketing screenshots with captions and

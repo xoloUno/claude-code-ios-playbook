@@ -42,6 +42,7 @@ hooks — no bypass.
 | `/feature {name}` | Scaffolds View + ViewModel + Tests for a new feature |
 | `/test {target}` | Generates Swift Testing tests with @Test macros |
 | `/review` | Reviews staged changes for concurrency, accessibility, privacy |
+| `/preflight` | Pre-deploy gate — validates simulators, ASC metadata, git state |
 | `/deploy` | Builds, signs, and uploads to TestFlight from local machine |
 | `/release` | Syncs metadata, builds, and uploads to App Store Connect |
 | `/inbox {lesson}` | Logs a lesson learned to the shared playbook inbox |

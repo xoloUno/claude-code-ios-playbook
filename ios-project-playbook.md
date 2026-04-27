@@ -933,6 +933,70 @@ main in-app screens; rename to reorder.
 - StandBy mode screenshots require a real device charging in landscape — no
   simulator path as of iOS 26.
 
+### Step 2.6: Control Center Capture (Control Widget apps only)
+
+If your app ships a **Control Widget** (`ControlWidgetButton` / `ControlWidgetToggle`
+via ControlKit, iOS 18+), a Control Center screenshot showing your widget is
+App Store-worthy marketing. If not, skip this step — Control Center with only
+iOS defaults shows nothing app-specific.
+
+The `control_center_screenshot` lane drives a synthetic mouse swipe via an
+inline Swift script that calls `CGEvent.post(tap:)` on CoreGraphics — Swift
+ships with Xcode Command Line Tools, no extra dep. Control Center has no
+keyboard shortcut in Simulator.app, so keystroke automation can't reach it.
+
+**One-time prerequisite — Accessibility permission:**
+
+Sending synthesized mouse events to another app requires Accessibility
+permission. The first time you run the lane, macOS will prompt — or silently
+refuse and the swipe will do nothing. Grant your terminal app access:
+
+> **System Settings → Privacy & Security → Accessibility →** enable
+> **Terminal** (or **iTerm**, whichever you run `fastlane` from).
+
+This is a one-time grant per terminal app. Without it, the script runs without
+errors but Control Center stays closed.
+
+**Usage:**
+
+```bash
+# Default: iPhone 17 Pro Max → fastlane/screenshots/en-US/iPhone 6.9" Display/
+bundle exec fastlane control_center_screenshot
+
+# Override device or skip auto-framing
+bundle exec fastlane control_center_screenshot device:"iPad Pro 13-inch (M5)" frame:false
+```
+
+**How it works:**
+1. Boots the simulator, overrides the status bar.
+2. Sends Cmd+Shift+H to ensure SpringBoard is foregrounded.
+3. Reads the Simulator.app window's screen position via AppleScript.
+4. Inlines a Swift script (run via `swift -`) that calls
+   `CGEvent(mouseEventSource:mouseType:…).post(tap: .cghidEventTap)` for a
+   25-step mouse drag from the top-right corner of the simulated screen
+   down ~600 points, simulating a user swiping Control Center open.
+5. Captures via `xcrun simctl io ... screenshot` once Control Center has
+   settled (~1.5s).
+6. Dismisses with Cmd+Shift+H and chains `frame_screenshots` unless
+   `frame:false` is passed.
+
+**Output file:** `92_ControlCenter.png` in the `iPhone 6.9" Display` directory.
+
+**Troubleshooting:**
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Lane runs cleanly, but the screenshot is just the home screen | Terminal lacks Accessibility permission | Grant it in System Settings (above), re-run |
+| `Simulator window: 0,0  0×0` in the log | Simulator.app wasn't frontmost when the AppleScript queried | Click the Simulator window once, then re-run |
+| Control Center opens but is partially off-screen | Simulator window dragged below the screen edge | Move the Simulator window fully on-screen, re-run |
+| Works on iPhone, fails on iPad | iPad Control Center has the same gesture but from a slightly different origin — script's `WIN_W - 40` offset works for both, but verify | If iPad fails, increase the offset to `WIN_W - 60` in `capture_control_center.sh` |
+
+**Why not XCUITest?** UI tests *can* drive SpringBoard via
+`XCUIApplication(bundleIdentifier: "com.apple.springboard")` and would be
+cleaner long-term, but they require your project to already have the snapshot
+UI test target wired up. The Swift+CoreGraphics path runs the moment
+`bootstrap.sh` finishes — no UI test setup needed.
+
 ### Step 3: Export and Upload
 
 Export from your design tool at the exact required resolutions. Then either:

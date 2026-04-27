@@ -30,5 +30,3 @@ In a Claude Code session in the `_playbook/` directory:
 **Lesson:** [the actual insight — be specific]
 **Suggested action:** [what should change in playbook/template/rules, or "none — just FYI"]
 ```
-
-

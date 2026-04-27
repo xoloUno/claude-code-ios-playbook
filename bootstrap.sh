@@ -88,6 +88,10 @@ Secrets.swift
 # Claude Code local scratchpads
 MANUAL-TASKS.md
 WORKLOG.md
+# appshot — keep config + captions, ignore intermediate PNG dirs
+fastlane/appshot/screenshots/
+fastlane/appshot/final/
+fastlane/appshot/.appshot/config.backup.json
 GITIGNORE
 # --- XcodeGen project.yml ---
 cat > project.yml << XCODEGEN
@@ -288,10 +292,14 @@ xcrun simctl boot "$DEVICE" 2>/dev/null || true
 open -a Simulator
 xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 
-echo "🕘 Overriding status bar (9:41, full signal, charged)…"
+echo "🕘 Overriding status bar (9:41, full signal, charged, no carrier/5G)…"
+# --dataNetwork hide hides the 5G/LTE label (otherwise the Wi-Fi icon gets
+# pushed to a second row in Control Center). --operatorName "" blanks the
+# carrier text. Together these produce the cleanest App Store status bar.
 xcrun simctl status_bar "$DEVICE" override \
-  --time "9:41" --batteryState charged --batteryLevel 100 \
-  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3
+  --time "9:41" --dataNetwork hide --batteryState charged --batteryLevel 100 \
+  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3 \
+  --operatorName ""
 
 echo "🚀 Launching $BUNDLE_ID with -WIDGET_DEMO_MODE YES…"
 xcrun simctl launch "$DEVICE" "$BUNDLE_ID" -WIDGET_DEMO_MODE YES -FASTLANE_SNAPSHOT YES >/dev/null
@@ -363,10 +371,14 @@ xcrun simctl boot "$DEVICE" 2>/dev/null || true
 open -a Simulator
 xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 
-echo "🕘 Overriding status bar (9:41, full signal, charged)…"
+echo "🕘 Overriding status bar (9:41, full signal, charged, no carrier/5G)…"
+# --dataNetwork hide hides the 5G/LTE label (otherwise the Wi-Fi icon gets
+# pushed to a second row in Control Center). --operatorName "" blanks the
+# carrier text. Together these produce the cleanest App Store status bar.
 xcrun simctl status_bar "$DEVICE" override \
-  --time "9:41" --batteryState charged --batteryLevel 100 \
-  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3
+  --time "9:41" --dataNetwork hide --batteryState charged --batteryLevel 100 \
+  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3 \
+  --operatorName ""
 
 # Make sure we're on home (not in any app)
 osascript <<'APPLESCRIPT'
@@ -442,6 +454,106 @@ echo "     permission. Grant it in System Settings → Privacy & Security → Ac
 echo "     then re-run."
 CAPTURECC
 chmod +x fastlane/capture_control_center.sh
+
+# --- appshot-cli scaffolding (Track B: captioned + gradient marketing screenshots) ---
+mkdir -p fastlane/appshot/.appshot/captions
+mkdir -p fastlane/appshot/screenshots/iphone fastlane/appshot/screenshots/ipad
+touch fastlane/appshot/screenshots/iphone/.gitkeep fastlane/appshot/screenshots/ipad/.gitkeep
+cat > fastlane/appshot/.appshot/config.json << 'APPSHOTCONFIG'
+{
+  "version": 2,
+  "layout": "footer",
+  "caption": {
+    "font": "New York Small Bold",
+    "color": "#1B1B1B"
+  },
+  "background": {
+    "mode": "gradient",
+    "gradient": {
+      "colors": ["#FF5F6D", "#FFC371"],
+      "direction": "top-bottom"
+    }
+  },
+  "devices": {
+    "iphone": { "input": "./screenshots/iphone", "resolution": "1320x2868" },
+    "ipad":   { "input": "./screenshots/ipad",   "resolution": "2064x2752" }
+  },
+  "output": "./final"
+}
+APPSHOTCONFIG
+cat > fastlane/appshot/.appshot/captions/iphone.json << 'IPHONECAPTIONS'
+{
+  "01_HomeScreen.png": {
+    "en": "Your headline here"
+  },
+  "02_KeyFeature.png": {
+    "en": "What makes the app worth it"
+  }
+}
+IPHONECAPTIONS
+cat > fastlane/appshot/.appshot/captions/ipad.json << 'IPADCAPTIONS'
+{
+  "01_HomeScreen.png": {
+    "en": "Your headline here"
+  },
+  "02_KeyFeature.png": {
+    "en": "What makes the app worth it"
+  }
+}
+IPADCAPTIONS
+
+mkdir -p scripts
+cat > scripts/patch-appshot.sh << 'PATCHAPPSHOT'
+#!/usr/bin/env bash
+# Patch the globally-installed appshot-cli so caption typography matches your
+# project's design. Patches modify node_modules/, so a fresh `npm install -g`
+# clobbers them — re-run this script after any appshot upgrade.
+#
+# Why patch at all:
+#   appshot v2 caps caption font size at 86px (iPhone) / 88px (iPad). That's
+#   too small to read at App Store thumbnail size and too small to force
+#   readable line wraps via the chars-per-line heuristic.
+#
+# Tune to your design:
+#   APPSHOT_IPHONE_FONT=120 APPSHOT_IPAD_FONT=140 ./scripts/patch-appshot.sh
+#
+# Defaults (115/130) were chosen for the bootstrapped sunset gradient + "New
+# York Small Bold" caption. Adjust upward for shorter captions or downward for
+# longer ones.
+set -euo pipefail
+
+IPHONE_FONT="${APPSHOT_IPHONE_FONT:-115}"
+IPAD_FONT="${APPSHOT_IPAD_FONT:-130}"
+
+APPSHOT_DIR="$(dirname "$(readlink -f "$(command -v appshot)" 2>/dev/null || command -v appshot)" )/../lib/node_modules/appshot-cli"
+if [ ! -d "$APPSHOT_DIR" ]; then
+  APPSHOT_DIR="/opt/homebrew/lib/node_modules/appshot-cli"
+fi
+if [ ! -d "$APPSHOT_DIR" ]; then
+  echo "❌ Could not locate appshot-cli install. Tried: $APPSHOT_DIR"
+  echo "   Install with: npm install -g appshot-cli"
+  exit 1
+fi
+
+patch_size() {
+  local file="$1" size="$2"
+  if [ ! -f "$file" ]; then
+    echo "❌ Missing $file"
+    exit 1
+  fi
+  cp -n "$file" "${file}.bak" 2>/dev/null || true
+  sed -i '' -E "s/fontMin: [0-9]+/fontMin: ${size}/" "$file"
+  sed -i '' -E "s/fontMax: [0-9]+/fontMax: ${size}/" "$file"
+  echo "✅ $(basename "$file"): fontMin=${size}, fontMax=${size}"
+}
+
+echo "Patching appshot-cli at $APPSHOT_DIR"
+patch_size "$APPSHOT_DIR/dist/core/device-strategies/iphone.js" "$IPHONE_FONT"
+patch_size "$APPSHOT_DIR/dist/core/device-strategies/ipad.js"   "$IPAD_FONT"
+echo ""
+echo "Done. Re-run after any 'npm install -g appshot-cli'."
+PATCHAPPSHOT
+chmod +x scripts/patch-appshot.sh
 
 cat > fastlane/Fastfile << 'FASTFILE'
 default_platform(:ios)
@@ -534,8 +646,53 @@ platform :ios do
   desc "Apply Apple Frames to captured screenshots (requires frames-cli on PATH)"
   lane :frame_screenshots do
     Dir.glob("../fastlane/screenshots/en-US/*/").each do |dir|
+      # Preserve raws before first framing so re-framing or re-captioning later
+      # doesn't require re-capturing on the simulator. Snapshot once; frames
+      # CLI's `_framed.png` sibling convention preserves the framed step too.
+      raw_dir = "#{dir}raw"
+      if !Dir.exist?(raw_dir) || Dir.empty?(raw_dir)
+        sh("mkdir -p #{raw_dir.shellescape}")
+        Dir.glob("#{dir}*.png").reject { |f| f.end_with?("_framed.png") }.each do |f|
+          sh("cp #{f.shellescape} #{raw_dir.shellescape}/")
+        end
+      end
       sh("frames -o #{dir.shellescape} #{dir.shellescape}*.png")
     end
+  end
+
+  desc "Caption framed screenshots with appshot-cli (run once per locale)"
+  lane :appshot_screenshots do |options|
+    locale = options[:locale] || "en-US"
+    lang   = options[:lang]   || "en"
+
+    iphone_src = "../fastlane/screenshots/#{locale}/iPhone 6.9\" Display"
+    ipad_src   = "../fastlane/screenshots/#{locale}/iPad 13\" Display"
+    iphone_in  = "../fastlane/appshot/screenshots/iphone"
+    ipad_in    = "../fastlane/appshot/screenshots/ipad"
+
+    sh("rm -f #{iphone_in.shellescape}/*.png #{ipad_in.shellescape}/*.png 2>/dev/null || true")
+
+    # Stage framed PNGs into appshot input, dropping the `_framed` suffix so
+    # caption JSON keys (e.g. "01_HomeScreen.png") match the staged filenames.
+    Dir.glob("#{iphone_src}/*_framed.png").each do |f|
+      dest = "#{iphone_in}/#{File.basename(f).sub('_framed.png', '.png')}"
+      sh("cp #{f.shellescape} #{dest.shellescape}")
+    end
+    Dir.glob("#{ipad_src}/*_framed.png").each do |f|
+      dest = "#{ipad_in}/#{File.basename(f).sub('_framed.png', '.png')}"
+      sh("cp #{f.shellescape} #{dest.shellescape}")
+    end
+
+    Dir.chdir("../fastlane/appshot") do
+      sh("appshot build --no-frame --langs #{lang}")
+    end
+
+    # Copy captioned output back. The unframed-raw originals (01_X.png) get
+    # overwritten — recover from screenshots/<locale>/<device>/raw/ if needed.
+    iphone_out = "../fastlane/appshot/final/iphone/#{lang}"
+    ipad_out   = "../fastlane/appshot/final/ipad/#{lang}"
+    sh("cp #{iphone_out.shellescape}/*.png \"#{iphone_src}\"/") if Dir.exist?(iphone_out)
+    sh("cp #{ipad_out.shellescape}/*.png \"#{ipad_src}\"/")     if Dir.exist?(ipad_out)
   end
 
   desc "Capture lock-screen (Live Activity) and home-screen (widget) shots via simctl"

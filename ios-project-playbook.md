@@ -739,10 +739,11 @@ sizes blocks "Add for Review." Capture on iPhone 17 Pro Max and iPad Pro 13-inch
 (M5); these are the only two simulators required.
 
 **If you need iPhone 17 Pro or iPad Pro 11" specifically as your marketing frame**
-(e.g., those are the devices most of your users have), route through Track B
-(AppMockUp Studio) — AppMockUp composites at ASC canonical resolutions regardless
-of source capture size, so you can show any device frame while meeting 6.9"/13"
-pixel requirements.
+(e.g., those are the devices most of your users have), capture on the larger
+ASC-accepted simulator (17 Pro Max / iPad 13") and let Apple Frames CLI's
+`--device "iPhone 17 Pro"` flag override the auto-detected bezel. The pixel
+dimensions still meet ASC's required 6.9" / 13" submission sizes; only the
+displayed frame changes.
 
 Minimum 1 screenshot per required size. Upload 3–5 on the 6.9" primary for
 marketing impact.
@@ -801,6 +802,61 @@ and device, plus an HTML summary page for review.
 > screenshots on demand during a Claude Code session — faster for one-off captures but
 > doesn't scale like `snapshot`.
 
+#### Reference: cleanest manual status-bar override
+
+`override_status_bar(true)` in the Snapfile sets sensible defaults (9:41, full
+signal, charged) but leaves the carrier name and 5G/LTE label visible. For
+manual `simctl` runs (e.g., the `widget_screenshots` and `control_center_screenshot`
+lanes — which the bootstrap installs with the full override), use:
+
+```bash
+xcrun simctl status_bar "<DEVICE>" override \
+  --time "9:41" --dataNetwork hide \
+  --batteryState charged --batteryLevel 100 \
+  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3 \
+  --operatorName ""
+```
+
+`--dataNetwork hide` is the one most projects miss — without it, the 5G/LTE
+label takes width next to the cellular bars and pushes the Wi-Fi icon onto a
+second row inside Control Center. `--operatorName ""` blanks the carrier text.
+Use the same flags on iPad (where the default carrier label is "Carrier" even
+though most iPads represent Wi-Fi-only).
+
+> **Note:** `--time` only sets the *visible status-bar time/date display*, not
+> the iOS system clock. Calendar widgets, the Lock Screen big date, and
+> Notification Center all read from the system clock (which follows the host
+> Mac). There is no public `simctl date` command. If a marketing-friendly date
+> matters, change the host Mac's date or compose a layout without date-driven
+> widgets — there is no simulator-only path as of iOS 26.
+
+#### XCUITest tips that save reshoots
+
+- **Prefer direct accessibility-identifier taps** over `press(forDuration:)` +
+  contextMenu items in screenshot tests. Direct taps are faster and dramatically
+  more reliable, especially when the underlying view uses SwiftUI's
+  Button-inside-Button + `.contextMenu` composition.
+- **Synchronously detect `-FASTLANE_SNAPSHOT` in any service that reads
+  `UserDefaults` in `init()`** (theme manager, settings singleton, feature
+  flags). SwiftUI evaluates the first body using whatever `init()` produced
+  *before* any `.task` modifier runs, so XCUITest's snapshot can capture a
+  frame using the persisted user value (e.g., dark mode) even when `.task`
+  later corrects it. Belt-and-suspenders: also call
+  `xcrun simctl ui <DEVICE> appearance light` (or `dark`) before
+  `xcodebuild test` so the system appearance can't bleed through.
+
+```swift
+// In your ThemeManager / Settings / FeatureFlags init():
+init() {
+    let args = ProcessInfo.processInfo.arguments
+    if args.contains("-FASTLANE_SNAPSHOT") {
+        appearance = args.contains("-DARK_MODE") ? .dark : .light
+        return  // skip the UserDefaults read
+    }
+    appearance = AppAppearance(rawValue: UserDefaults.standard.string(forKey: "appearance") ?? "") ?? .system
+}
+```
+
 ### Step 2: Frame Screenshots
 
 Raw simulator screenshots won't convert users. Two tracks — pick based on how much
@@ -856,20 +912,154 @@ A 2064×2752 iPad screenshot auto-frames as the matching iPad Pro 13" model.
 - `--json` — machine-readable output for pipelines
 - `frames list` / `frames info screenshot.png` — inspect supported devices and detect what a file is
 
-#### Track B — AppMockUp Studio (when you need captions + backgrounds)
+#### Track B — appshot-cli + Apple Frames CLI (when you need captions + backgrounds)
 
 Apple Frames CLI only applies device bezels — no captions, no branded backgrounds.
-When conversion design matters, compose in a web tool instead:
+For marketing screenshots with captions, gradient backgrounds, and multi-locale
+support, layer **[appshot-cli](https://www.npmjs.com/package/appshot-cli)** on
+top of Apple Frames CLI. Every web-based mockup tool we tried (AppMockUp,
+AppDrift, AppLaunchpad) is too janky to recommend; appshot-cli is the only
+CLI option that's actually agent-friendly and reproducible.
 
-| Tool | Cost | Notes |
-|---|---|---|
-| **[AppMockUp Studio](https://app-mockup.com)** | Free | Web-based, no account, modern device frames, panoramic backgrounds, exports at ASC resolutions |
-| [AppDrift](https://appdrift.co) | Free | Batch export, no watermarks, AI translation for localized captions |
-| [AppLaunchpad](https://theapplaunchpad.com) | Free tier | 150+ device frames, auto-generates all sizes from one design |
+The pipeline is two CLIs in sequence:
 
-**Design tips:** Lead with your core value prop, not settings. First 2–3 screenshots are
-a mini-story. Use large readable captions (visible at thumbnail size). Real in-app UI
-inside device frames — Apple rejects pure marketing mockups.
+```
+raw simctl/UITest PNGs
+        ↓ frames CLI            (Track A — adds device bezels)
+framed PNGs (e.g. with iPhone 17 Pro Max bezel)
+        ↓ appshot build --no-frame   (adds caption + gradient + multi-locale)
+final marketing PNGs
+        ↓ deliver
+App Store Connect
+```
+
+**One-time install:**
+
+```bash
+npm install -g appshot-cli
+./scripts/patch-appshot.sh   # bootstrap-emitted; tunes caption font sizes
+```
+
+The patch step is required because appshot v2 hard-caps caption font size at
+86px (iPhone) / 88px (iPad), which is too small to read at App Store thumbnail
+size and too small to force readable line wraps. The bootstrap-emitted patch
+script (`scripts/patch-appshot.sh`) bumps these to 115/130 by default — tune
+to your design with `APPSHOT_IPHONE_FONT=120 APPSHOT_IPAD_FONT=140 ./scripts/patch-appshot.sh`.
+
+> **Re-run the patch after any `npm install -g appshot-cli` upgrade** — the
+> patches live inside `node_modules/appshot-cli/dist/...` and a fresh install
+> silently clobbers them.
+
+**Project layout (bootstrap-emitted):**
+
+```
+fastlane/appshot/
+├── .appshot/
+│   ├── config.json              ← gradient, font, layout — TUNE THIS
+│   └── captions/
+│       ├── iphone.json          ← {filename: {lang: caption}}
+│       └── ipad.json
+├── screenshots/                 ← (gitignored) staged input PNGs per device
+│   ├── iphone/
+│   └── ipad/
+└── final/                       ← (gitignored) appshot output, copied to fastlane/screenshots/
+    ├── iphone/
+    └── ipad/
+```
+
+**Tune `.appshot/config.json` per project.** The starter has a sunset
+gradient (`#FF5F6D → #FFC371`) and "New York Small Bold" font. Swap for your
+brand colors and font:
+
+```json
+{
+  "version": 2,
+  "layout": "footer",
+  "caption": {
+    "font": "New York Small Bold",
+    "color": "#1B1B1B"
+  },
+  "background": {
+    "mode": "gradient",
+    "gradient": {
+      "colors": ["#FF5F6D", "#FFC371"],
+      "direction": "top-bottom"
+    }
+  },
+  "devices": {
+    "iphone": { "input": "./screenshots/iphone", "resolution": "1320x2868" },
+    "ipad":   { "input": "./screenshots/ipad",   "resolution": "2064x2752" }
+  },
+  "output": "./final"
+}
+```
+
+> **Caption font naming gotcha.** appshot's `parseFontName` only recognizes
+> the literal suffixes `Bold` and `Italic`. To get the bold weight of a
+> macOS optical-size variant (e.g. New York Small, New York Medium), the
+> font name has to literally end in `Bold` so the parser strips the suffix
+> and sets SVG `font-weight=700`. Apple's font license explicitly permits
+> SF Pro and the New York family for marketing materials about Apple-platform
+> apps; both work well. If you want a custom font, install it system-wide and
+> reference it by family-name + `Bold` suffix.
+
+**Fill `.appshot/captions/{iphone,ipad}.json` with one entry per screenshot
+filename, with one key per language code:**
+
+```json
+{
+  "01_HomeScreen.png": {
+    "en": "Track everything in one tap",
+    "es": "Registra todo con un toque"
+  },
+  "02_KeyFeature.png": {
+    "en": "Privacy-first by design",
+    "es": "Privacidad ante todo"
+  }
+}
+```
+
+**Run the pipeline:**
+
+```bash
+# 1. Capture + frame (Track A)
+bundle exec fastlane screenshots
+
+# 2. Caption with appshot (per locale)
+bundle exec fastlane appshot_screenshots                           # default en-US/en
+bundle exec fastlane appshot_screenshots locale:es-ES lang:es      # Spanish locale
+
+# 3. Upload
+bundle exec fastlane upload_screenshots
+```
+
+The `appshot_screenshots` lane stages framed PNGs from
+`fastlane/screenshots/{locale}/` into `fastlane/appshot/screenshots/`,
+runs `appshot build --langs <lang>`, then copies the captioned output back
+into the deliver dirs. For multi-locale projects, call the lane once per
+locale.
+
+> **Raw preservation is automatic.** The bootstrapped `frame_screenshots`
+> lane snapshots all raw (unframed) captures into `fastlane/screenshots/{locale}/<device>/raw/`
+> the first time it runs, *before* invoking the `frames` CLI. This means you
+> can re-frame with a different bezel color (`frames --color "Deep Blue"`) or
+> re-caption with new copy *without re-capturing* — the raw PNGs are still
+> there. The `_framed.png` siblings (Apple Frames CLI's default output naming)
+> additionally preserve the post-frame state, so re-captioning alone is
+> already cheap. If the lesson "we forgot to keep raws" hits you mid-cycle,
+> the raws are already saved.
+
+**Multi-locale tip — share captions across regional variants.** If your app
+ships `es-ES` and `es-MX` with effectively-identical Spanish captions, point
+both at the same `lang: es` build. iOS's Spanish localization is shared, so
+the marginal `Localizable.xcstrings` overrides for `es-MX` rarely produce
+visibly different marketing screenshots. Saves capture time without hurting
+ASC submission quality.
+
+**Design tips that apply regardless of tool:** Lead with your core value
+prop, not settings. First 2–3 screenshots are a mini-story. Use large
+readable captions (visible at thumbnail size). Real in-app UI inside device
+frames — Apple rejects pure marketing mockups.
 
 ### Step 2.5: Lock Screen (Live Activity) & Home Screen (Widget) Capture
 
@@ -894,6 +1084,15 @@ Add the home-screen widget **once** via the simulator UI — long-press the home
 screen → `+` → find your widget → Add. This state persists in the simulator's
 `CoreSimulator` data container across boots and across `bundle exec fastlane` runs,
 so you only do it once per simulator device.
+
+> **⚠️ Never `xcrun simctl uninstall <DEVICE> <BUNDLE_ID>` in a capture pipeline.**
+> Uninstall removes the app **and all of its extensions/widgets** — wiping the
+> user's manual placements of home-screen widgets, Lock Screen Live Activity
+> widget, and Control Center widget. Reinstalling does NOT bring those layouts
+> back. To neutralize persisted UserDefaults during snapshot mode, use launch-arg
+> detection in app code (`init()` reads `-FASTLANE_SNAPSHOT`) — see the
+> "XCUITest tips that save reshoots" subsection above. Uninstall as a clean-state
+> shortcut costs 5–15 minutes of widget rearrangement to undo.
 
 For Live Activities, no manual setup is needed — the script triggers the activity
 via launch argument. Your app needs to honor it:
@@ -939,6 +1138,13 @@ If your app ships a **Control Widget** (`ControlWidgetButton` / `ControlWidgetTo
 via ControlKit, iOS 18+), a Control Center screenshot showing your widget is
 App Store-worthy marketing. If not, skip this step — Control Center with only
 iOS defaults shows nothing app-specific.
+
+> **⚠️ Place your Control Widget into Control Center once, manually, then keep it
+> there.** Add the widget via the simulator UI (long-press Control Center → `+` →
+> add your control). Same warning as §2.5: do **not** `xcrun simctl uninstall` the
+> app between captures — uninstall removes the Control Center placement (and the
+> home-screen widget, and the Lock Screen Live Activity widget) and reinstall does
+> not bring them back.
 
 The `control_center_screenshot` lane drives a synthetic mouse swipe via an
 inline Swift script that calls `CGEvent.post(tap:)` on CoreGraphics — Swift
@@ -1038,15 +1244,15 @@ fastlane/screenshots/en-US/
 
 ### Recommended Workflow by Project Stage
 
-| Stage | Capture | Frame | Upload |
-|---|---|---|---|
-| **First app / v1 launch** | Manual on 3 simulators (or XcodeBuildMCP) | Apple Frames CLI | Manual in ASC |
-| **Second app onward** | Fastlane `snapshot` | Apple Frames CLI (via `fastlane frame_screenshots`) | Fastlane `deliver` |
-| **Marketing-heavy app** | Fastlane `snapshot` | Apple Frames CLI + AppMockUp overlays for captions | Fastlane `deliver` |
+| Stage | Capture | Frame | Caption / Background | Upload |
+|---|---|---|---|---|
+| **First app / v1 launch** | Manual on 2 simulators (or XcodeBuildMCP) | Apple Frames CLI | None — bare bezels are fine | Manual in ASC |
+| **Second app onward** | Fastlane `snapshot` | `fastlane frame_screenshots` | None | Fastlane `deliver` |
+| **Marketing-heavy app** | Fastlane `snapshot` | `fastlane frame_screenshots` | `fastlane appshot_screenshots` (per locale) | Fastlane `deliver` |
 
-Don't over-engineer this on your first app. Raw capture + Apple Frames CLI gets you
-professional framed screenshots in under 5 minutes. Add AppMockUp captions and
-branded backgrounds later when you need marketing polish.
+Don't over-engineer this on your first app. Raw capture + Apple Frames CLI gets
+you professional framed screenshots in under 5 minutes. Add appshot captions and
+branded gradients later when you need marketing polish.
 
 ---
 

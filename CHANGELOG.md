@@ -8,6 +8,132 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-27 — Track B replaced: appshot-cli + Apple Frames CLI (no more AppMockUp)
+
+**What changed:** §Phase 5 Track B (marketing screenshots with captions and
+gradient backgrounds) now recommends a CLI pipeline — `appshot-cli` layered on
+top of Apple Frames CLI — instead of AppMockUp Studio. Web-based mockup tools
+(AppMockUp, AppDrift, AppLaunchpad) are removed entirely. The new pipeline is
+scriptable, agent-friendly, reproducible, and produces designs that are easier
+to tune across releases.
+
+**Pipeline:**
+
+```
+raw simctl/UITest PNGs
+        ↓ frames CLI (Track A)
+framed PNGs
+        ↓ appshot build --no-frame
+final marketing PNGs
+        ↓ deliver
+App Store Connect
+```
+
+**Bootstrap-emitted artifacts (new):**
+
+- `fastlane/appshot/.appshot/config.json` — starter with sunset gradient
+  (`#FF5F6D → #FFC371`) and "New York Small Bold" caption font. Tune per
+  project.
+- `fastlane/appshot/.appshot/captions/{iphone,ipad}.json` — caption skeletons
+  with placeholders for two screenshots; format is
+  `{filename: {lang: caption}}`.
+- `fastlane/appshot/screenshots/{iphone,ipad}/` — staged input dirs (gitignored).
+- `fastlane/appshot/final/` — appshot output dir (gitignored).
+- `scripts/patch-appshot.sh` — idempotent patch that bumps appshot v2's
+  caption font caps. Tunable via `APPSHOT_IPHONE_FONT` / `APPSHOT_IPAD_FONT`
+  env vars (defaults: 115 / 130). **Re-run after every `npm install -g
+  appshot-cli`** — patches live inside `node_modules/`.
+- `appshot_screenshots` lane in the bootstrap Fastfile. Stages framed PNGs
+  per locale, runs `appshot build --langs <lang>`, copies captioned output
+  back to the deliver dirs. Defaults: `locale:en-US lang:en`. Multi-locale
+  projects call once per locale (`bundle exec fastlane appshot_screenshots
+  locale:es-ES lang:es`).
+- `frame_screenshots` lane updated to **automatically preserve raws** in
+  `fastlane/screenshots/{locale}/<device>/raw/` on first run. Re-framing
+  with a different bezel color or re-captioning with new copy no longer
+  requires re-capturing on the simulator. Lesson learned from Flara, where
+  the `raw/` discipline was added too late.
+- `.gitignore` updated for appshot intermediates.
+
+**Caption font naming gotcha (documented):** appshot's `parseFontName` only
+recognizes the literal suffixes `Bold` and `Italic`. To get the bold weight of
+a macOS optical-size variant (e.g. New York Small, New York Medium), the font
+name must literally end in `Bold`. Apple's font license permits SF Pro and
+the New York family for marketing materials about Apple-platform apps.
+
+**One-time install (manual, per machine):**
+
+```bash
+npm install -g appshot-cli
+./scripts/patch-appshot.sh
+```
+
+**Recommended Workflow table** updated to reflect the new flow with a
+separate "Caption / Background" column.
+
+**To adopt in existing projects:**
+1. Run the install commands above.
+2. Copy `fastlane/appshot/`, `scripts/patch-appshot.sh`, the `.gitignore`
+   additions, and the `appshot_screenshots` lane (plus the `raw/`
+   preservation block in `frame_screenshots`) from a freshly-bootstrapped
+   project — or run `/upgrade` if you have it wired up.
+3. Edit `.appshot/config.json` and `.appshot/captions/{iphone,ipad}.json`
+   for your project's gradient, font, and copy.
+4. Capture + frame: `bundle exec fastlane screenshots`.
+5. Caption: `bundle exec fastlane appshot_screenshots` (per locale).
+6. Upload: `bundle exec fastlane upload_screenshots`.
+
+**Why no more AppMockUp:** the web UI is janky, breaks reproducibility (manual
+clicks per run), and isn't agent-driveable. Hand-tuned CLI config that lives
+in the repo is faster to iterate and survives across releases.
+
+---
+
+## 2026-04-26 — Screenshot pipeline hardening (status bar, snapshot races, uninstall warning)
+
+Five lessons curated out of the playbook inbox after the Flara v2.0 screenshot
+session. All five fix real bugs or prevent ~10–15 minute foot-guns.
+
+**What changed:**
+
+1. **`bootstrap.sh` status-bar overrides** — `capture_widgets.sh` and
+   `capture_control_center.sh` heredocs now include `--dataNetwork hide` and
+   `--operatorName ""`. Without these flags, the 5G/LTE label takes width next
+   to the cellular bars and pushes the Wi-Fi icon onto a second row inside
+   Control Center. Affects every project bootstrapped before today.
+2. **Playbook §Phase 5 — "Reference: cleanest manual status-bar override"**
+   subsection added (after Step 1) with the full `simctl status_bar` command and
+   a caveat that `--time` only sets the *visible status-bar time/date display*,
+   not the iOS system clock (so Calendar widgets / Lock Screen big date /
+   Notification Center always show today's actual date — there is no public
+   `simctl date` and no simulator-only workaround as of iOS 26).
+3. **Playbook §Phase 5 — "XCUITest tips that save reshoots"** subsection added.
+   Two patterns: (a) prefer direct accessibility-identifier taps over
+   `press(forDuration:)` + contextMenu items in screenshot tests — direct taps
+   are dramatically more reliable; (b) any service that reads `UserDefaults` in
+   `init()` (theme manager, settings singleton) must also synchronously check
+   `-FASTLANE_SNAPSHOT` there — SwiftUI evaluates the first body using
+   whatever `init()` produced *before* `.task` runs, so XCUITest can capture
+   a frame using the persisted user value (e.g., dark mode) even when `.task`
+   later corrects it. Includes a 10-line code example.
+4. **Playbook §Phase 5 §2.5 + §2.6 — `simctl uninstall` warning** added. Never
+   `xcrun simctl uninstall <DEVICE> <BUNDLE_ID>` in a capture pipeline.
+   Uninstall removes the app **and all of its extensions/widgets** — wiping
+   the user's manual placements of home-screen widgets, Lock Screen Live
+   Activity widget, and Control Center widget. Reinstall does not bring those
+   layouts back.
+
+**To adopt in existing projects:**
+- If your project's `fastlane/capture_widgets.sh` or
+  `fastlane/capture_control_center.sh` predates 2026-04-26, replace the
+  `xcrun simctl status_bar … override …` line with the new flag set (see
+  playbook §Phase 5 reference command).
+- If your project has a custom theme manager or settings singleton that reads
+  `UserDefaults` in `init()`, add the `-FASTLANE_SNAPSHOT` synchronous check
+  to prevent the dark/light race in screenshot tests.
+
+---
+
 ## 2026-04-25 — Control Center capture lane (Control Widget apps)
 
 **What changed:** Added a `control_center_screenshot` Fastlane lane and a

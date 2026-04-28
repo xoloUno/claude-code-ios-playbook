@@ -34,6 +34,7 @@ for var in APP_NAME BUNDLE_ID REPO_NAME; do
   [[ -n "${!var:-}" ]] || { echo "❌ $var is not set in .env.project"; exit 1; }
 done
 MINIMUM_IOS="${MINIMUM_IOS:-26.0}"
+PRIMARY_SIM="${PRIMARY_SIM:-iPhone 17 Pro}"
 # ═══════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════
@@ -769,7 +770,7 @@ jobs:
           SCHEME=$(ls -d *.xcodeproj | head -1 | sed 's/.xcodeproj//')
           xcodebuild build \
             -scheme "$SCHEME" \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -destination 'platform=iOS Simulator,name=__PRIMARY_SIM__' \
             -skipPackagePluginValidation \
             -quiet \
             CODE_SIGN_IDENTITY="" \
@@ -1277,7 +1278,7 @@ Steps:
    the project's required simulators exist. Standard set:
    - iPhone 6.9" screenshots: iPhone 17 Pro Max
    - iPad 13" screenshots: iPad Pro 13-inch (M5)
-   - Build/run target: iPhone 17 Pro
+   - Build/run target: __PRIMARY_SIM__
    Skip iPad checks if the project does not ship iPad. If a required sim is missing,
    FAIL — suggest `xcrun simctl create` or downloading the runtime via
    Xcode > Settings > Platforms.
@@ -1355,6 +1356,17 @@ if [[ -d "$RULES_SRC" ]]; then
   echo "✓ Claude Code rules copied to .claude/rules/"
 else
   echo "⚠️  No .claude/rules/ found in playbook — skipping rule generation"
+fi
+# --- Substitute PRIMARY_SIM into emitted files ---
+# Marker substitution (always runs, even with default value)
+for f in .github/workflows/build-check.yml .claude/commands/preflight.md; do
+  [[ -f "$f" ]] && sed -i '' "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" "$f"
+done
+# Literal substitution in copied rule files (only when overridden)
+if [[ "${PRIMARY_SIM}" != "iPhone 17 Pro" ]]; then
+  for f in .claude/rules/build-deploy.md .claude/rules/testing.md; do
+    [[ -f "$f" ]] && sed -i '' "s|iPhone 17 Pro|${PRIMARY_SIM}|g" "$f"
+  done
 fi
 # --- Playbook version marker (for /upgrade command) ---
 cat > .playbook-version << 'PBVERSION'

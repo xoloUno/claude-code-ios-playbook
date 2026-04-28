@@ -8,6 +8,50 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-27 — Inbox curation: Control Widget intents, PRIMARY_SIM, SwiftData tests, migration appendix
+
+**What changed:** Four playbook adoptions from the 2026-04-27 inbox triage:
+
+1. **Control Widget intent pattern** — new §4.5 in `ios-project-playbook.md` covering
+   the App Group bridge for `AppIntent`-backed Control Widgets on iOS 26. The
+   `OpensIntent(OpenURLIntent(...))` return path silently drops the URL; use a shared
+   App Group UserDefaults handoff instead. One-line cross-reference added to
+   `.claude/rules/wwdc25-ios26.md`.
+
+2. **`PRIMARY_SIM` env var** — `bootstrap.sh` now reads `PRIMARY_SIM` from
+   `.env.project` (default `iPhone 17 Pro`) and substitutes it into the GitHub Actions
+   build destination, the emitted `preflight.md`, and (via post-cp sed) the build-deploy
+   and testing rule files. Lets iPad-first projects bootstrap with
+   `PRIMARY_SIM=iPad mini (A17 Pro)` without manual edits. Screenshot device list
+   (Snapfile) is unchanged because ASC submission requirements are project-independent.
+
+3. **SwiftData test target gotcha** — new "SwiftData test target setup" subsection in
+   `.claude/rules/testing.md`. Shared `@Model` files compiled into both the host app
+   AND the test bundle (when `TEST_HOST` is set) crash SwiftData on first
+   `context.insert(...)` because the same Swift type exists twice in one process.
+   Use `@testable import` only.
+
+4. **Migration appendix** — new Appendix C in `ios-project-playbook.md` walking through
+   the five-step consolidation pass for projects adopting the playbook later. Existing
+   "Maintaining the Playbook" appendix renumbered to D; "Glossary" renumbered to E.
+   Includes a roadmap note for the future `/conform` slash command (full-state audit
+   complementing `/upgrade`'s delta-driven model).
+
+**Bootstrap-emitted artifacts (changed):**
+- `.env.project.example` — adds `PRIMARY_SIM` line
+- `bootstrap.sh` — fallback default + three substitutions for `PRIMARY_SIM`
+
+**To adopt in existing projects:**
+
+1. Run `/upgrade` to refresh `.claude/rules/{wwdc25-ios26,testing}.md`.
+2. If your project is iPad-first or multiplatform, set `PRIMARY_SIM` in your
+   project's `.env.project` and re-run any rule-file refresh.
+3. If your project ships a Control Widget backed by an `AppIntent`, audit your intent
+   return values for `OpensIntent(OpenURLIntent(...))` and migrate to the App Group
+   bridge per §4.5.
+
+---
+
 ## 2026-04-27 — `/preflight` slash command + `verify-review` user-level skill
 
 **What changed:** Two new agent affordances to address recurring friction surfaced by

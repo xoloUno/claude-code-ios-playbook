@@ -23,8 +23,9 @@ is concrete, copy-pasteable, and tested.
 - [Phase 7: Post-Launch Monitoring](#phase-7-post-launch-monitoring-add-when-app-is-live)
 - [Appendix A: Why These Tools](#appendix-a-why-these-tools)
 - [Appendix B: Decision Trees](#appendix-b-decision-trees)
-- [Appendix C: Maintaining the Playbook](#appendix-c-maintaining-the-playbook)
-- [Appendix D: Glossary](#appendix-d-glossary)
+- [Appendix C: Migrating an Existing Project to the Playbook](#appendix-c-migrating-an-existing-project-to-the-playbook)
+- [Appendix D: Maintaining the Playbook](#appendix-d-maintaining-the-playbook)
+- [Appendix E: Glossary](#appendix-e-glossary)
 
 ---
 
@@ -709,6 +710,31 @@ func push(_ record: CKRecord) async throws {
 
 The same principle applies to any async capability: StoreKit product loading, HealthKit
 authorization, CoreLocation permissions. If init can fail, don't trust that it succeeded.
+
+### 4.5 Control Center Widget Intents (App Group Bridge)
+
+If your app ships a Control Widget (`ControlWidgetButton`/`ControlWidgetToggle`)
+backed by an `AppIntent`, do NOT return `OpensIntent(OpenURLIntent(...))` from the
+intent. On iOS 26, the URL is silently dropped on the way back to the app —
+`.onOpenURL` never fires. The `openAppWhenRun: true` flag still foregrounds the app,
+but the payload is lost. (Home-screen widgets using `Link` / `.widgetURL` keep working
+through the standard URL handler — leave those alone.)
+
+**Reliable pattern: shared App Group UserDefaults bridge.**
+
+1. The intent (running in the widget extension's process) writes the requested action
+   to App Group UserDefaults — e.g. a `pendingAction` key with the payload + a
+   timestamp.
+2. The intent returns plain `.result()` (no `OpensIntent`) and relies on
+   `openAppWhenRun: true` to foreground the app.
+3. The app drains and clears the entry on `.task` (cold launch) and on
+   `.onChange(of: scenePhase)` when active (warm launch). Atomic clear-on-read makes
+   double-fire safe across both hooks.
+4. Apply a freshness window (~30s) so a stale tap from hours ago doesn't produce a
+   phantom action on a much later launch.
+
+Put the bridge type in a shared SPM package so both the app target and the widget
+extension import the same key constants without drift.
 
 ---
 
@@ -1551,7 +1577,55 @@ Is Xcode running?
     └── XcodeBuildMCP → builds, simulator management, UI automation (59 tools)
 ```
 
-## Appendix C: Maintaining the Playbook
+## Appendix C: Migrating an Existing Project to the Playbook
+
+This walkthrough is for projects that pre-date the playbook and want to adopt it.
+Greenfield projects from `bootstrap.sh` already conform.
+
+### When to migrate
+
+Look for these symptoms:
+- `CLAUDE.md` has grown past ~250 lines and mixes reference, session log, and rules
+- A separate `MILESTONES.md` or session log file lives at project root
+- A `FEEDBACK.md` (or similar) mixes closed `[x]` items and open `[ ]` items
+- Operational rules are inline in `CLAUDE.md` rather than under `.claude/rules/`
+
+### Five-step consolidation pass
+
+1. **Audit.** Get line counts for `CLAUDE.md`, `MILESTONES.md`, `FEEDBACK.md`, and
+   any other docs that look load-bearing. Identify role overlap.
+2. **Fold milestone history into `WORKLOG.md`.** Move `MILESTONES.md` content to
+   `WORKLOG.md` as a single condensed entry titled `Pre-<date> milestone summary`,
+   then `git rm MILESTONES.md`.
+3. **Slim `FEEDBACK.md` to open items only.** Closed `[x]` items live in git history;
+   delete them from the working file. Aim for <150 lines.
+4. **Slim `CLAUDE.md`.** Move operational rules → `.claude/rules/` (use the playbook
+   files as templates). Move session-by-session detail → `WORKLOG.md`. Keep
+   `CLAUDE.md` as stable reference: project overview, core loop, tech stack,
+   architecture, scope rules, key product decisions.
+5. **Update the `Related Context Files` table** in `CLAUDE.md` to reflect the new
+   structure.
+
+Reference: HVACApp's adoption commit (`5b35626 chore(playbook): adopt rules/cmds;
+slim CLAUDE.md; fold MILESTONES`) shows the concrete shape — net ~830 lines of
+tracked content removed while gaining ~1400 lines of `.claude/` rules/commands.
+
+### Future: `/conform` slash command (roadmap)
+
+A `/conform` command is on the roadmap to automate the broader case: full-state audit
+of a project against the latest playbook expectation. It complements `/upgrade`
+(delta-driven via CHANGELOG) by detecting drift in:
+
+- Missing or stale `.claude/rules/*.md` files (compared to playbook source)
+- Missing slash commands (e.g. `/preflight` added later)
+- `CLAUDE.md` template gaps (sections added to `CLAUDE-TEMPLATE.md` since project bootstrap)
+- Stale `lefthook.yml`, `Fastfile`, GitHub workflow files
+- Doc bloat (the migration scenario above)
+- Stranded files in `.claude/` that aren't in the playbook (custom keepers vs leftovers)
+
+Until `/conform` ships, run the manual five-step pass above when symptoms appear.
+
+## Appendix D: Maintaining the Playbook
 
 ### When Xcode updates
 
@@ -1591,7 +1665,7 @@ set -a && source .env.fastlane && set +a
 bundle exec fastlane beta
 ```
 
-## Appendix D: Glossary
+## Appendix E: Glossary
 
 | Term | What it is |
 |---|---|

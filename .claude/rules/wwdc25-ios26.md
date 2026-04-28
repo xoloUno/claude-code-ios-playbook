@@ -33,3 +33,8 @@ developer.apple.com.
 Frameworks that always require verification before use: ActivityKit, AppIntents, WidgetKit,
 FoundationModels, HealthKit (iOS 26 additions), Metal 4, RealityKit, any SwiftUI modifier
 introduced after iOS 18.
+
+> **AppIntents + Control Widgets gotcha (iOS 26):** intents invoked from
+> `ControlWidgetButton` cannot deliver URLs back via `OpensIntent(OpenURLIntent(...))`.
+> Use a shared App Group UserDefaults bridge instead. See
+> `ios-project-playbook.md` §4.5.

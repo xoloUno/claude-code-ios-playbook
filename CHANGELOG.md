@@ -8,6 +8,52 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-27 — `/conform` slash command (full-state playbook audit)
+
+**What changed:** New `/conform` slash command lives at
+`_playbook/.claude/commands/conform.md` and gets copied into every newly bootstrapped
+project by the existing copy loop in `bootstrap.sh` (lines 1336–1342). Bootstrap.sh
+needs no changes — the loop already picks up any `.md` file in
+`_playbook/.claude/commands/` except `curate.md`.
+
+`/conform` complements `/upgrade`: where `/upgrade` is delta-driven (replays CHANGELOG
+entries since the last `.playbook-version` date), `/conform` is state-driven (directly
+compares the project's current shape against the playbook source, regardless of
+CHANGELOG history). Use it when CHANGELOG entries may have been missed, after a long
+absence, or when adopting the playbook on an existing project.
+
+**Audit categories (six checks):**
+
+1. **Stale playbook-copied rule files** (`.claude/rules/*.md`) — diff against playbook
+   source, accounting for `PLAYBOOK_PATH` and `PRIMARY_SIM` substitutions. Auto-fixable.
+2. **Stale playbook-copied commands** (`.claude/commands/*.md`, excluding `curate.md`) —
+   diff against playbook source. Auto-fixable.
+3. **Missing bootstrap-emitted commands** — checks for `feature`, `test`, `review`,
+   `deploy`, `release`, `preflight`. Manual fix only (heredoc context not reproducible
+   from `/conform`).
+4. **CLAUDE.md template gaps** — H2 sections present in `CLAUDE-TEMPLATE.md` but absent
+   from project's `CLAUDE.md`. Advisory only — never auto-edits CLAUDE.md.
+5. **Doc bloat** — presence of `MILESTONES.md`, `FEEDBACK.md`, or `SESSION-*.md` /
+   `LOG-*.md` patterns at project root. Advisory; points to Appendix C migration
+   walkthrough.
+6. **Stranded `.claude/` files** — files in project's `.claude/rules/` or
+   `.claude/commands/` that aren't in playbook source AND aren't bootstrap-emitted
+   commands. Advisory — could be intentional custom keepers.
+
+**Appendix C updated:** the "Future: `/conform` slash command (roadmap)" subsection in
+`ios-project-playbook.md` is replaced with the active "`/conform` slash command
+(full-state audit)" describing the actual command behavior.
+
+**To adopt in existing projects:**
+
+1. Copy `<playbook>/.claude/commands/conform.md` into your project's
+   `.claude/commands/conform.md`, OR re-bootstrap a fresh project and copy the file
+   from there.
+2. Run `/conform` to perform the first audit. Recommended order: `/upgrade` first
+   (CHANGELOG-driven), then `/conform` (state-driven catch-all).
+
+---
+
 ## 2026-04-27 — Inbox curation: Control Widget intents, PRIMARY_SIM, SwiftData tests, migration appendix
 
 **What changed:** Four playbook adoptions from the 2026-04-27 inbox triage:

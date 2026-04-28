@@ -1610,20 +1610,29 @@ Reference: HVACApp's adoption commit (`5b35626 chore(playbook): adopt rules/cmds
 slim CLAUDE.md; fold MILESTONES`) shows the concrete shape — net ~830 lines of
 tracked content removed while gaining ~1400 lines of `.claude/` rules/commands.
 
-### Future: `/conform` slash command (roadmap)
+### `/conform` slash command (full-state audit)
 
-A `/conform` command is on the roadmap to automate the broader case: full-state audit
-of a project against the latest playbook expectation. It complements `/upgrade`
-(delta-driven via CHANGELOG) by detecting drift in:
+The `/conform` command automates the broader case: a full-state audit of a project against
+the latest playbook expectation. It complements `/upgrade` (delta-driven via CHANGELOG) by
+direct comparison rather than CHANGELOG replay. It detects drift in:
 
 - Missing or stale `.claude/rules/*.md` files (compared to playbook source)
-- Missing slash commands (e.g. `/preflight` added later)
+- Missing or stale playbook-copied slash commands
+- Missing bootstrap-emitted slash commands (e.g. `/preflight` added later)
 - `CLAUDE.md` template gaps (sections added to `CLAUDE-TEMPLATE.md` since project bootstrap)
-- Stale `lefthook.yml`, `Fastfile`, GitHub workflow files
-- Doc bloat (the migration scenario above)
-- Stranded files in `.claude/` that aren't in the playbook (custom keepers vs leftovers)
+- Doc bloat (the migration scenario above — `MILESTONES.md`, `FEEDBACK.md`, scattered logs)
+- Stranded files in `.claude/` that aren't in the playbook (custom keepers vs. leftovers)
 
-Until `/conform` ships, run the manual five-step pass above when symptoms appear.
+Run `/conform` from any bootstrapped iOS project. It presents drift as a single table, then
+asks how to proceed: apply all auto-fixable, walk one-by-one, or just report. Stale or
+missing playbook-copied files are auto-applied with user approval; CLAUDE.md gaps, doc
+bloat, and stranded files are surfaced as manual follow-ups (the user decides intent).
+
+When to reach for it:
+- Returning to a project after a long absence
+- After a major playbook update — run `/upgrade` first (CHANGELOG-driven), then `/conform`
+  to catch anything the upgrade missed
+- Adopting the playbook on an existing project — combine with the five-step pass above
 
 ## Appendix D: Maintaining the Playbook
 

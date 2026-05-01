@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "input": {
+    "iphone": "../../tests/fixtures/{locale}/iphone",
+    "ipad": "../../tests/fixtures/{locale}/ipad"
+  },
+  "pipeline": {
+    "frames_cli": "frames",
+    "verify_strict": true
+  },
+  "output": {
+    "iphone": "../../tests/fixtures/sample-output/presets/royal-purple/iphone/{locale}",
+    "ipad": "../../tests/fixtures/sample-output/presets/royal-purple/ipad/{locale}"
+  },
+  "background": {
+    "type": "linear-gradient",
+    "stops": ["#6B4FBB", "#FF6B5C"],
+    "angle": 180,
+    "dither": 30
+  },
+  "caption": {
+    "font": "New York Small Bold",
+    "color": "#FFFFFF",
+    "size_iphone": 115,
+    "size_ipad": 130,
+    "position": "footer",
+    "padding_pct": 3.0,
+    "max_lines": 2,
+    "line_height": 1.15
+  },
+  "captions_file": "../captions.example.json",
+  "locales": ["en-US"]
+}

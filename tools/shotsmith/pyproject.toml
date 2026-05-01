@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shotsmith"
+version = "0.1.0"
+description = "Compose App Store screenshots: gradient backgrounds, captions, multi-locale, framed-PNG-aware."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "xoloUno" }]
+dependencies = [
+    "Pillow>=10.0,<13.0",
+]
+
+[project.scripts]
+shotsmith = "shotsmith.__main__:main"
+
+[tool.setuptools]
+packages = ["shotsmith"]

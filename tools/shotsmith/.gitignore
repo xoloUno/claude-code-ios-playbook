@@ -1,0 +1,15 @@
+# Python build / cache artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Test fixtures are dev artifacts (synthetic raw PNGs + their framed/composed
+# output). Tests synthesize their own fixtures via tmp_path; the example
+# config's smoke-test fixtures are documented in README for re-creation.
+tests/fixtures/

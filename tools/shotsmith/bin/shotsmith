@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""shotsmith — entry shim that runs the package as a CLI.
+
+Allows `./bin/shotsmith compose ...` without a pip install step. For installed
+usage, the `shotsmith` console script defined in pyproject.toml takes over.
+"""
+
+import sys
+from pathlib import Path
+
+# Make the parent package importable when invoked as a bare script.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from shotsmith.__main__ import main  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(main())

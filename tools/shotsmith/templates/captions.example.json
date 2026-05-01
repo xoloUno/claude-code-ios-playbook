@@ -1,0 +1,17 @@
+{
+  "01_HomeScreen.png": {
+    "en": {
+      "caption":        "Track everything in one place",
+      "caption_iphone": "Track everything\nin one place",
+      "subtitle":       "in real time"
+    },
+    "es": {
+      "caption":  "Todo en un solo lugar",
+      "subtitle": "en tiempo real"
+    }
+  },
+  "02_Detail.png": {
+    "en": "Drill down\nwith one tap",
+    "es": "Profundiza con un solo toque"
+  }
+}

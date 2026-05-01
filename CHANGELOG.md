@@ -8,6 +8,90 @@ in your project to adopt the change.
 
 ---
 
+## 2026-04-28 — Inbox curation: assertion discipline, legal URLs, ASC troubleshooting, Fastfile UTF-8
+
+**What changed:** Four playbook adoptions from the 2026-04-28 inbox triage. Three new
+`.claude/rules/` files plus a defense-in-depth `before_all` block in the bootstrapped
+Fastfile template.
+
+### 1. New rule — `.claude/rules/assertion-discipline.md`
+
+Extends the auto-memory "Before recommending from memory" discipline (which covers code
+paths and feature flags) to higher-stakes claim categories: **App Store rendering rules**
+(e.g. watch screenshots are NOT rendered inside a stylized watch frame), **repo
+visibility / GH Pages tier** (run `git remote -v` + `gh repo view --json visibility`
+before recommending public/private toggles), **fastlane / ASC operational behavior**,
+and **simulator capabilities**. Includes the concrete verification commands for each
+category. Triggered by a planning session where two factual mistakes (claiming watch
+screenshots get an automatic stylized frame; suggesting a private→public repo toggle to
+"fix" Pages, which would have exposed all source) landed in quick succession from
+training-memory recall.
+
+### 2. New rule — `.claude/rules/legal-urls.md`
+
+Single-source-of-truth pattern for privacy/terms/marketing/support URLs across Swift
+code AND fastlane metadata. Two pieces:
+
+- `<App>/Configuration/LegalURLs.swift` — `enum LegalURLs { static let base = ... }`
+  referenced from every SwiftUI view.
+- `scripts/update-legal-urls.sh` — idempotent migration script that takes a base URL
+  and rewrites the Swift constant plus every locale's `privacy_url.txt`,
+  `marketing_url.txt`, `support_url.txt`, **and embedded privacy/terms links inside
+  `description.txt`**.
+
+The `description.txt` rewrite is the key insight — privacy/terms links embedded inline
+in the app description need to stay in sync with the dedicated URL fields, or ASC review
+can flag a broken privacy link in the description. The `sed` pattern matches only URLs
+ending in `/privacy.html` or `/terms.html`, so Apple's EULA URL and unrelated marketing
+links are untouched.
+
+Reference implementation in Flara: `Flara/Configuration/LegalURLs.swift` +
+`scripts/update-legal-urls.sh`.
+
+### 3. New rule — `.claude/rules/asc-troubleshooting.md`
+
+Documents the **fastlane screenshot verify hang** — `fastlane upload_screenshots` (or
+`release` with screenshots) appears to hang for tens of minutes after all files have
+already uploaded successfully because ASC's verify endpoint returns 500 transiently
+during high-load periods. Fix: kill the lane, run a direct ASC API query to confirm
+state. Includes a `scripts/asc-query.rb` helper (~30 lines, JWT-signed) and bash
+wrapper for general-purpose ASC sanity checks (build state, version state, screenshot
+sets, etc.).
+
+### 4. Fastfile template — `before_all` UTF-8 hook (`bootstrap.sh`)
+
+Added to the bootstrapped `fastlane/Fastfile` template as defense-in-depth:
+
+```ruby
+before_all do
+  ENV["LC_ALL"] ||= "en_US.UTF-8"
+  ENV["LANG"] ||= "en_US.UTF-8"
+  ENV["LANGUAGE"] ||= "en_US.UTF-8"
+end
+```
+
+The `/deploy` and `/release` slash commands already prepend `LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8`
+exports, and `ios-project-playbook.md` §1.5 + §1.6 document this. The `before_all` block
+ensures lanes invoked directly (without the slash command's wrapper) don't crash with
+`invalid byte sequence in US-ASCII` from gym's error handler.
+
+**To adopt in existing projects:**
+
+1. Re-bootstrap or copy the three new rule files into `.claude/rules/`:
+   - `assertion-discipline.md`
+   - `legal-urls.md`
+   - `asc-troubleshooting.md`
+   (Or run `/upgrade` once it picks up this CHANGELOG entry.)
+2. For the Fastfile UTF-8 hook: add the `before_all` block above to your project's
+   `fastlane/Fastfile`, just below `default_platform(:ios)`. Optional but cheap.
+3. For the legal-URLs pattern: opt-in. If your app has hosted legal pages, follow
+   `legal-urls.md` to extract `LegalURLs.swift` + the update script. Use the Flara
+   implementation as reference.
+4. For the ASC query helper: opt-in. If you've hit the screenshot-verify hang or want
+   to script ASC checks, drop `scripts/asc-query.rb` from the rule into your project.
+
+---
+
 ## 2026-04-27 — `/conform` slash command (full-state playbook audit)
 
 **What changed:** New `/conform` slash command lives at

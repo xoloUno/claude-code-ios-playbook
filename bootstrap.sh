@@ -558,6 +558,18 @@ chmod +x scripts/patch-appshot.sh
 
 cat > fastlane/Fastfile << 'FASTFILE'
 default_platform(:ios)
+
+# Defense-in-depth: ensure UTF-8 locale even if the lane is invoked without
+# the LC_ALL/LANG export prefix. Without this, gym crashes on any non-ASCII
+# byte in build logs (`invalid byte sequence in US-ASCII`). The slash
+# commands also export these, but a lane invoked directly would otherwise
+# inherit whatever the shell has.
+before_all do
+  ENV["LC_ALL"] ||= "en_US.UTF-8"
+  ENV["LANG"] ||= "en_US.UTF-8"
+  ENV["LANGUAGE"] ||= "en_US.UTF-8"
+end
+
 platform :ios do
   desc "Build and upload to TestFlight"
   lane :beta do

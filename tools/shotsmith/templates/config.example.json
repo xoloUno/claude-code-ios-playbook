@@ -39,5 +39,15 @@
     "spacing_pct": 1.5
   },
   "captions_file": "captions.example.json",
-  "locales": ["en-US"]
+  "locales": ["en-US"],
+  "manual_inputs": {
+    "iphone": {
+      "source": "../manual-captures/{locale}",
+      "files": [
+        "90_LockScreen_LiveActivity.png",
+        "91_HomeScreen_Widget.png",
+        "92_ControlCenter.png"
+      ]
+    }
+  }
 }

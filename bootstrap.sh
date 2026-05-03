@@ -89,16 +89,16 @@ Secrets.swift
 # Claude Code local scratchpads
 MANUAL-TASKS.md
 WORKLOG.md
-# appshot — keep config + captions, ignore intermediate PNG dirs
-fastlane/appshot/screenshots/
-fastlane/appshot/final/
-fastlane/appshot/.appshot/config.backup.json
 # Screenshot pipeline — see .claude/rules/screenshot-pipeline.md
 fastlane/screenshots/                # raw + framed (regenerable from sims)
 fastlane/shotsmith/composed/         # composed (regenerable from raw + config)
 # Intentionally NOT ignored: fastlane/manual-captures/
 # These are tracked manual-gesture inputs (Live Activity stack, Home Screen
 # widget, Control Center) — recaptured once per release. Do not gitignore.
+# shotsmith binary symlink — points at $PLAYBOOK_DIR/tools/shotsmith/bin/
+# on the bootstrapping machine. Each machine re-runs bootstrap (or the
+# `ln -sfn` line) to refresh the link locally.
+bin/
 GITIGNORE
 # --- XcodeGen project.yml ---
 cat > project.yml << XCODEGEN
@@ -423,105 +423,15 @@ After recapturing, commit the changed PNGs with a message like
 diff system-surface drift release-over-release.
 MANUALCAPTURES
 
-# --- appshot-cli scaffolding (Track B: captioned + gradient marketing screenshots) ---
-mkdir -p fastlane/appshot/.appshot/captions
-mkdir -p fastlane/appshot/screenshots/iphone fastlane/appshot/screenshots/ipad
-touch fastlane/appshot/screenshots/iphone/.gitkeep fastlane/appshot/screenshots/ipad/.gitkeep
-cat > fastlane/appshot/.appshot/config.json << 'APPSHOTCONFIG'
-{
-  "version": 2,
-  "layout": "footer",
-  "caption": {
-    "font": "New York Small Bold",
-    "color": "#1B1B1B"
-  },
-  "background": {
-    "mode": "gradient",
-    "gradient": {
-      "colors": ["#FF5F6D", "#FFC371"],
-      "direction": "top-bottom"
-    }
-  },
-  "devices": {
-    "iphone": { "input": "./screenshots/iphone", "resolution": "1320x2868" },
-    "ipad":   { "input": "./screenshots/ipad",   "resolution": "2064x2752" }
-  },
-  "output": "./final"
-}
-APPSHOTCONFIG
-cat > fastlane/appshot/.appshot/captions/iphone.json << 'IPHONECAPTIONS'
-{
-  "01_HomeScreen.png": {
-    "en": "Your headline here"
-  },
-  "02_KeyFeature.png": {
-    "en": "What makes the app worth it"
-  }
-}
-IPHONECAPTIONS
-cat > fastlane/appshot/.appshot/captions/ipad.json << 'IPADCAPTIONS'
-{
-  "01_HomeScreen.png": {
-    "en": "Your headline here"
-  },
-  "02_KeyFeature.png": {
-    "en": "What makes the app worth it"
-  }
-}
-IPADCAPTIONS
-
-mkdir -p scripts
-cat > scripts/patch-appshot.sh << 'PATCHAPPSHOT'
-#!/usr/bin/env bash
-# Patch the globally-installed appshot-cli so caption typography matches your
-# project's design. Patches modify node_modules/, so a fresh `npm install -g`
-# clobbers them — re-run this script after any appshot upgrade.
-#
-# Why patch at all:
-#   appshot v2 caps caption font size at 86px (iPhone) / 88px (iPad). That's
-#   too small to read at App Store thumbnail size and too small to force
-#   readable line wraps via the chars-per-line heuristic.
-#
-# Tune to your design:
-#   APPSHOT_IPHONE_FONT=120 APPSHOT_IPAD_FONT=140 ./scripts/patch-appshot.sh
-#
-# Defaults (115/130) were chosen for the bootstrapped sunset gradient + "New
-# York Small Bold" caption. Adjust upward for shorter captions or downward for
-# longer ones.
-set -euo pipefail
-
-IPHONE_FONT="${APPSHOT_IPHONE_FONT:-115}"
-IPAD_FONT="${APPSHOT_IPAD_FONT:-130}"
-
-APPSHOT_DIR="$(dirname "$(readlink -f "$(command -v appshot)" 2>/dev/null || command -v appshot)" )/../lib/node_modules/appshot-cli"
-if [ ! -d "$APPSHOT_DIR" ]; then
-  APPSHOT_DIR="/opt/homebrew/lib/node_modules/appshot-cli"
-fi
-if [ ! -d "$APPSHOT_DIR" ]; then
-  echo "❌ Could not locate appshot-cli install. Tried: $APPSHOT_DIR"
-  echo "   Install with: npm install -g appshot-cli"
-  exit 1
-fi
-
-patch_size() {
-  local file="$1" size="$2"
-  if [ ! -f "$file" ]; then
-    echo "❌ Missing $file"
-    exit 1
-  fi
-  cp -n "$file" "${file}.bak" 2>/dev/null || true
-  sed -i '' -E "s/fontMin: [0-9]+/fontMin: ${size}/" "$file"
-  sed -i '' -E "s/fontMax: [0-9]+/fontMax: ${size}/" "$file"
-  echo "✅ $(basename "$file"): fontMin=${size}, fontMax=${size}"
-}
-
-echo "Patching appshot-cli at $APPSHOT_DIR"
-patch_size "$APPSHOT_DIR/dist/core/device-strategies/iphone.js" "$IPHONE_FONT"
-patch_size "$APPSHOT_DIR/dist/core/device-strategies/ipad.js"   "$IPAD_FONT"
-echo ""
-echo "Done. Re-run after any 'npm install -g appshot-cli'."
-PATCHAPPSHOT
-chmod +x scripts/patch-appshot.sh
+# --- shotsmith install (symlink playbook tool into project bin/) ---
+# The compose_screenshots fastlane lane invokes ./bin/shotsmith. The tool
+# itself lives in $PLAYBOOK_DIR/tools/shotsmith/ — symlink rather than copy
+# so projects automatically pick up shotsmith updates when /upgrade syncs
+# the playbook. PLAYBOOK_DIR is set later (line ~1336); resolve it here from
+# SCRIPT_DIR (set at the top of bootstrap).
+mkdir -p bin
+ln -sfn "$SCRIPT_DIR/tools/shotsmith/bin/shotsmith" bin/shotsmith
+echo "✅ Symlinked bin/shotsmith → $SCRIPT_DIR/tools/shotsmith/bin/shotsmith"
 
 cat > fastlane/Fastfile << 'FASTFILE'
 default_platform(:ios)
@@ -615,103 +525,42 @@ platform :ios do
     )
   end
 
-  desc "Capture screenshots on all required device sizes and apply Apple Frames"
-  lane :screenshots do
-    capture_screenshots(
-      scheme: Dir.glob("*.xcodeproj").first.sub(".xcodeproj", "") + "UITests"
-    )
-    frame_screenshots
-  end
-
-  desc "Apply Apple Frames to captured screenshots (requires frames-cli on PATH)"
-  lane :frame_screenshots do
-    Dir.glob("../fastlane/screenshots/en-US/*/").each do |dir|
-      # Preserve raws before first framing so re-framing or re-captioning later
-      # doesn't require re-capturing on the simulator. Snapshot once; frames
-      # CLI's `_framed.png` sibling convention preserves the framed step too.
-      raw_dir = "#{dir}raw"
-      if !Dir.exist?(raw_dir) || Dir.empty?(raw_dir)
-        sh("mkdir -p #{raw_dir.shellescape}")
-        Dir.glob("#{dir}*.png").reject { |f| f.end_with?("_framed.png") }.each do |f|
-          sh("cp #{f.shellescape} #{raw_dir.shellescape}/")
-        end
-      end
-      sh("frames -o #{dir.shellescape} #{dir.shellescape}*.png")
-    end
-  end
-
-  desc "Caption framed screenshots with appshot-cli (run once per locale)"
-  lane :appshot_screenshots do |options|
-    locale = options[:locale] || "en-US"
-    lang   = options[:lang]   || "en"
-
-    iphone_src = "../fastlane/screenshots/#{locale}/iPhone 6.9\" Display"
-    ipad_src   = "../fastlane/screenshots/#{locale}/iPad 13\" Display"
-    iphone_in  = "../fastlane/appshot/screenshots/iphone"
-    ipad_in    = "../fastlane/appshot/screenshots/ipad"
-
-    sh("rm -f #{iphone_in.shellescape}/*.png #{ipad_in.shellescape}/*.png 2>/dev/null || true")
-
-    # Stage framed PNGs into appshot input, dropping the `_framed` suffix so
-    # caption JSON keys (e.g. "01_HomeScreen.png") match the staged filenames.
-    Dir.glob("#{iphone_src}/*_framed.png").each do |f|
-      dest = "#{iphone_in}/#{File.basename(f).sub('_framed.png', '.png')}"
-      sh("cp #{f.shellescape} #{dest.shellescape}")
-    end
-    Dir.glob("#{ipad_src}/*_framed.png").each do |f|
-      dest = "#{ipad_in}/#{File.basename(f).sub('_framed.png', '.png')}"
-      sh("cp #{f.shellescape} #{dest.shellescape}")
-    end
-
-    Dir.chdir("../fastlane/appshot") do
-      sh("appshot build --no-frame --langs #{lang}")
-    end
-
-    # Copy captioned output back. The unframed-raw originals (01_X.png) get
-    # overwritten — recover from screenshots/<locale>/<device>/raw/ if needed.
-    iphone_out = "../fastlane/appshot/final/iphone/#{lang}"
-    ipad_out   = "../fastlane/appshot/final/ipad/#{lang}"
-    sh("cp #{iphone_out.shellescape}/*.png \"#{iphone_src}\"/") if Dir.exist?(iphone_out)
-    sh("cp #{ipad_out.shellescape}/*.png \"#{ipad_src}\"/")     if Dir.exist?(ipad_out)
-  end
-
   desc "Capture lock-screen (Live Activity) and home-screen (widget) shots via simctl"
   lane :widget_screenshots do |options|
     device = options[:device] || "iPhone 17 Pro Max"
     bundle_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
     output_dir = options[:output] || "fastlane/screenshots/en-US/iPhone 6.9\" Display"
     sh("../fastlane/capture_widgets.sh #{device.shellescape} #{bundle_id.shellescape} #{output_dir.shellescape}")
-    frame_screenshots if options[:frame] != false
+    # Note: this lane predates /capture-manual-surfaces (the agent-driven loop
+    # that produces tracked manual-captures/<locale>/ inputs). Prefer the
+    # slash command for new projects — it's more reliable for Control Center
+    # and the locale switch story is cleaner. This lane is kept for projects
+    # that still drive widget capture via simctl scripts.
   end
 
-  desc "Stage manual-captures into raw/ and run shotsmith pipeline (frame + compose)"
-  # Manual-gesture surfaces (Live Activity, Home Screen widget, Control Center)
-  # live in fastlane/manual-captures/<locale>/ and are captured via Claude Code's
-  # /capture-manual-surfaces slash command — see .claude/rules/screenshot-pipeline.md.
-  # This lane stages those tracked PNGs into the iPhone raw/ tree, then defers
-  # to shotsmith for frame + compose. shotsmith's input_mapping renames the
-  # 90/91/92_ prefixes into the canonical 0N_LiveActivities / 0N_ControlCenter /
-  # 0N_HomeScreenWidgets that captions.json references.
+  desc "Run shotsmith pipeline (stage → frame → compose) end-to-end"
+  # Stages manual-captures into raw/ via shotsmith's manual_inputs config
+  # block, frames raw inputs via frames-cli, composes captioned + gradient
+  # output. Single command — no per-locale loop, no Ruby staging — because
+  # shotsmith reads the locale list and per-locale source paths from
+  # fastlane/shotsmith/config.json.
+  #
+  # See `.claude/rules/screenshot-pipeline.md` for the directory contract
+  # and `/capture-manual-surfaces` for the human-in-the-loop step that
+  # populates fastlane/manual-captures/<locale>/.
   lane :compose_screenshots do |options|
     config = options[:config] || "shotsmith/config.json"
-    iphone_device = options[:device] || "iPhone 6.9\" Display"
-    manual_root = "../fastlane/manual-captures"
-    raw_root_template = "../fastlane/screenshots/%s/#{iphone_device}/raw"
-
-    unless Dir.exist?(manual_root)
-      UI.user_error!("fastlane/manual-captures/ not found — capture system surfaces first via /capture-manual-surfaces")
-    end
-
-    Dir.entries(manual_root).each do |loc|
-      next if loc.start_with?(".") || loc == "README.md"
-      src_dir = "#{manual_root}/#{loc}"
-      next unless File.directory?(src_dir)
-      raw_dir = raw_root_template % loc
-      FileUtils.mkdir_p(raw_dir)
-      sh("cp #{src_dir.shellescape}/*.png #{raw_dir.shellescape}/ 2>/dev/null || true")
-    end
-
-    sh("./bin/shotsmith pipeline --config #{config.shellescape}", error_callback: ->(_) { UI.user_error!("shotsmith pipeline failed — check config and verify output") })
+    sh(
+      "./bin/shotsmith pipeline --config #{config.shellescape}",
+      error_callback: ->(_) {
+        UI.user_error!(
+          "shotsmith pipeline failed — run " \
+          "`./bin/shotsmith verify --config #{config}` to see specific errors. " \
+          "Common cause: missing manual-capture sources — recapture via " \
+          "/capture-manual-surfaces."
+        )
+      },
+    )
   end
 
   desc "Sync metadata to App Store Connect (no binary, no screenshots)"

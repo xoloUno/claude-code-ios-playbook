@@ -77,6 +77,33 @@ def _verify_one(
                 f"First offender: {orphans[0].name}"
             )
 
+    # manual_inputs source files — error if declared but missing on disk.
+    # This is the end-to-end check the manual_inputs schema was built for:
+    # without it, a missing manual capture surfaces only via input_mapping
+    # ("source X.png not found in raw/") in the frame step, one indirection
+    # away from the actual cause.
+    if config.manual_inputs is not None:
+        device_block = config.manual_inputs.for_device(device_key)
+        if device_block is not None:
+            source_dir = config.manual_source_dir(device_key, locale)
+            if source_dir is None or not source_dir.is_dir():
+                report.errors.append(
+                    f"{device_key}/{locale}: manual_inputs source dir missing: "
+                    f"{source_dir}. Run /capture-manual-surfaces (or your project's "
+                    f"manual-capture flow) and commit the result."
+                )
+            else:
+                missing = [
+                    f for f in device_block.files
+                    if not (source_dir / f).is_file()
+                ]
+                if missing:
+                    report.errors.append(
+                        f"{device_key}/{locale}: manual_inputs source(s) missing "
+                        f"in {source_dir}: {', '.join(missing)}. "
+                        f"Recapture via /capture-manual-surfaces."
+                    )
+
     # raw/ presence — warning, not error (capture step may not have run yet)
     if not raw_dir.is_dir() or not list(raw_dir.glob("*.png")):
         report.warnings.append(

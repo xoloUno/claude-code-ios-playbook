@@ -114,6 +114,68 @@ def test_verify_rejects_orphan_pngs_at_locale_root(tmp_path):
     assert any("at root of" in e for e in report.errors)
 
 
+def test_verify_errors_when_manual_inputs_source_dir_missing(tmp_path):
+    # Declare manual_inputs but don't create the source dir.
+    raw = json.loads(_write_config(tmp_path).read_text())
+    raw["manual_inputs"] = {
+        "iphone": {
+            "source": "manual-captures/{locale}",
+            "files": ["90_LockScreen.png"],
+        }
+    }
+    (tmp_path / "config.json").write_text(json.dumps(raw))
+    cfg = config_mod.load(tmp_path / "config.json")
+
+    report = verify_mod.verify(cfg)
+    assert not report.ok
+    assert any("manual_inputs source dir missing" in e for e in report.errors)
+
+
+def test_verify_errors_when_manual_inputs_file_missing(tmp_path):
+    raw = json.loads(_write_config(tmp_path).read_text())
+    raw["manual_inputs"] = {
+        "iphone": {
+            "source": "manual-captures/{locale}",
+            "files": ["90_LockScreen.png", "91_HomeScreen.png"],
+        }
+    }
+    (tmp_path / "config.json").write_text(json.dumps(raw))
+    cfg = config_mod.load(tmp_path / "config.json")
+
+    # Source dir exists with one file, the other missing
+    src = tmp_path / "manual-captures" / "en-US"
+    _make_png(src / "90_LockScreen.png", (10, 10))
+
+    report = verify_mod.verify(cfg)
+    assert not report.ok
+    msg = next(e for e in report.errors if "manual_inputs source(s) missing" in e)
+    assert "91_HomeScreen.png" in msg
+    assert "90_LockScreen.png" not in msg  # only the missing one is named
+
+
+def test_verify_clean_when_manual_inputs_satisfied(tmp_path):
+    raw = json.loads(_write_config(tmp_path).read_text())
+    raw["manual_inputs"] = {
+        "iphone": {
+            "source": "manual-captures/{locale}",
+            "files": ["90_LockScreen.png"],
+        }
+    }
+    (tmp_path / "config.json").write_text(json.dumps(raw))
+    cfg = config_mod.load(tmp_path / "config.json")
+
+    src = tmp_path / "manual-captures" / "en-US"
+    _make_png(src / "90_LockScreen.png", (10, 10))
+    raw_dir = cfg.raw_dir("iphone", "en-US")
+    framed_dir = cfg.framed_dir("iphone", "en-US")
+    _make_png(raw_dir / "01.png", (1100, 2400))
+    _make_png(framed_dir / "01.png", (1470, 3000))
+
+    report = verify_mod.verify(cfg)
+    # No manual_inputs errors; warnings about raw/framed are still allowed
+    assert not any("manual_inputs" in e for e in report.errors)
+
+
 def test_verify_format_report_summarizes():
     report = verify_mod.VerifyReport()
     assert "clean" in verify_mod.format_report(report)

@@ -68,29 +68,34 @@ re-capture or re-frame) while ensuring intermediates are never silently lost.
 
 ## Usage
 
-Four subcommands. All take `--config`, `--locale` (repeatable), `--device`
+Five subcommands. All take `--config`, `--locale` (repeatable), `--device`
 (repeatable). With no filter flags, every (device × locale) combination runs.
 
 ```bash
-# Compose only — reads from <input>/<locale>/framed/
-./bin/shotsmith compose  --config path/to/config.json
-./bin/shotsmith compose  --config path/to/config.json --locale en-US --device iphone --dry-run
+# Stage manual_inputs sources into raw/ (no-op without manual_inputs config)
+./bin/shotsmith stage    --config path/to/config.json
 
-# Frame only — wraps frames-cli, reads raw/, writes framed/
+# Frame — wraps frames-cli, reads raw/, writes framed/
 ./bin/shotsmith frame    --config path/to/config.json
 ./bin/shotsmith frame    --config path/to/config.json --force   # re-frame existing
 
-# Verify directory contract — reports errors (alpha, dim mismatch, orphans) + warnings (missing dirs)
+# Compose — reads from <input>/<locale>/framed/, writes ASC-ready PNGs
+./bin/shotsmith compose  --config path/to/config.json
+./bin/shotsmith compose  --config path/to/config.json --locale en-US --device iphone --dry-run
+
+# Verify directory contract — reports errors (alpha, dim mismatch, orphans, missing manual_inputs) + warnings (missing dirs)
 ./bin/shotsmith verify   --config path/to/config.json
 
-# Pipeline — verify, then frame + compose end-to-end
+# Pipeline — verify, then stage + frame + compose end-to-end
 ./bin/shotsmith pipeline --config path/to/config.json
-./bin/shotsmith pipeline --config path/to/config.json --steps capture,frame,compose
+./bin/shotsmith pipeline --config path/to/config.json --steps capture,stage,frame,compose
 ./bin/shotsmith pipeline --config path/to/config.json --steps compose   # just re-render
 ```
 
-`pipeline --steps` defaults to `frame,compose`. Add `capture` if your config
-defines a `pipeline.capture_hook`.
+`pipeline --steps` defaults to `stage,frame,compose`. Add `capture` if your
+config defines a `pipeline.capture_hook`. The `stage` step is a no-op without
+a `manual_inputs` block, so projects without manual-gesture surfaces aren't
+affected.
 
 ## Config
 
@@ -164,6 +169,56 @@ with canonical names that match captions.json.
 
 Without `input_mapping`, shotsmith uses identity — every PNG in `raw/` becomes
 the same filename in `framed/`. So simple pipelines need no mapping at all.
+
+### Manual inputs (optional, for projects with manual-gesture surfaces)
+
+Some screenshot surfaces — Live Activity stack on the lock screen, Home Screen
+widget page, Control Center pulled down — can't reliably be captured by
+XCUITest or simctl scripts. The playbook's `/capture-manual-surfaces` slash
+command produces those PNGs as **tracked** inputs in
+`fastlane/manual-captures/<locale>/`, recaptured "once per release" when the
+underlying UI changes.
+
+The `manual_inputs` config block declares those sources. The `stage` pipeline
+step copies declared files from `<source>/<file>` into `<raw_dir>/<file>`
+before frame, and `verify` reports a hard error when a declared source file
+is missing from disk:
+
+```json
+"manual_inputs": {
+  "iphone": {
+    "source": "../manual-captures/{locale}",
+    "files": [
+      "90_LockScreen_LiveActivity.png",
+      "91_HomeScreen_Widget.png",
+      "92_ControlCenter.png"
+    ]
+  }
+}
+```
+
+Per device. `source` is config-relative and supports `{locale}`. Files are
+named with the conventional `90/91/92_` prefix; pair with `input_mapping` to
+rename them to canonical caption keys at frame time.
+
+**Why declare them in config rather than handle staging in your Fastfile?**
+Three reasons:
+
+1. **Single source of truth.** The contract for "what manual surfaces this
+   project ships" lives next to the gradient and captions, not in a Ruby
+   block that drifts across projects.
+2. **End-to-end verify.** Without `manual_inputs`, a missing manual capture
+   surfaces only via `input_mapping` indirection in the frame step ("source
+   X.png not found in raw/"). With `manual_inputs`, `shotsmith verify`
+   names the missing source file directly:
+   `manual_inputs source(s) missing in /…/manual-captures/es-MX:
+   91_HomeScreen_Widget.png`.
+3. **Composability with `--steps stage`.** Re-stage without re-framing or
+   re-composing when you recapture a single surface.
+
+A config without `manual_inputs` makes both `stage` (the step and the
+subcommand) a no-op — projects without manual-gesture surfaces aren't
+affected.
 
 `shotsmith verify` reports each canonical name whose source file isn't in
 `raw/` so you can see which capture step is missing. `shotsmith frame` skips

@@ -6,6 +6,297 @@ project that uses this playbook, read this file to check if the project needs up
 Each entry describes what changed, which playbook files were affected, and what to do
 in your project to adopt the change.
 
+## Superseded-by convention
+
+When a later entry retracts or replaces guidance from an earlier one, the **earlier
+entry** gets a one-line banner immediately under its `##` heading:
+
+```markdown
+> **Superseded by:** YYYY-MM-DD — <title>. <one-sentence description of what's
+> different now and what readers should ignore from this entry>.
+```
+
+Use **`Superseded by:`** when the earlier entry is fully retracted (e.g. a tool
+or lane has been deleted), and **`Partially superseded by:`** when only some of
+the earlier guidance is now stale (e.g. one fix landed in a rule file but other
+fixes still apply for un-migrated projects).
+
+This keeps history append-only — important for `/upgrade`'s date-cursor walking
+model — while making it impossible for a reader to follow retracted guidance
+without seeing the retraction first. Cheap to add at retraction time, very high
+signal during multi-version skips.
+
+---
+
+## 2026-05-03 — shotsmith 0.2.0: `manual_inputs` config block + Superseded-by convention + vestigial lane cleanup
+
+Three follow-ups from the Phase 6 wrap-up landed together. All three came
+out of the same `/curate` pass on `inbox.md` plus the user's call-out that
+the inbox's `manual_inputs` deferral was worth promoting now for the
+end-to-end `verify` benefit.
+
+### 1. shotsmith **0.2.0** — `manual_inputs` config block + `stage` step + `stage` subcommand
+
+The `manual_inputs` config block declares which manual-gesture captures
+(Live Activity, Home Screen widget, Control Center) shotsmith should stage
+into `raw/` before framing. It replaces the per-project Fastfile staging
+block (`~10 lines of Ruby in :compose_screenshots`) with a single
+source-of-truth in `shotsmith/config.json`:
+
+```json
+"manual_inputs": {
+  "iphone": {
+    "source": "../manual-captures/{locale}",
+    "files": [
+      "90_LockScreen_LiveActivity.png",
+      "91_HomeScreen_Widget.png",
+      "92_ControlCenter.png"
+    ]
+  }
+}
+```
+
+**Why now (the user's question):** the verify-end-to-end win. Without
+`manual_inputs`, a missing manual capture surfaces only via `input_mapping`
+indirection in the frame step ("source X.png not found in raw/"). With
+`manual_inputs` declared, `shotsmith verify` names the missing source file
+directly:
+
+```
+❌ iphone/es-MX: manual_inputs source(s) missing in
+   /…/manual-captures/es-MX: 91_HomeScreen_Widget.png
+```
+
+Concretely shipped:
+
+- `shotsmith/config.py` — new `ManualInputs` + `ManualInputDevice`
+  dataclasses; `manual_inputs` parsed and validated at config load
+  (string/list/non-empty/required-field checks); `Config.manual_source_dir(device, locale)`
+  helper.
+- `shotsmith/stage.py` (new, ~110 lines) — `stage_locale()` copies declared
+  files from `<source>/<file>` into `<raw_dir>/<file>` per (device, locale).
+  Returns `StageResult` with written + skipped lists. Skipped reasons name
+  missing source files specifically. No-op when `manual_inputs` isn't
+  configured.
+- `shotsmith/pipeline.py` — `VALID_STEPS` now `("capture", "stage", "frame", "compose")`;
+  `DEFAULT_STEPS` now `("stage", "frame", "compose")`. Stage runs after
+  capture (if invoked) and before frame. Aborts pipeline with
+  `PipelineError` if any declared source file is missing.
+- `shotsmith/__main__.py` — new `shotsmith stage --config X` subcommand
+  with `--dry-run`. Prints `ℹ️ No manual_inputs declared in config — stage is a no-op.`
+  when not configured.
+- `shotsmith/verify.py` — declares a hard error for each missing
+  `manual_inputs` source (file or whole dir). Also flagged when
+  `pipeline.verify_strict: true`, so a bad config aborts pipeline before
+  any work.
+- `tests/test_stage.py` (new) — 9 tests covering staging, dry-run,
+  missing-source reporting, locale template expansion, multi-device
+  no-ops, and config validation rejection paths.
+- `tests/test_verify.py` — 3 new tests for `manual_inputs` source-missing
+  errors.
+- `tests/test_pipeline.py` — 3 new tests for stage step ordering, abort on
+  missing source, and `DEFAULT_STEPS` regression guard.
+- `templates/config.example.json` — bumped to demonstrate `manual_inputs`.
+- `tools/shotsmith/README.md` — new "Manual inputs" subsection + updated
+  Usage section listing 5 subcommands (was 4).
+- VERSION / pyproject.toml / `__init__.py` — bumped to 0.2.0.
+
+**Test count:** 67 → 83 (16 new). All pass.
+
+### 2. `bootstrap.sh` — `:compose_screenshots` simplified, vestigial lanes deleted
+
+The bootstrap-emitted `:compose_screenshots` lane no longer has its own
+staging logic — it's now a one-line wrapper around `./bin/shotsmith pipeline`
+(staging is shotsmith's job via the `manual_inputs` block). Error message
+points the user at `shotsmith verify` for diagnostics.
+
+Two vestigial fastlane lanes deleted (~25 lines):
+
+- `:screenshots` — ran XCUITest then called `frame_screenshots`. Wrote to
+  the old flat `<locale>/*_framed.png` layout that doesn't match shotsmith
+  v2's `<locale>/<device>/raw/` contract. Projects on shotsmith write a
+  project-specific `scripts/capture-screenshots.sh` instead.
+- `:frame_screenshots` — wrapped `frames -o <dir> <dir>*.png` in the same
+  flat layout. Replaced by shotsmith's `frame` step which handles the
+  per-device subdir contract.
+
+Lanes remaining: `:beta`, `:release`, `:widget_screenshots`,
+`:compose_screenshots`, `:upload_metadata`, `:upload_screenshots`. The
+`:widget_screenshots` lane lost its trailing `frame_screenshots` call but
+otherwise stayed (still useful for projects driving widget capture via
+simctl scripts; new projects should prefer `/capture-manual-surfaces`).
+
+### 3. Superseded-by banner convention + 3 backfilled entries
+
+Adopted from a 2026-05-03 Flara `/curate` finding that walking 8 days of
+CHANGELOG entries surfaced three already-retracted items.
+
+- New section **"Superseded-by convention"** in CHANGELOG.md header
+  documents the syntax (`> **Superseded by:** YYYY-MM-DD — <title>. <one
+  sentence>.`) and the `Partially superseded by:` variant.
+- Banners backfilled on three stale entries:
+  - **2026-04-27 — Track B replaced: appshot-cli + Apple Frames CLI** →
+    superseded by today's appshot retirement.
+  - **2026-04-26 — Screenshot pipeline hardening** → partially superseded
+    by the 2026-05-03 rule files (`status-bar-overrides.md`,
+    `screenshot-pipeline.md`).
+  - **2026-04-25 — Control Center capture lane (Quartz drag)** →
+    superseded by 2026-05-03 agent-driven manual-capture loop.
+
+**Why this matters:** `/upgrade`'s date-cursor model walks CHANGELOG
+entries forward from the project's `.playbook-version`. A project on a
+multi-version skip would otherwise silently follow retracted guidance
+(install appshot-cli, wire up Quartz drag) before being told to remove it
+days later. The banner makes the retraction visible in the same pass.
+
+### 4. Inbox curation
+
+Three entries from `inbox.md` processed:
+
+- **adopted** — 2026-05-03 Playbook (deferred shotsmith CLI work) →
+  `manual_inputs` shipped (item 1 above).
+- **adopted** — 2026-05-03 Flara (Superseded-by banner) → convention +
+  backfill shipped (item 3 above).
+- **deferred** — 2026-04-27 HVACApp internal/team archetype + parallel-tasks
+  worktree workflow. Both are sizable doc/scaffold additions worth their
+  own focused session.
+
+**To adopt in your project:**
+
+1. Pull via `/upgrade` (no manual steps needed for the core update —
+   shotsmith updates automatically via the `bin/shotsmith` symlink).
+2. **If your project has a `:compose_screenshots` Fastfile lane that
+   stages manual-captures via Ruby:** simplify it to the one-line wrapper
+   shown in `bootstrap.sh`. Add a `manual_inputs` block to your
+   `fastlane/shotsmith/config.json` matching the surfaces you have. Run
+   `./bin/shotsmith verify --config fastlane/shotsmith/config.json` to
+   confirm the new contract before recapturing.
+3. **If your project has `:screenshots` and/or `:frame_screenshots`
+   lanes:** delete them — your `:compose_screenshots` lane already
+   handles the framing step via shotsmith. Keep your project-specific
+   `scripts/capture-screenshots.sh` (or equivalent) for the XCUITest
+   capture step.
+
+---
+
+## 2026-05-03 — appshot retirement + watch composition cleanup (Phase 6 finished)
+
+**What changed:** Closes out Phase 6 of the long-running shotsmith plan
+(`thank-you-so-much-drifting-cocoa.md`) by finishing the appshot retirement
+and aligning the playbook's watch-screenshot rule with what Flara actually
+ships. Three files touched.
+
+### 1. `bootstrap.sh` — appshot scaffolding deleted, shotsmith install wired
+
+- **Deleted** the entire `# --- appshot-cli scaffolding (Track B …)` section
+  (~99 lines) — `fastlane/appshot/.appshot/config.json`, the iPhone/iPad
+  caption JSON skeletons, the `mkdir -p fastlane/appshot/{screenshots,…}`
+  scaffolding, and the bootstrap-emitted `scripts/patch-appshot.sh` (the
+  22-line monkey-patch that bumped appshot v2's caption font-size cap).
+- **Deleted** the `appshot — keep config + captions` `.gitignore` block
+  (`fastlane/appshot/screenshots/`, `fastlane/appshot/final/`,
+  `fastlane/appshot/.appshot/config.backup.json`).
+- **Deleted** the `:appshot_screenshots` fastlane lane (~36 lines —
+  staged `_framed.png` siblings into the appshot input dir, ran
+  `appshot build --no-frame --langs <lang>`, copied output back).
+- **Added** a `# --- shotsmith install (symlink playbook tool into project bin/) ---`
+  section. Bootstrap now creates `bin/shotsmith` as a symlink to
+  `$SCRIPT_DIR/tools/shotsmith/bin/shotsmith` so the
+  `:compose_screenshots` lane's `./bin/shotsmith pipeline` invocation works
+  out of the box. Symlink rather than copy means projects pick up shotsmith
+  updates automatically when `/upgrade` syncs the playbook.
+
+### 2. `ios-project-playbook.md` Phase 5 Track B — full rewrite
+
+The "Track B — appshot-cli + Apple Frames CLI" subsection (~148 lines —
+two-CLI pipeline diagram, `npm install -g appshot-cli` + `patch-appshot.sh`
+install, `fastlane/appshot/` directory layout, the `parseFontName` `Bold`
+suffix gotcha, the `:appshot_screenshots` lane invocation per locale) is
+**replaced** with "Track B — shotsmith (when you need captions + gradients
++ multi-locale)". The new section:
+
+- Points at `.claude/rules/screenshot-pipeline.md` as the durable contract
+  (two-input-tree pattern, four artifact layers, agent-driven manual
+  capture loop, watch checklist) — that rule auto-loads in any project.
+- Documents the shotsmith install (`pip install -r requirements.txt` once;
+  bootstrap symlinks `bin/shotsmith`).
+- Walks the new directory layout with `fastlane/manual-captures/` tracked
+  vs. `fastlane/screenshots/` regenerable.
+- Shows the v2 `config.json` schema (subtitle, dither, `input_mapping`,
+  per-device overrides) and points at the three bundled gradient presets
+  (`mauve`, `royal-purple`, `apple-music`).
+- Replaces the per-locale `appshot_screenshots` invocation with the
+  single-shot `bundle exec fastlane compose_screenshots` lane (multi-locale
+  in one pass).
+- Explicitly calls out **watch is screen-only** — ASC submissions are raw
+  `simctl io screenshot` output with no framing/gradient/caption (Path 1;
+  the watch hardware corner-radius would clip the art anyway).
+
+The "Recommended Workflow by Project Stage" table (Phase 5) drops the
+"Caption / Background" column and merges it into "Frame + Caption +
+Background", with the marketing-heavy row pointing at
+`fastlane compose_screenshots` (Track B / shotsmith) instead of
+`appshot_screenshots`.
+
+### 3. `.claude/rules/screenshot-pipeline.md` — watch section aligned to Flara reality
+
+- **Intro paragraph** rewritten to declare ASC watch submissions are
+  screen-only PNGs from `simctl io screenshot` (no bezel, no gradient, no
+  caption), citing Flara v2.1 (2026-04-28) production verification: Apple
+  accepted the framed upload, but the watch hardware's display
+  corner-radius clipped the gradient and caption corners at viewing time.
+- **Gotcha #1** ("composed marketing PNG must be at exact size") reframed
+  for direct simctl output (no scaling, no padding).
+- **Gotcha #3** flipped — the answer is now "don't frame on the ASC path"
+  (frames-cli's bezels include strap; the hardware corner-radius would clip
+  added art anyway), not "draw the bezel directly in ImageMagick."
+- **`scripts/compose-watch-marketing.sh` subsection** (~85-line
+  ImageMagick recipe — concentric titanium ring + black inner ring +
+  gradient + caption at 422×514) removed entirely. Replaced with a short
+  "Staging into the composed-output dir" subsection showing the ~5-line
+  Ruby snippet that stages raw watch PNGs into the composed-output tree
+  alongside iPhone/iPad so a single `upload_screenshots` ships everything.
+
+**Net diffstat:** ~290 lines deleted, ~210 lines added across the three
+files. Bootstrap leaves projects with a working `compose_screenshots`
+pipeline cold; the appshot scaffolding is gone for good.
+
+**Why now:** The shotsmith tool itself shipped 2026-04-27 and Flara
+migrated to it on the same date. The playbook's bootstrap and Phase 5 doc
+got partially updated but kept the appshot scaffolding alongside the new
+shotsmith lane — a freshly-bootstrapped project ended up with both, with
+appshot as the documented Track B path while shotsmith hung in the air.
+This entry retires the dead scaffolding so new projects get shotsmith by
+default and don't have to discover the migration.
+
+**To adopt in your project:**
+
+1. Pull via `/upgrade`. New `bin/shotsmith` symlink will appear; updated
+   `ios-project-playbook.md` Phase 5 Track B will be visible in the
+   playbook checkout.
+2. **If your project still has appshot scaffolding** (likely if it was
+   bootstrapped before 2026-05-03):
+   - `git rm -rf fastlane/appshot/`
+   - `git rm scripts/patch-appshot.sh`
+   - Remove the `appshot — keep config + captions` block from your
+     project `.gitignore`.
+   - Remove the `:appshot_screenshots` lane from your `fastlane/Fastfile`.
+   - `npm uninstall -g appshot-cli` (optional cleanup).
+   - Migrate captions: translate `fastlane/appshot/.appshot/captions/*.json`
+     into `fastlane/shotsmith/captions.json` (schema in the playbook §Phase 5
+     Track B and `tools/shotsmith/README.md`). Translate the gradient/font
+     from `.appshot/config.json` into `fastlane/shotsmith/config.json`.
+   - Add `mkdir -p bin && ln -sfn /path/to/_playbook/tools/shotsmith/bin/shotsmith bin/shotsmith`
+     if your bootstrap predates 2026-05-03.
+3. **If your project never adopted appshot:** the new symlink is the only
+   change; the bootstrap `:compose_screenshots` lane already targets
+   shotsmith.
+
+**Project-side reference for the migration:** Flara's commit history
+between 2026-04-27 and 2026-05-03 has the full migration recipe — search
+the commits referencing `compose-watch-marketing.sh` deletion and the
+shotsmith pipeline cutover.
+
 ---
 
 ## 2026-05-03 — Agent-driven manual-capture pipeline + Control Center retirement
@@ -383,6 +674,8 @@ Both are mechanical to prevent with the right scaffolding.
 
 ## 2026-04-27 — Track B replaced: appshot-cli + Apple Frames CLI (no more AppMockUp)
 
+> **Superseded by:** 2026-05-03 — appshot retirement + watch composition cleanup (Phase 6 finished). Track B is now shotsmith; do **not** install appshot-cli or run `patch-appshot.sh` from this entry — that scaffolding has been removed.
+
 **What changed:** §Phase 5 Track B (marketing screenshots with captions and
 gradient backgrounds) now recommends a CLI pipeline — `appshot-cli` layered on
 top of Apple Frames CLI — instead of AppMockUp Studio. Web-based mockup tools
@@ -464,6 +757,8 @@ in the repo is faster to iterate and survives across releases.
 
 ## 2026-04-26 — Screenshot pipeline hardening (status bar, snapshot races, uninstall warning)
 
+> **Partially superseded by:** 2026-05-03 — Agent-driven manual-capture pipeline + Control Center retirement. The status-bar fix is now codified in `.claude/rules/status-bar-overrides.md`; the widget/Control Center heredoc fixes are moot because those scripts are no longer emitted (replaced by the agent-driven `/capture-manual-surfaces` flow). Only un-migrated projects still acting on this entry need the heredoc edits — fresh bootstraps don't.
+
 Five lessons curated out of the playbook inbox after the Flara v2.0 screenshot
 session. All five fix real bugs or prevent ~10–15 minute foot-guns.
 
@@ -508,6 +803,8 @@ session. All five fix real bugs or prevent ~10–15 minute foot-guns.
 ---
 
 ## 2026-04-25 — Control Center capture lane (Control Widget apps)
+
+> **Superseded by:** 2026-05-03 — Agent-driven manual-capture pipeline + Control Center retirement. The `control_center_screenshot` lane and `fastlane/capture_control_center.sh` helper are no longer emitted by bootstrap. Use `/capture-manual-surfaces` instead — the user performs the swipe, Claude Code captures the screenshot. Do **not** wire up the Quartz drag from this entry on new projects.
 
 **What changed:** Added a `control_center_screenshot` Fastlane lane and a
 `fastlane/capture_control_center.sh` helper for apps that ship a Control

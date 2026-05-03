@@ -102,3 +102,69 @@ edits. The HVACApp implementation is at
 `/Users/erikj/Documents/JJ AIR/99-WIP/erik/App/HVACApp/.claude/{rules,commands}/parallel-*`
 — copy verbatim or refine.
 
+### 2026-05-03 — Playbook (`/wrapup` skill improvements)
+
+**Category:** suggestion
+**Context:** End-of-session `/wrapup` ran in the playbook repo itself
+(not a typical iOS project). Two friction points surfaced that the
+current `/wrapup` skill at `.claude/skills/wrapup.md` (or wherever the
+template lives) doesn't handle gracefully.
+
+**Lesson:**
+
+1. **`/wrapup` step 10 says "Push to `dev` or feature branch (not
+   `main` unless the user explicitly asks)" — but the safer default
+   when the user is ON `main` should be "create a feature branch
+   automatically and open a PR", not "ask the user."** When the user
+   typed `push` in response to a "want me to push?" question, the
+   model interpreted that as "push to main" and the action got blocked
+   by the playbook's own `git-workflow` rule (which is enforced via
+   the `.claude/settings*.json` permission system). The system's
+   denial reason was specific and useful: *"'push' is not specific
+   authorization for the default branch."* The fix saved a bad push
+   but it surfaced that `/wrapup` should have routed to the PR flow
+   from the start. Auto mode was active, which sharpens this — the
+   skill should "prefer action over planning" by automatically
+   creating a feature branch + PR when on `main`, not asking.
+
+2. **`/wrapup` steps 5–9 (CLAUDE.md "Current State", `WORKLOG.md`,
+   `release-notes-draft.md`, scope items, `MANUAL-TASKS.md`) don't
+   apply to the playbook repo itself.** Those files are project
+   conventions, not playbook conventions — the playbook's CHANGELOG
+   is the equivalent of "Current State" + release notes for downstream
+   consumers. The skill currently reads as if it's always running in a
+   bootstrapped project. Running `/wrapup` in `_playbook/` requires
+   the model to silently skip those steps, which is fine when it
+   notices but easy to miss.
+
+**Suggested action:**
+
+Update `.claude/skills/wrapup.md` (or the playbook's `wrapup` skill
+source — confirm location) with two narrow changes:
+
+1. **Add a "Branch detection" note before step 10:** *"If the current
+   branch is `main`, do not ask whether to push. Create a feature
+   branch from HEAD (`feat/<short-slug>` derived from the commit
+   subject), push the branch, open a PR, and report the PR URL in
+   the final summary. The playbook's own `git-workflow` rule
+   forbids direct pushes to `main`; honoring it via PR flow is
+   the safer default for any branch-protected repo."* This also
+   matches the iOS project rule's spirit even when the user is in a
+   different repo with its own protections.
+
+2. **Add a "Repo type detection" guard before steps 5–9:** *"Steps
+   5–9 (CLAUDE.md / WORKLOG.md / release-notes-draft.md / scope
+   items / MANUAL-TASKS.md) apply to bootstrapped iOS projects. If
+   running in the playbook repo itself (heuristic: presence of
+   `bootstrap.sh` + `CHANGELOG.md` + absence of `CLAUDE.md`), skip
+   those steps and instead ensure the relevant `CHANGELOG.md`
+   entry exists for the session's user-facing changes."* The
+   playbook is one of likely-many tool repos that don't fit the
+   iOS-project mold; a generic skip-when-not-applicable rule is
+   probably better than a hard playbook check.
+
+Both changes are scoped for a focused `/wrapup` session — one skill
+file edit, no behavior change for the common case (running `/wrapup`
+in a bootstrapped iOS project on a feature branch).
+
+

@@ -8,6 +8,26 @@ in your project to adopt the change.
 
 ---
 
+## 2026-05-03 — shotsmith 0.1.1: Pillow diagnostic
+
+**What changed:** `tools/shotsmith/bin/shotsmith` now catches a missing-Pillow
+`ImportError` and prints the exact `pip install` command for the active Python
+interpreter, instead of letting a raw traceback bubble up. Sourced from
+`requirements.txt` so the version pin stays in one place. Also bumped to
+`0.1.1` (in `__init__.py`, `pyproject.toml`, and `VERSION`) and added a
+**Requirements** section to the shotsmith README.
+
+**Why:** Stock macOS resolves `python3` to `/usr/bin/python3` (3.9), which does
+**not** ship with Pillow. A fresh-Mac contributor running `./bin/shotsmith`
+hits an `ImportError: No module named PIL` traceback with no obvious next step.
+The friendly diagnostic identifies the active Python explicitly and prints a
+copy-paste-ready install command.
+
+**To adopt in your project:** `/upgrade` will pull the new shotsmith. No
+project-side change required.
+
+---
+
 ## 2026-05-03 — New rule: status-bar overrides
 
 **What changed:** New `.claude/rules/status-bar-overrides.md` documents the canonical

@@ -8,10 +8,43 @@ usage, the `shotsmith` console script defined in pyproject.toml takes over.
 import sys
 from pathlib import Path
 
-# Make the parent package importable when invoked as a bare script.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 
-from shotsmith.__main__ import main  # noqa: E402
+# Make the parent package importable when invoked as a bare script.
+sys.path.insert(0, str(PACKAGE_ROOT))
+
+
+def _pillow_install_hint() -> str:
+    """Return the exact pip-install command for the active python."""
+    pin = "Pillow"
+    requirements = PACKAGE_ROOT / "requirements.txt"
+    try:
+        for line in requirements.read_text().splitlines():
+            line = line.strip()
+            if line.lower().startswith("pillow"):
+                pin = line
+                break
+    except OSError:
+        pass
+    return f"{sys.executable} -m pip install --user '{pin}'"
+
+
+try:
+    from shotsmith.__main__ import main  # noqa: E402
+except ImportError as e:
+    if e.name == "PIL":
+        sys.stderr.write(
+            "shotsmith: Pillow is required but not installed for this Python.\n"
+            f"  Active Python: {sys.executable}\n"
+            f"  Install with:  {_pillow_install_hint()}\n"
+            "\n"
+            "On stock macOS, /usr/bin/python3 (3.9) ships without Pillow. If you\n"
+            "have a newer Python on PATH (e.g. /usr/local/bin/python3 or pyenv),\n"
+            "you can also run shotsmith with that interpreter directly:\n"
+            f"  /path/to/python3 {Path(__file__).resolve()} <args>\n"
+        )
+        sys.exit(1)
+    raise
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -14,6 +14,24 @@ Phase 4.5 — orchestrator complete. iPhone 6.9" + iPad 13" supported.
 Multi-locale supported. Watch is not yet handled (see the playbook's
 `thank-you-so-much-drifting-cocoa.md` plan §3 for the deferred decision).
 
+## Requirements
+
+- Python ≥ 3.9 (any python on `PATH` as `python3`)
+- Pillow (pinned in `requirements.txt`)
+
+The `bin/shotsmith` shim resolves `python3` via `/usr/bin/env`. On stock macOS
+that's `/usr/bin/python3` (3.9) — which does **not** ship with Pillow. If you
+run shotsmith on a fresh Mac without Pillow installed, the shim prints the
+exact `pip install` command for your active Python and exits with a
+non-zero status. Copy-paste the command and re-run.
+
+If you'd rather use a newer Python (e.g. Homebrew's `/usr/local/bin/python3`),
+invoke the shim through that interpreter directly:
+
+```bash
+/usr/local/bin/python3 ./bin/shotsmith --version
+```
+
 ## Install
 
 From the playbook (development):

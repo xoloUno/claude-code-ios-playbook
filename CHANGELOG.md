@@ -8,6 +8,103 @@ in your project to adopt the change.
 
 ---
 
+## 2026-05-03 — Agent-driven manual-capture pipeline + Control Center retirement
+
+**What changed:** The screenshot pipeline now formally documents a **two-input-tree
+pattern** with four artifact layers, replaces the unreliable Quartz-drag Control
+Center automation with an **agent-driven loop**, and ports the watch screenshot
+pipeline. Three new files plus targeted bootstrap and Phase 5 edits.
+
+### 1. New rule — `.claude/rules/screenshot-pipeline.md`
+
+The canonical reference for App Store screenshot pipelines. Covers:
+
+- **The two-input-tree pattern** — split inputs into `fastlane/manual-captures/`
+  (tracked, "once per release" manual-gesture inputs) and
+  `fastlane/screenshots/<locale>/<device>/raw/` (gitignored, regenerable XCUITest
+  output). Solves three problems at once: small git history, versionable manual
+  inputs, legible cadence intent.
+- **The four artifact layers** — `manual-captures/` + XCUITest `raw/` →
+  `framed/` → `composed/`.
+- **The agent-driven capture loop** — Claude Code runs the prep (boot, locale,
+  status bar, app launch) and the user performs Simulator gestures and types
+  `ready` in chat between surfaces. Sidesteps `read -p`'s EOF-on-stdin issue
+  and is more reliable than scripted Quartz drag.
+- **Surface gesture inventory** — Live Activity (`90_LockScreen_LiveActivity`),
+  Home Screen widget (`91_HomeScreen_Widget`), Control Center (`92_ControlCenter`).
+- **Inlined fallback script** (`scripts/capture-manual-surface.sh`) for
+  non-Claude-Code workflows.
+- **Watch capture checklist** with the seven gotchas (ASC dimensions per device
+  class, alpha rejection requiring `PNG24:` ImageMagick prefix, frames-cli
+  bezels include band/strap so use ImageMagick concentric rings instead, sheet
+  auto-presentation needing a deferred `Task.sleep(for:)`, ScrollViewReader
+  scroll-to races, demo-data shape per screen, locale switching is per-launch-arg).
+- Inlined `scripts/capture-watch-screenshots.sh` and
+  `scripts/compose-watch-marketing.sh` using `WATCH_SIM` from `.env.project`
+  (never hardcoded sim model name).
+
+### 2. New slash command — `.claude/commands/capture-manual-surfaces.md`
+
+Drives the agent-driven loop end-to-end. Reads `.env.project` and
+`shotsmith/config.json`, walks each (locale × surface) pair, prepping the
+simulator and capturing on the user's `ready` cue. Lenient parsing
+(`ready`/`done`/`go`/`ok` advance; `redo`/`back`/`skip`/`cancel` for control
+flow). Verifies each PNG exists and is non-empty before advancing.
+
+### 3. Bootstrap.sh edits
+
+- **Deleted** the entire `cat > fastlane/capture_control_center.sh << 'CAPTURECC'`
+  heredoc (~110 lines of Quartz-drag automation that was unreliable across
+  machines and accessibility-permission states). Bootstrap stops emitting this
+  script.
+- **Deleted** the `:control_center_screenshot` Fastfile lane.
+- **Added** a `:compose_screenshots` Fastfile lane that stages
+  `fastlane/manual-captures/<locale>/` into the iPhone `raw/` tree, then runs
+  `./bin/shotsmith pipeline`. shotsmith's `input_mapping` renames the `90/91/92_`
+  prefixes to canonical caption names.
+- **Added** `fastlane/manual-captures/README.md` emission — a discoverability
+  doc that explains what lives there, when to recapture, the "once per release"
+  cadence, and how the compose lane stages files.
+- **Updated** the emitted `.gitignore` to ignore `fastlane/screenshots/` and
+  `fastlane/shotsmith/composed/` with an explicit comment line above declaring
+  `fastlane/manual-captures/` is **intentionally tracked**.
+
+### 4. Phase 5 update — `ios-project-playbook.md` Step 2.6
+
+Replaced the entire "Control Center Capture (Control Widget apps only)"
+subsection (~75 lines of Quartz-drag setup, Accessibility-permission
+prerequisites, and troubleshooting table) with a much shorter "Manual-capture
+surfaces" subsection that directs to the rule + slash command, calls out the
+opt-in nature of this step (apps without LA / widgets / Control Widget skip
+it), and documents the `compose_screenshots` lane.
+
+### 5. Inbox curation
+
+Removed the **2026-04-28 Flara watch pipeline entry** (lines 105–170 — the
+seven-gotcha watch checklist, now inlined in `screenshot-pipeline.md`) and the
+**2026-05-03 Flara two-input-tree entry** (lines 172–247 — the directory
+naming + README discoverability suggestions, all adopted). Replaced with a
+small deferred entry naming two shotsmith CLI changes (mirror subcommand;
+`manual_inputs` config block) flagged for a future shotsmith-focused session.
+
+**To adopt in your project:**
+
+1. Pull via `/upgrade`. New rule (`screenshot-pipeline.md`) and slash command
+   (`/capture-manual-surfaces`) propagate automatically.
+2. **If your app ships a Live Activity, Home Screen widget, or Control Widget:**
+   - Decide whether to migrate to the new flow now or defer.
+   - To migrate now: `git rm fastlane/capture_control_center.sh` (the old
+     Quartz-drag script — bootstrap no longer emits it). `mkdir -p
+     fastlane/manual-captures` (or re-run bootstrap to get the README).
+     Run `/capture-manual-surfaces` to recapture into the new directory.
+     Update your `.gitignore` per the comment block in the rule. Add a
+     `:compose_screenshots` lane to your Fastfile (template in bootstrap.sh).
+   - Move existing `fastlane/screenshots/<locale>/iPhone 6.9" Display/9*_*.png`
+     captures into `fastlane/manual-captures/<locale>/` to preserve them.
+3. **If your app has no manual-gesture surfaces:** ignore — no action needed.
+
+---
+
 ## 2026-05-03 — shotsmith 0.1.1: Pillow diagnostic
 
 **What changed:** `tools/shotsmith/bin/shotsmith` now catches a missing-Pillow

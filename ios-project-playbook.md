@@ -1158,76 +1158,74 @@ main in-app screens; rename to reorder.
 - StandBy mode screenshots require a real device charging in landscape — no
   simulator path as of iOS 26.
 
-### Step 2.6: Control Center Capture (Control Widget apps only)
+### Step 2.6: Manual-capture surfaces (Control Center, Live Activity, Home Screen widget)
 
-If your app ships a **Control Widget** (`ControlWidgetButton` / `ControlWidgetToggle`
-via ControlKit, iOS 18+), a Control Center screenshot showing your widget is
-App Store-worthy marketing. If not, skip this step — Control Center with only
-iOS defaults shows nothing app-specific.
+Three screenshot surfaces are rendered by SpringBoard rather than your app —
+the **Live Activity stack on the Lock Screen**, the **Home Screen page with
+your widget**, and **Control Center pulled down with your Control Widget**.
+None can be reached by XCUITest. Earlier versions of this playbook tried
+synthesized mouse drags (Quartz `CGEvent.post`) and AppleScript `Cmd+L`
+keystroke automation — both were unreliable enough across machines that they
+were retired. The current flow is **agent-driven** instead: Claude Code runs
+the prep (boot, locale, status bar, app launch), you perform the gesture in
+the Simulator window, type `ready` in chat, and Claude captures.
 
-> **⚠️ Place your Control Widget into Control Center once, manually, then keep it
-> there.** Add the widget via the simulator UI (long-press Control Center → `+` →
-> add your control). Same warning as §2.5: do **not** `xcrun simctl uninstall` the
-> app between captures — uninstall removes the Control Center placement (and the
-> home-screen widget, and the Lock Screen Live Activity widget) and reinstall does
-> not bring them back.
+> **Opt-in.** This step only matters if your app ships a Live Activity
+> (`ActivityKit`), a Home Screen widget (`WidgetKit`), or a Control Widget
+> (`ControlKit`, iOS 18+). Apps without those surfaces skip Step 2.6 entirely
+> — there's nothing app-specific in the iOS-default Control Center / lock
+> screen / home screen to capture.
 
-The `control_center_screenshot` lane drives a synthetic mouse swipe via an
-inline Swift script that calls `CGEvent.post(tap:)` on CoreGraphics — Swift
-ships with Xcode Command Line Tools, no extra dep. Control Center has no
-keyboard shortcut in Simulator.app, so keystroke automation can't reach it.
+**Required reading:**
 
-**One-time prerequisite — Accessibility permission:**
+- `.claude/rules/screenshot-pipeline.md` — the four-layer pipeline + the
+  two-input-tree pattern + the gesture inventory + an inlined fallback script
+  for non-Claude-Code workflows.
+- `.claude/rules/status-bar-overrides.md` — the canonical status-bar block.
 
-Sending synthesized mouse events to another app requires Accessibility
-permission. The first time you run the lane, macOS will prompt — or silently
-refuse and the swipe will do nothing. Grant your terminal app access:
+**Where the captures land:**
 
-> **System Settings → Privacy & Security → Accessibility →** enable
-> **Terminal** (or **iTerm**, whichever you run `fastlane` from).
+```
+fastlane/manual-captures/<locale>/
+├── 90_LockScreen_LiveActivity.png
+├── 91_HomeScreen_Widget.png
+└── 92_ControlCenter.png
+```
 
-This is a one-time grant per terminal app. Without it, the script runs without
-errors but Control Center stays closed.
+**Tracked in git** (unlike the regenerable `fastlane/screenshots/`). These are
+"once per release" inputs — recapture only when iOS major version changes,
+your widget/LA UI changes, or a new locale is added. The `:compose_screenshots`
+Fastfile lane stages them into the iPhone `raw/` tree before invoking
+shotsmith.
+
+> **⚠️ Never `xcrun simctl uninstall <DEVICE> <BUNDLE_ID>` between captures.**
+> Uninstall removes the app **and all of its extensions/widgets** — wiping
+> the manual placements of the home-screen widget, the Live Activity, and
+> the Control Center widget. Reinstalling does not bring those layouts back.
+> See §2.5 for launch-arg detection patterns that neutralize persisted
+> UserDefaults without uninstalling.
 
 **Usage:**
 
 ```bash
-# Default: iPhone 17 Pro Max → fastlane/screenshots/en-US/iPhone 6.9" Display/
-bundle exec fastlane control_center_screenshot
+# In Claude Code:
+/capture-manual-surfaces
 
-# Override device or skip auto-framing
-bundle exec fastlane control_center_screenshot device:"iPad Pro 13-inch (M5)" frame:false
+# The agent walks every (locale × surface) pair: prep → prompt you →
+# capture → verify → next.
 ```
 
-**How it works:**
-1. Boots the simulator, overrides the status bar.
-2. Sends Cmd+Shift+H to ensure SpringBoard is foregrounded.
-3. Reads the Simulator.app window's screen position via AppleScript.
-4. Inlines a Swift script (run via `swift -`) that calls
-   `CGEvent(mouseEventSource:mouseType:…).post(tap: .cghidEventTap)` for a
-   25-step mouse drag from the top-right corner of the simulated screen
-   down ~600 points, simulating a user swiping Control Center open.
-5. Captures via `xcrun simctl io ... screenshot` once Control Center has
-   settled (~1.5s).
-6. Dismisses with Cmd+Shift+H and chains `frame_screenshots` unless
-   `frame:false` is passed.
+After capturing, run shotsmith via the compose lane to stage manual-captures
+into `raw/` and produce ASC-ready images:
 
-**Output file:** `92_ControlCenter.png` in the `iPhone 6.9" Display` directory.
+```bash
+bundle exec fastlane compose_screenshots
+```
 
-**Troubleshooting:**
-
-| Symptom | Cause | Fix |
-|---|---|---|
-| Lane runs cleanly, but the screenshot is just the home screen | Terminal lacks Accessibility permission | Grant it in System Settings (above), re-run |
-| `Simulator window: 0,0  0×0` in the log | Simulator.app wasn't frontmost when the AppleScript queried | Click the Simulator window once, then re-run |
-| Control Center opens but is partially off-screen | Simulator window dragged below the screen edge | Move the Simulator window fully on-screen, re-run |
-| Works on iPhone, fails on iPad | iPad Control Center has the same gesture but from a slightly different origin — script's `WIN_W - 40` offset works for both, but verify | If iPad fails, increase the offset to `WIN_W - 60` in `capture_control_center.sh` |
-
-**Why not XCUITest?** UI tests *can* drive SpringBoard via
-`XCUIApplication(bundleIdentifier: "com.apple.springboard")` and would be
-cleaner long-term, but they require your project to already have the snapshot
-UI test target wired up. The Swift+CoreGraphics path runs the moment
-`bootstrap.sh` finishes — no UI test setup needed.
+**One-time manual setup per simulator (same as §2.5):** Add your home-screen
+widget and Control Widget once via the simulator UI. Both placements persist
+across reboots and `bundle exec fastlane` runs in the simulator's
+`CoreSimulator` data container.
 
 ### Step 3: Export and Upload
 

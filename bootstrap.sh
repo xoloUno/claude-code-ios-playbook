@@ -93,6 +93,12 @@ WORKLOG.md
 fastlane/appshot/screenshots/
 fastlane/appshot/final/
 fastlane/appshot/.appshot/config.backup.json
+# Screenshot pipeline — see .claude/rules/screenshot-pipeline.md
+fastlane/screenshots/                # raw + framed (regenerable from sims)
+fastlane/shotsmith/composed/         # composed (regenerable from raw + config)
+# Intentionally NOT ignored: fastlane/manual-captures/
+# These are tracked manual-gesture inputs (Live Activity stack, Home Screen
+# widget, Control Center) — recaptured once per release. Do not gitignore.
 GITIGNORE
 # --- XcodeGen project.yml ---
 cat > project.yml << XCODEGEN
@@ -344,117 +350,78 @@ echo "or they'll be framed automatically if you invoked via widget_screenshots l
 CAPTUREWIDGETS
 chmod +x fastlane/capture_widgets.sh
 
-cat > fastlane/capture_control_center.sh << 'CAPTURECC'
-#!/usr/bin/env bash
-# Capture iOS Control Center screenshot via simctl + Quartz mouse drag.
-#
-# Worth running only if your app ships a Control Widget (ControlKit, iOS 18+).
-# If not, Control Center shows only iOS defaults — no app-specific marketing value.
-#
-# Prereqs:
-#   • Your terminal app needs Accessibility permission to send synthesized mouse
-#     events. macOS prompts the first time you run this. Grant it in:
-#       System Settings → Privacy & Security → Accessibility → enable Terminal/iTerm
-#   • Swift on PATH (`/usr/bin/swift`, ships with Xcode Command Line Tools).
-#   • App built + installed on the target simulator if your Control Widget needs
-#     the host app installed to register itself.
-#
-# Usage (called by `fastlane control_center_screenshot`):
-#   ./fastlane/capture_control_center.sh "iPhone 17 Pro Max" "fastlane/screenshots/en-US/iPhone 6.9\" Display"
-set -euo pipefail
+# --- Manual-captures directory + discoverability README ---
+# Manual-gesture screenshots (Live Activity, Home Screen widget, Control Center)
+# are captured by the agent-driven /capture-manual-surfaces flow, not by a
+# bootstrap-emitted shell script. The Quartz-drag automation that used to live
+# here was retired due to reliability issues — see .claude/rules/screenshot-pipeline.md.
+mkdir -p fastlane/manual-captures
+cat > fastlane/manual-captures/README.md << 'MANUALCAPTURES'
+# fastlane/manual-captures/
 
-DEVICE="${1:?device name required (e.g. 'iPhone 17 Pro Max')}"
-OUTPUT_DIR="${2:?output directory required}"
-mkdir -p "$OUTPUT_DIR"
+System-surface screenshots that require a human gesture to produce: Live Activity
+stack on the Lock Screen, Home Screen page with your widget, Control Center pulled
+down with your Control Widget. Captured by Claude Code via the
+`/capture-manual-surfaces` slash command — agent runs the prep (boot sim, switch
+locale, override status bar, launch app); you perform the gesture in the
+Simulator window and type `ready` in chat; agent saves the PNG.
 
-echo "📱 Booting $DEVICE…"
-xcrun simctl boot "$DEVICE" 2>/dev/null || true
-open -a Simulator
-xcrun simctl bootstatus "$DEVICE" -b >/dev/null
+## What lives here
 
-echo "🕘 Overriding status bar (9:41, full signal, charged, no carrier/5G)…"
-# --dataNetwork hide hides the 5G/LTE label (otherwise the Wi-Fi icon gets
-# pushed to a second row in Control Center). --operatorName "" blanks the
-# carrier text. Together these produce the cleanest App Store status bar.
-xcrun simctl status_bar "$DEVICE" override \
-  --time "9:41" --dataNetwork hide --batteryState charged --batteryLevel 100 \
-  --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3 \
-  --operatorName ""
+```
+fastlane/manual-captures/
+├── en-US/
+│   ├── 90_LockScreen_LiveActivity.png
+│   ├── 91_HomeScreen_Widget.png
+│   └── 92_ControlCenter.png
+├── es-ES/
+│   └── …
+└── …
+```
 
-# Make sure we're on home (not in any app)
-osascript <<'APPLESCRIPT'
-tell application "Simulator" to activate
-delay 0.4
-tell application "System Events" to keystroke "h" using {command down, shift down}
-APPLESCRIPT
-sleep 1
+The `90_/91_/92_` filename prefixes are referenced by shotsmith's
+`input_mapping` when the `:compose_screenshots` Fastfile lane stages these
+into `fastlane/screenshots/<locale>/<device>/raw/`. Don't rename them ad-hoc
+— update `input_mapping` in `shotsmith/config.json` instead.
 
-# Read the Simulator window's screen position + size
-WIN_GEOM="$(osascript <<'APPLESCRIPT'
-tell application "System Events"
-  tell process "Simulator"
-    set winPos to position of window 1
-    set winSize to size of window 1
-    return ((item 1 of winPos) as text) & "," & ((item 2 of winPos) as text) & "," & ((item 1 of winSize) as text) & "," & ((item 2 of winSize) as text)
-  end tell
-end tell
-APPLESCRIPT
-)"
-IFS=',' read -r WIN_X WIN_Y WIN_W WIN_H <<< "$WIN_GEOM"
-echo "Simulator window: ${WIN_X},${WIN_Y}  ${WIN_W}×${WIN_H}"
+## Why this directory is tracked in git
 
-# Title bar ~28pt; swipe origin = right edge of status bar; pull down ~600pt
-TITLE_BAR=28
-START_X=$(( WIN_X + WIN_W - 40 ))
-START_Y=$(( WIN_Y + TITLE_BAR + 8 ))
-END_Y=$(( WIN_Y + TITLE_BAR + 600 ))
+Unlike `fastlane/screenshots/` (regenerable bulk from XCUITest, gitignored),
+this directory contains **slow-to-regenerate manual inputs that are versioned
+as a source of truth**. Anyone with the repo can run `bundle exec fastlane
+compose_screenshots` and get a complete shotsmith run — no need to have you
+on the keyboard for the manual gestures.
 
-echo "🔽 Swiping ($START_X, $START_Y) → ($START_X, $END_Y) to invoke Control Center…"
-osascript -e 'tell application "Simulator" to activate'
-sleep 0.4
+See `.claude/rules/screenshot-pipeline.md` (the four-layer pipeline + the
+two-input-tree pattern) for the full rationale.
 
-swift - "$START_X" "$START_Y" "$START_X" "$END_Y" <<'SWIFTEOF'
-import CoreGraphics
-import Foundation
-let args = CommandLine.arguments
-guard args.count >= 5,
-      let sx = Double(args[1]), let sy = Double(args[2]),
-      let ex = Double(args[3]), let ey = Double(args[4])
-else { fputs("usage: drag sx sy ex ey\n", stderr); exit(1) }
-func post(_ type: CGEventType, _ x: Double, _ y: Double) {
-    CGEvent(mouseEventSource: nil, mouseType: type,
-            mouseCursorPosition: CGPoint(x: x, y: y),
-            mouseButton: .left)?.post(tap: .cghidEventTap)
-}
-post(.leftMouseDown, sx, sy)
-Thread.sleep(forTimeInterval: 0.05)
-let steps = 25
-for i in 1...steps {
-    let t = Double(i) / Double(steps)
-    post(.leftMouseDragged, sx + (ex - sx) * t, sy + (ey - sy) * t)
-    Thread.sleep(forTimeInterval: 0.012)
-}
-post(.leftMouseUp, ex, ey)
-SWIFTEOF
+## When to recapture
 
-sleep 1.5  # let Control Center settle into open state
+This directory is "once per release" content. Recapture when:
 
-CC_PNG="$OUTPUT_DIR/92_ControlCenter.png"
-echo "📸 Capturing Control Center → $CC_PNG"
-xcrun simctl io "$DEVICE" screenshot "$CC_PNG"
+- iOS major version changes (Control Center / Notification Center layouts
+  shift between iOS 18 → 19 → 26).
+- Your Live Activity, Home Screen widget, or Control Widget UI changes.
+- You add a new locale.
+- You change which surfaces you're highlighting in your App Store listing.
 
-# Dismiss Control Center
-osascript -e 'tell application "Simulator" to activate' \
-          -e 'tell application "System Events" to keystroke "h" using {command down, shift down}'
+Otherwise the previously-committed PNGs stage into the pipeline automatically
+and you ship without doing the gesture dance.
 
-echo ""
-echo "✅ Captured: $CC_PNG"
-echo ""
-echo "Tip: if Control Center didn't open, your terminal probably lacks Accessibility"
-echo "     permission. Grant it in System Settings → Privacy & Security → Accessibility,"
-echo "     then re-run."
-CAPTURECC
-chmod +x fastlane/capture_control_center.sh
+## How to recapture
+
+```bash
+# In Claude Code:
+/capture-manual-surfaces
+
+# The agent walks you through every (locale × surface) pair, prepping the
+# simulator and capturing on your `ready` cue.
+```
+
+After recapturing, commit the changed PNGs with a message like
+`chore(screenshots): regenerate manual-captures for v2.1` so reviewers can
+diff system-surface drift release-over-release.
+MANUALCAPTURES
 
 # --- appshot-cli scaffolding (Track B: captioned + gradient marketing screenshots) ---
 mkdir -p fastlane/appshot/.appshot/captions
@@ -717,12 +684,34 @@ platform :ios do
     frame_screenshots if options[:frame] != false
   end
 
-  desc "Capture Control Center (with your Control Widget) via Quartz mouse drag"
-  lane :control_center_screenshot do |options|
-    device = options[:device] || "iPhone 17 Pro Max"
-    output_dir = options[:output] || "fastlane/screenshots/en-US/iPhone 6.9\" Display"
-    sh("../fastlane/capture_control_center.sh #{device.shellescape} #{output_dir.shellescape}")
-    frame_screenshots if options[:frame] != false
+  desc "Stage manual-captures into raw/ and run shotsmith pipeline (frame + compose)"
+  # Manual-gesture surfaces (Live Activity, Home Screen widget, Control Center)
+  # live in fastlane/manual-captures/<locale>/ and are captured via Claude Code's
+  # /capture-manual-surfaces slash command — see .claude/rules/screenshot-pipeline.md.
+  # This lane stages those tracked PNGs into the iPhone raw/ tree, then defers
+  # to shotsmith for frame + compose. shotsmith's input_mapping renames the
+  # 90/91/92_ prefixes into the canonical 0N_LiveActivities / 0N_ControlCenter /
+  # 0N_HomeScreenWidgets that captions.json references.
+  lane :compose_screenshots do |options|
+    config = options[:config] || "shotsmith/config.json"
+    iphone_device = options[:device] || "iPhone 6.9\" Display"
+    manual_root = "../fastlane/manual-captures"
+    raw_root_template = "../fastlane/screenshots/%s/#{iphone_device}/raw"
+
+    unless Dir.exist?(manual_root)
+      UI.user_error!("fastlane/manual-captures/ not found — capture system surfaces first via /capture-manual-surfaces")
+    end
+
+    Dir.entries(manual_root).each do |loc|
+      next if loc.start_with?(".") || loc == "README.md"
+      src_dir = "#{manual_root}/#{loc}"
+      next unless File.directory?(src_dir)
+      raw_dir = raw_root_template % loc
+      FileUtils.mkdir_p(raw_dir)
+      sh("cp #{src_dir.shellescape}/*.png #{raw_dir.shellescape}/ 2>/dev/null || true")
+    end
+
+    sh("./bin/shotsmith pipeline --config #{config.shellescape}", error_callback: ->(_) { UI.user_error!("shotsmith pipeline failed — check config and verify output") })
   end
 
   desc "Sync metadata to App Store Connect (no binary, no screenshots)"

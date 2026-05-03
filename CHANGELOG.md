@@ -8,6 +8,32 @@ in your project to adopt the change.
 
 ---
 
+## 2026-05-03 — New rule: status-bar overrides
+
+**What changed:** New `.claude/rules/status-bar-overrides.md` documents the canonical
+`xcrun simctl status_bar override` block that every screenshot-capture script must run
+before launching the target app, and explains *why* each of the seven flags exists
+(`--time "9:41"`, `--dataNetwork hide`, `--batteryState charged`, `--batteryLevel 100`,
+`--cellularBars 4`, `--wifiBars 3`, `--operatorName ""`).
+
+**Why:** A downstream session refactored capture scripts in a single commit and silently
+dropped `--operatorName ""` and `--dataNetwork hide` from all of them. The drop wasn't
+caught for weeks because the captures still rendered — just with "Carrier" visible in
+the status bar and the Control Center status row wrapping to two rows. By the time it
+surfaced, those flags had to be re-added across multiple scripts. The new rule
+documents the flags' rationale so the next refactor leaves them alone.
+
+**To adopt in your project:**
+
+1. Pull the new rule via `/upgrade`.
+2. If you've recently refactored any `fastlane/capture_*.sh` or
+   `scripts/capture-*.sh` script, audit it against the canonical block in the rule.
+3. Re-capture one screenshot per script and verify: 9:41, no carrier name, no 5G/LTE
+   label, full bars on both icons, full battery + lightning bolt. For Control Center
+   specifically, confirm the Wi-Fi icon stays on the same row as cellular.
+
+---
+
 ## 2026-04-28 — Inbox curation: assertion discipline, legal URLs, ASC troubleshooting, Fastfile UTF-8
 
 **What changed:** Four playbook adoptions from the 2026-04-28 inbox triage. Three new

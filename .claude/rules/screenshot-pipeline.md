@@ -64,11 +64,11 @@ XCUITest- or simctl-driven app surfaces (HomeScreen, Picker, etc.). Fast to
 regenerate — running the capture lane writes a fresh set in seconds to minutes
 depending on screen count. Shifts visually with every UI tweak, which is why
 keeping it in git would balloon history. **Gitignored.** This is also where
-the Fastfile's `:compose_screenshots` lane stages the tracked
-`manual-captures/<locale>/` files using shotsmith's `input_mapping` — so
-`90_LockScreen_LiveActivity.png` from manual-captures lands as
-`01_LiveActivities.png` (or whatever the canonical caption-order name is) in
-`raw/` right before the frame step runs. The two flows merge here.
+shotsmith's `stage` step deposits the tracked `manual-captures/<locale>/`
+files (per the `manual_inputs` block in `shotsmith/config.json`), and where
+shotsmith's `input_mapping` then renames `90_LockScreen_LiveActivity.png`
+from manual-captures to the canonical caption-order name (`01_LiveActivities.png`)
+at frame time. The two input flows merge here.
 
 ### `fastlane/screenshots/<locale>/<device>/framed/`
 
@@ -279,14 +279,20 @@ Make executable: `chmod +x scripts/capture-manual-surface.sh`.
 
 ## Watch screenshot capture
 
-watchOS screenshots have their own pipeline because Apple's submission rules
-and frames-cli's bezel handling differ enough from iPhone/iPad to break the
-"raw → framed → composed" assumption. The seven gotchas below are what wall
-time gets spent on the first time a project hits the watch pipeline; treat
-this as a checklist before shipping.
+watchOS screenshots are **submitted to ASC screen-only** — raw simctl
+captures at exact display-pixel dimensions, no bezel, no gradient, no
+caption. The Apple Watch hardware's display corner-radius clips submitted
+PNGs at viewing time (full-screen and in the App Store carousel), so any
+framing or caption art near the corners gets cut. Flara v2.1 verified
+this in production (2026-04-28): App Review accepted a framed watch
+upload, but on-device viewing clipped the gradient and caption corners.
+Watch is the one device class that breaks the "raw → framed → composed"
+shotsmith pipeline — it stops at `raw/` and goes to ASC unaltered.
 
-A future version may inline the watch bezel as a shotsmith subcommand; for
-now the watch pipeline ships as separate scripts.
+The seven gotchas below cover the watch capture pipeline and ASC
+submission rules; treat this as a checklist before shipping. shotsmith
+never touches the watch path — projects stage raw watch PNGs directly
+into their composed-output dir for upload.
 
 ### Checklist
 
@@ -294,18 +300,22 @@ now the watch pipeline ships as separate scripts.
    accepts 410×502 OR 422×514 (Apple Watch Ultra 3 simulator captures at
    422×514 native). Other classes have their own dimensions. The full map is
    in `fastlane/deliver/lib/deliver/app_screenshot.rb`'s
-   `DEVICE_TYPE_TO_DIMENSIONS`. The composed marketing PNG must be at one of
-   those exact sizes — no padding, no scaling-up.
+   `DEVICE_TYPE_TO_DIMENSIONS`. The submitted PNG must be at one of those
+   exact sizes — `simctl io screenshot` against the right sim model writes
+   them natively, no scaling needed.
 2. **ASC rejects watch screenshots with alpha (PNG32).** Error code
    `IMAGE_ALPHA_NOT_ALLOWED`. iPhone screenshots accept alpha, watch does
-   not. ImageMagick's `-alpha off` only marks the channel inactive — to drop
-   the alpha channel from the file you need the `PNG24:output.png` prefix in
-   the output spec.
-3. **frames-cli's watch bezels include band/strap.** Cropping leaves visible
-   strap residue or pushes the result outside the 422×514 ASC slot. Don't use
-   frames-cli for watch — draw the bezel directly in ImageMagick: concentric
-   titanium ring (`#6e6661`) + black inner ring around the rounded watch
-   screen.
+   not. `simctl io screenshot` writes opaque PNGs by default so this rarely
+   bites for screen-only submissions, but if you ever post-process the PNG
+   (e.g. through ImageMagick), note that `-alpha off` only marks the channel
+   inactive — to drop the alpha channel from the file you need the
+   `PNG24:output.png` prefix in the output spec.
+3. **Don't use frames-cli for watch.** frames-cli's bundled watch bezels
+   (Series 11, Ultra 3) include band/strap. There's no `--no-band` flag.
+   Even if you crop the strap off, the result either leaves residue or
+   pushes the image outside the ASC slot dimensions. The Path 1 answer
+   (and what Flara ships) is to skip framing entirely on the ASC path —
+   the hardware corner-radius would clip the bezel art anyway.
 4. **Sheet auto-presentation needs a launch arg + a deferred Task.** To
    capture a sheet (picker, confirmation), the home view must render BEHIND
    the sheet first. Implement as `-WATCH_SHOW_PICKER` / `-WATCH_SHOW_STOP`
@@ -386,96 +396,30 @@ xcrun simctl io "$WATCH_SIM" screenshot "$OUTPUT"
 echo "Captured: $OUTPUT"
 ```
 
-### `scripts/compose-watch-marketing.sh`
+### Staging into the composed-output dir
 
-ImageMagick bezel + gradient + caption composer. Demonstrates the
-concentric-rounded-rect titanium ring + black inner ring with an alpha mask
-so the watch screen contents render through cleanly.
+Watch raw PNGs go to ASC unaltered. The fastlane lane that runs shotsmith
+for iPhone/iPad should also stage the watch raws into the composed-output
+tree so a single `upload_screenshots` call ships everything. Flara's
+`:compose_screenshots` lane does this in ~5 lines:
 
-```bash
-#!/usr/bin/env bash
-# Compose a watchOS marketing screenshot at an ASC slot dimension.
-#
-# Usage:
-#   scripts/compose-watch-marketing.sh <input-screen-png> <caption> <output-png>
-#
-# Output is PNG24 (no alpha) at 422x514 — the Apple Watch Ultra 3 ASC slot.
-set -euo pipefail
-
-INPUT="${1:?input screenshot png required}"
-CAPTION="${2:?caption text required}"
-OUTPUT="${3:?output png path required}"
-
-# ASC slot
-W=422
-H=514
-
-# Watch case rounded-rect geometry inside the canvas
-CASE_W=312
-CASE_H=380
-CASE_X=$(( (W - CASE_W) / 2 ))
-CASE_Y=40
-CASE_R=68     # outer corner radius
-RING_BLACK=8  # black inner ring thickness
-SCREEN_PAD=14 # how far the screen sits inside the titanium
-
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
-
-# 1. Background gradient (vertical, dusk → coral). Opaque PNG24 from the start.
-magick -size ${W}x${H} \
-  gradient:'#1B1B2E-#FF6B5C' \
-  PNG24:"$TMP/bg.png"
-
-# 2. Titanium outer rounded rect.
-magick -size ${CASE_W}x${CASE_H} canvas:none \
-  -fill '#6e6661' -draw "roundrectangle 0,0 ${CASE_W},${CASE_H} ${CASE_R},${CASE_R}" \
-  PNG32:"$TMP/case.png"
-
-# 3. Black inner ring — same shape, inset by RING_BLACK, draw black on top.
-INNER_W=$((CASE_W - 2*RING_BLACK))
-INNER_H=$((CASE_H - 2*RING_BLACK))
-INNER_R=$((CASE_R - RING_BLACK))
-magick "$TMP/case.png" \
-  \( -size ${INNER_W}x${INNER_H} canvas:none \
-     -fill black -draw "roundrectangle 0,0 ${INNER_W},${INNER_H} ${INNER_R},${INNER_R}" \) \
-  -geometry +${RING_BLACK}+${RING_BLACK} -composite \
-  PNG32:"$TMP/case_with_ring.png"
-
-# 4. Watch screen — input screenshot, masked to the inner rounded rect.
-SCREEN_W=$((INNER_W - 2*SCREEN_PAD))
-SCREEN_H=$((INNER_H - 2*SCREEN_PAD))
-SCREEN_R=$((INNER_R - SCREEN_PAD))
-magick "$INPUT" -resize ${SCREEN_W}x${SCREEN_H}^ -gravity center -extent ${SCREEN_W}x${SCREEN_H} \
-  \( -size ${SCREEN_W}x${SCREEN_H} canvas:none \
-     -fill white -draw "roundrectangle 0,0 ${SCREEN_W},${SCREEN_H} ${SCREEN_R},${SCREEN_R}" \) \
-  -compose DstIn -composite \
-  PNG32:"$TMP/screen.png"
-
-# 5. Compose case + screen onto bg.
-magick "$TMP/bg.png" \
-  "$TMP/case_with_ring.png" -geometry +${CASE_X}+${CASE_Y} -composite \
-  "$TMP/screen.png" -geometry +$((CASE_X + RING_BLACK + SCREEN_PAD))+$((CASE_Y + RING_BLACK + SCREEN_PAD)) -composite \
-  PNG32:"$TMP/composed.png"
-
-# 6. Caption below the case.
-CAPTION_Y=$((CASE_Y + CASE_H + 24))
-magick "$TMP/composed.png" \
-  -font 'New-York-Small-Bold' -pointsize 26 -fill white \
-  -gravity North -annotate +0+${CAPTION_Y} "$CAPTION" \
-  PNG32:"$TMP/captioned.png"
-
-# 7. Final flatten to PNG24 — gotcha #2: ASC rejects alpha for watch.
-magick "$TMP/captioned.png" -background black -alpha remove -alpha off \
-  PNG24:"$OUTPUT"
-
-echo "Composed: $OUTPUT (${W}x${H} PNG24)"
+```ruby
+# After the iPhone/iPad shotsmith pipeline runs:
+LOCALES.each do |locale|
+  watch_src = Dir.glob("../fastlane/screenshots/#{locale}/*Watch*/raw").first
+  next unless watch_src
+  watch_dir_name = File.basename(File.dirname(watch_src))
+  watch_dst = "../fastlane/shotsmith/composed/<style>/#{locale}/#{watch_dir_name}"
+  FileUtils.mkdir_p(watch_dst)
+  Dir.glob("#{watch_src}/*.png").each { |f| FileUtils.cp(f, watch_dst) }
+end
 ```
 
-Both scripts are starting points — refine the geometry and gradient palette
-per project. The structural pieces (boot+bootstatus before launch, per-launch
-locale, PNG24 output, concentric rounded-rect bezel) are what's hard to figure
-out cold; the cosmetic pieces are easy to iterate on.
+The starter script above (`capture-watch-screenshots.sh`) is the only
+watch-specific tooling a project needs. Refine the per-screen launch args
+and demo-data shapes per project. The structural pieces (boot+bootstatus
+before launch, per-launch locale, ≥5s sleep for ScrollViewReader to land)
+are what's hard to figure out cold; everything else is iteration.
 
 ## Why this rule exists
 

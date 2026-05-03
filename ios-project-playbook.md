@@ -938,149 +938,195 @@ A 2064×2752 iPad screenshot auto-frames as the matching iPad Pro 13" model.
 - `--json` — machine-readable output for pipelines
 - `frames list` / `frames info screenshot.png` — inspect supported devices and detect what a file is
 
-#### Track B — appshot-cli + Apple Frames CLI (when you need captions + backgrounds)
+#### Track B — shotsmith (when you need captions + gradients + multi-locale)
 
-Apple Frames CLI only applies device bezels — no captions, no branded backgrounds.
-For marketing screenshots with captions, gradient backgrounds, and multi-locale
-support, layer **[appshot-cli](https://www.npmjs.com/package/appshot-cli)** on
-top of Apple Frames CLI. Every web-based mockup tool we tried (AppMockUp,
-AppDrift, AppLaunchpad) is too janky to recommend; appshot-cli is the only
-CLI option that's actually agent-friendly and reproducible.
+Apple Frames CLI only applies device bezels. For marketing screenshots with
+captions, gradient backgrounds, and multi-locale rendering, the playbook
+ships **shotsmith** — an in-house Python composer at
+[`tools/shotsmith/`](tools/shotsmith/) in this repo. It replaces the prior
+appshot-cli + `patch-appshot.sh` pipeline (retired 2026-05-03; see
+[CHANGELOG.md](CHANGELOG.md) for migration history). shotsmith wraps
+frames-cli for the bezel step and adds a Pillow (FreeType + HarfBuzz) layer
+for typography — gradients, captions, optional subtitles, per-device
+overrides, multi-locale, and a stable per-device directory contract that
+preserves raws and framed intermediates.
 
-The pipeline is two CLIs in sequence:
+**The durable reference is [`.claude/rules/screenshot-pipeline.md`](.claude/rules/screenshot-pipeline.md)**.
+That rule covers the four artifact layers (`raw/` → `framed/` → `composed/`),
+the two-input-tree pattern (regenerable XCUITest captures vs. tracked
+manual-gesture captures), the agent-driven manual-capture loop, and the watch
+checklist. The rule auto-loads in any project directory; this section is the
+quick-start reference for the human-readable docs.
+
+The pipeline:
 
 ```
-raw simctl/UITest PNGs
-        ↓ frames CLI            (Track A — adds device bezels)
-framed PNGs (e.g. with iPhone 17 Pro Max bezel)
-        ↓ appshot build --no-frame   (adds caption + gradient + multi-locale)
-final marketing PNGs
+raw simctl/UITest PNGs (in fastlane/screenshots/<locale>/<device>/raw/)
+        ↓ shotsmith frame    (wraps frames-cli; writes to framed/)
+framed PNGs
+        ↓ shotsmith compose  (gradient + caption + optional subtitle)
+final ASC-ready PNGs (in fastlane/shotsmith/composed/<style>/<locale>/<device>/)
         ↓ deliver
 App Store Connect
 ```
 
-**One-time install:**
+**One-time install (per machine).** shotsmith uses Pillow as its only
+runtime dependency:
 
 ```bash
-npm install -g appshot-cli
-./scripts/patch-appshot.sh   # bootstrap-emitted; tunes caption font sizes
+cd /path/to/_playbook/tools/shotsmith
+pip3 install -r requirements.txt   # installs Pillow into the active python3
 ```
 
-The patch step is required because appshot v2 hard-caps caption font size at
-86px (iPhone) / 88px (iPad), which is too small to read at App Store thumbnail
-size and too small to force readable line wraps. The bootstrap-emitted patch
-script (`scripts/patch-appshot.sh`) bumps these to 115/130 by default — tune
-to your design with `APPSHOT_IPHONE_FONT=120 APPSHOT_IPAD_FONT=140 ./scripts/patch-appshot.sh`.
+`bootstrap.sh` symlinks `bin/shotsmith` in each project to
+`$PLAYBOOK_DIR/tools/shotsmith/bin/shotsmith`, so projects automatically pick
+up shotsmith updates when `/upgrade` syncs the playbook. frames-cli must also
+be on `PATH` (see Track A above for that one-time install).
 
-> **Re-run the patch after any `npm install -g appshot-cli` upgrade** — the
-> patches live inside `node_modules/appshot-cli/dist/...` and a fresh install
-> silently clobbers them.
-
-**Project layout (bootstrap-emitted):**
+**Project layout (bootstrap-emitted).** Two input trees with opposite gitignore
+policies — see the rule for the full rationale:
 
 ```
-fastlane/appshot/
-├── .appshot/
-│   ├── config.json              ← gradient, font, layout — TUNE THIS
-│   └── captions/
-│       ├── iphone.json          ← {filename: {lang: caption}}
-│       └── ipad.json
-├── screenshots/                 ← (gitignored) staged input PNGs per device
-│   ├── iphone/
-│   └── ipad/
-└── final/                       ← (gitignored) appshot output, copied to fastlane/screenshots/
-    ├── iphone/
-    └── ipad/
+bin/shotsmith                                     ← symlink to playbook tool
+fastlane/
+├── shotsmith/
+│   ├── config.json                               ← TUNE THIS (gradient, captions, locales)
+│   ├── captions.json                             ← {filename: {lang: caption|{caption,subtitle}}}
+│   └── composed/<style>/<locale>/<device>/       ← (gitignored) ASC-ready output
+├── manual-captures/<locale>/                     ← TRACKED — manual-gesture inputs
+│   ├── 90_LockScreen_LiveActivity.png            ← Live Activity stack
+│   ├── 91_HomeScreen_Widget.png                  ← Home Screen widget page
+│   └── 92_ControlCenter.png                      ← Control Center swipe-down
+└── screenshots/<locale>/<device>/                ← (gitignored) regenerable
+    ├── raw/                                      ← XCUITest/simctl output
+    └── framed/                                   ← frames-cli output (via shotsmith)
 ```
 
-**Tune `.appshot/config.json` per project.** The starter has a sunset
-gradient (`#FF5F6D → #FFC371`) and "New York Small Bold" font. Swap for your
-brand colors and font:
+`fastlane/manual-captures/` is **intentionally tracked** — those PNGs are
+recaptured "once per release" via the agent-driven `/capture-manual-surfaces`
+slash command (defined in the playbook, propagated to every project at
+bootstrap). All other screenshot directories are regenerable.
+
+**Tune `fastlane/shotsmith/config.json` per project.** Starter template
+(see [`tools/shotsmith/templates/config.example.json`](tools/shotsmith/templates/config.example.json)
+for the full schema with subtitle, dither, per-device overrides, and
+`input_mapping`):
 
 ```json
 {
   "version": 2,
-  "layout": "footer",
+  "input":  { "iphone": "../screenshots/{locale}/iPhone 6.9\" Display" },
+  "output": { "iphone": "composed/royal-purple/{locale}/iPhone 6.9\" Display" },
+  "pipeline": { "frames_cli": "frames", "verify_strict": true },
+  "background": {
+    "type": "linear-gradient",
+    "stops": ["#6B4FBB", "#FF6B5C"],
+    "angle": 180,
+    "dither": 30
+  },
   "caption": {
     "font": "New York Small Bold",
-    "color": "#1B1B1B"
+    "color": "#FFFFFF",
+    "size_iphone": 115,
+    "size_ipad": 130,
+    "padding_pct": 3.5,
+    "max_lines": 2
   },
-  "background": {
-    "mode": "gradient",
-    "gradient": {
-      "colors": ["#FF5F6D", "#FFC371"],
-      "direction": "top-bottom"
+  "captions_file": "captions.json",
+  "locales": ["en-US", "es-ES", "es-MX"],
+  "manual_inputs": {
+    "iphone": {
+      "source": "../manual-captures/{locale}",
+      "files": [
+        "90_LockScreen_LiveActivity.png",
+        "91_HomeScreen_Widget.png",
+        "92_ControlCenter.png"
+      ]
     }
-  },
-  "devices": {
-    "iphone": { "input": "./screenshots/iphone", "resolution": "1320x2868" },
-    "ipad":   { "input": "./screenshots/ipad",   "resolution": "2064x2752" }
-  },
-  "output": "./final"
-}
-```
-
-> **Caption font naming gotcha.** appshot's `parseFontName` only recognizes
-> the literal suffixes `Bold` and `Italic`. To get the bold weight of a
-> macOS optical-size variant (e.g. New York Small, New York Medium), the
-> font name has to literally end in `Bold` so the parser strips the suffix
-> and sets SVG `font-weight=700`. Apple's font license explicitly permits
-> SF Pro and the New York family for marketing materials about Apple-platform
-> apps; both work well. If you want a custom font, install it system-wide and
-> reference it by family-name + `Bold` suffix.
-
-**Fill `.appshot/captions/{iphone,ipad}.json` with one entry per screenshot
-filename, with one key per language code:**
-
-```json
-{
-  "01_HomeScreen.png": {
-    "en": "Track everything in one tap",
-    "es": "Registra todo con un toque"
-  },
-  "02_KeyFeature.png": {
-    "en": "Privacy-first by design",
-    "es": "Privacidad ante todo"
   }
 }
 ```
 
-**Run the pipeline:**
+The `manual_inputs` block declares which manual-gesture captures (Live
+Activity, Home Screen widget, Control Center) shotsmith should stage into
+`raw/` before framing. `shotsmith verify` reports a hard error when any
+declared source file is missing on disk — so a fresh-bootstrap or
+fresh-clone run names the missing capture file directly instead of hiding
+it inside an `input_mapping` indirection. Omit the block entirely if your
+app has no manual-gesture surfaces.
+
+Three preset palettes are bundled at
+[`tools/shotsmith/templates/presets/`](tools/shotsmith/templates/presets/):
+**mauve** (dusty purple → coral), **royal-purple** (deep violet → coral, used
+by Flara), and **apple-music** (deep red → coral). Copy any one as your
+starting point.
+
+**Captions file** (`fastlane/shotsmith/captions.json`) — one entry per
+screenshot filename, one key per language code. The string form is shorthand
+for caption-only; the dict form supports an optional subtitle and per-device
+overrides:
+
+```json
+{
+  "01_HomeScreen.png": {
+    "en":    { "caption": "Track everything", "subtitle": "in one place" },
+    "en-US": { "caption_iphone": "Track everything\nin one place" },
+    "es":    "Todo en un solo lugar"
+  }
+}
+```
+
+shotsmith resolves locale → language fallback (`es-MX` → `es` → skip with
+warning), so regional variants share a single language entry by default.
+
+**Run the pipeline.** One command captures the manual-gesture inputs (if any
+have changed), stages them, frames everything, composes the final PNGs, and
+hands off to `deliver`:
 
 ```bash
-# 1. Capture + frame (Track A)
-bundle exec fastlane screenshots
+# 1. (Optional, once per release) Capture manual-gesture surfaces
+#    Live Activity, Home Screen widget, Control Center — agent-driven.
+/capture-manual-surfaces                           # Claude Code slash command
 
-# 2. Caption with appshot (per locale)
-bundle exec fastlane appshot_screenshots                           # default en-US/en
-bundle exec fastlane appshot_screenshots locale:es-ES lang:es      # Spanish locale
+# 2. Capture in-app screens (XCUITest) — project-specific
+./scripts/capture-screenshots.sh                   # writes to <locale>/<device>/raw/
 
-# 3. Upload
+# 3. Stage manual-captures + run frame + compose
+bundle exec fastlane compose_screenshots           # invokes ./bin/shotsmith pipeline
+
+# 4. Upload
 bundle exec fastlane upload_screenshots
 ```
 
-The `appshot_screenshots` lane stages framed PNGs from
-`fastlane/screenshots/{locale}/` into `fastlane/appshot/screenshots/`,
-runs `appshot build --langs <lang>`, then copies the captioned output back
-into the deliver dirs. For multi-locale projects, call the lane once per
-locale.
+The `compose_screenshots` lane (bootstrap-emitted) is now a one-line wrapper
+around `./bin/shotsmith pipeline` — staging is handled inside shotsmith via
+the `manual_inputs` config block (the `stage` step), and `input_mapping`
+renames the `90/91/92_` prefixes into canonical caption keys at frame time.
+Multi-locale runs in a single pass — `config.json` lists the locales,
+shotsmith iterates them.
 
-> **Raw preservation is automatic.** The bootstrapped `frame_screenshots`
-> lane snapshots all raw (unframed) captures into `fastlane/screenshots/{locale}/<device>/raw/`
-> the first time it runs, *before* invoking the `frames` CLI. This means you
-> can re-frame with a different bezel color (`frames --color "Deep Blue"`) or
-> re-caption with new copy *without re-capturing* — the raw PNGs are still
-> there. The `_framed.png` siblings (Apple Frames CLI's default output naming)
-> additionally preserve the post-frame state, so re-captioning alone is
-> already cheap. If the lesson "we forgot to keep raws" hits you mid-cycle,
-> the raws are already saved.
+> **Raw + framed preservation is automatic.** shotsmith's directory contract
+> writes to `raw/` and `framed/` siblings under each device dir and never
+> overwrites them. Re-running `compose` with new caption text or gradient
+> stops re-renders the composed output in seconds without re-capturing or
+> re-framing. `shotsmith verify` flags loose PNGs at the locale root and
+> stale orphans before you ship.
 
-**Multi-locale tip — share captions across regional variants.** If your app
-ships `es-ES` and `es-MX` with effectively-identical Spanish captions, point
-both at the same `lang: es` build. iOS's Spanish localization is shared, so
-the marginal `Localizable.xcstrings` overrides for `es-MX` rarely produce
-visibly different marketing screenshots. Saves capture time without hurting
-ASC submission quality.
+**Multi-locale tip — share captions across regional variants.** Add both
+`es-ES` and `es-MX` to `locales` in `config.json` and provide a single `es`
+key in `captions.json`. shotsmith's locale-fallback resolution picks up the
+language portion automatically. Manual-captures still need to be mirrored
+per locale — for now via `cp -r manual-captures/es-ES manual-captures/es-MX`
+if the rendered surfaces are visually identical between regional variants.
+
+**Watch screenshots are screen-only.** Apple Watch submissions go to ASC as
+raw `simctl io screenshot` output (422×514 native for Ultra 3) with no
+framing, no gradient, no caption — the watch hardware's display
+corner-radius would clip any added art at viewing time. shotsmith never
+touches the watch path; the `compose_screenshots` lane stages the raw watch
+PNGs directly into the composed-output tree alongside iPhone/iPad. See the
+"Watch screenshot capture" section of `screenshot-pipeline.md` for the
+seven-gotcha checklist.
 
 **Design tips that apply regardless of tool:** Lead with your core value
 prop, not settings. First 2–3 screenshots are a mini-story. Use large
@@ -1268,15 +1314,15 @@ fastlane/screenshots/en-US/
 
 ### Recommended Workflow by Project Stage
 
-| Stage | Capture | Frame | Caption / Background | Upload |
-|---|---|---|---|---|
-| **First app / v1 launch** | Manual on 2 simulators (or XcodeBuildMCP) | Apple Frames CLI | None — bare bezels are fine | Manual in ASC |
-| **Second app onward** | Fastlane `snapshot` | `fastlane frame_screenshots` | None | Fastlane `deliver` |
-| **Marketing-heavy app** | Fastlane `snapshot` | `fastlane frame_screenshots` | `fastlane appshot_screenshots` (per locale) | Fastlane `deliver` |
+| Stage | Capture | Frame + Caption + Background | Upload |
+|---|---|---|---|
+| **First app / v1 launch** | Manual on 2 simulators (or XcodeBuildMCP) | Apple Frames CLI (Track A) — bare bezels | Manual in ASC |
+| **Second app onward** | Fastlane `snapshot` | `fastlane frame_screenshots` (Track A) | Fastlane `deliver` |
+| **Marketing-heavy app** | Fastlane `snapshot` + `/capture-manual-surfaces` | `fastlane compose_screenshots` (Track B — shotsmith) | Fastlane `deliver` |
 
 Don't over-engineer this on your first app. Raw capture + Apple Frames CLI gets
-you professional framed screenshots in under 5 minutes. Add appshot captions and
-branded gradients later when you need marketing polish.
+you professional framed screenshots in under 5 minutes. Add shotsmith captions
+and branded gradients later when you need marketing polish.
 
 ---
 

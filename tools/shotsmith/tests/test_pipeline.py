@@ -161,3 +161,54 @@ def test_pipeline_dry_run_does_not_invoke_subprocesses(tmp_path):
     _make_raw(raw_dir / "01.png")
     # Should not raise even though capture_hook doesn't exist and frames isn't on PATH
     pipeline_mod.run(cfg, steps=("frame", "compose"), dry_run=True)
+
+
+def test_pipeline_stage_runs_before_frame(tmp_path, monkeypatch):
+    # End-to-end: stage copies manual_inputs into raw/, frame runs on what
+    # was staged, compose follows. Only the staged file flows through.
+    raw = json.loads(_write_config(tmp_path, verify_strict=False).read_text())
+    raw["manual_inputs"] = {
+        "iphone": {
+            "source": "manual-captures/{locale}",
+            "files": ["90_LockScreen.png"],
+        }
+    }
+    (tmp_path / "config.json").write_text(json.dumps(raw))
+    cfg = config_mod.load(tmp_path / "config.json")
+    bin_dir = _install_fake_frames(tmp_path)
+    monkeypatch.setenv("PATH", f"{bin_dir}:{os.environ['PATH']}")
+
+    src = tmp_path / "manual-captures" / "en-US"
+    _make_raw(src / "90_LockScreen.png")
+
+    result = pipeline_mod.run(cfg, steps=("stage", "frame"))
+    assert len(result.stage_results) == 1
+    assert result.stage_results[0].written == ["90_LockScreen.png"]
+    raw_dir = cfg.raw_dir("iphone", "en-US")
+    assert (raw_dir / "90_LockScreen.png").is_file()
+    # frame ran against the staged file
+    assert len(result.frame_results) == 1
+    assert any("90_LockScreen" in str(p) for p in result.frame_results[0].written)
+
+
+def test_pipeline_stage_aborts_on_missing_source(tmp_path):
+    raw = json.loads(_write_config(tmp_path, verify_strict=False).read_text())
+    raw["manual_inputs"] = {
+        "iphone": {
+            "source": "manual-captures/{locale}",
+            "files": ["90_LockScreen.png"],
+        }
+    }
+    (tmp_path / "config.json").write_text(json.dumps(raw))
+    cfg = config_mod.load(tmp_path / "config.json")
+
+    # No source file created — stage step should raise.
+    with pytest.raises(pipeline_mod.PipelineError, match="manual_inputs source"):
+        pipeline_mod.run(cfg, steps=("stage",))
+
+
+def test_pipeline_default_steps_includes_stage(tmp_path):
+    # Defensive: the public DEFAULT_STEPS contract changed in this revision.
+    # Keep this test so anyone reordering steps notices.
+    assert pipeline_mod.DEFAULT_STEPS == ("stage", "frame", "compose")
+    assert "stage" in pipeline_mod.VALID_STEPS

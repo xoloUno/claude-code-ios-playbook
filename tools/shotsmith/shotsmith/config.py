@@ -66,6 +66,27 @@ class Pipeline:
 
 
 @dataclass(frozen=True)
+class ManualInputDevice:
+    source: str         # config-relative path template; supports {locale}
+    files: list[str]    # expected manual-input filenames (e.g. ["90_LockScreen.png", ...])
+
+
+@dataclass(frozen=True)
+class ManualInputs:
+    """Declared manual-gesture inputs that get staged into raw/ before frame.
+
+    Per-device map of {device_key: {source: <path-template>, files: [...]}}.
+    `source` is config-relative and supports `{locale}` substitution. The
+    `stage` pipeline step copies declared files from
+    `<source>/<file>` into `<raw_dir>/<file>` for each (device, locale).
+    """
+    by_device: dict[str, ManualInputDevice]
+
+    def for_device(self, device_key: str) -> ManualInputDevice | None:
+        return self.by_device.get(device_key)
+
+
+@dataclass(frozen=True)
 class SubtitleStyle:
     font: str
     color: str
@@ -94,6 +115,11 @@ class Config:
     # (captions.json keys, e.g. `02_HomeScreen.png` if a hero shot was
     # numbered ahead of it). Defaults to identity if absent.
     input_mapping: dict[str, dict[str, str]] | None = None
+    # Declared manual-gesture inputs (Live Activity stack, Home Screen widget,
+    # Control Center) that the `stage` pipeline step copies from a tracked
+    # source dir into raw/ before framing. None = no manual_inputs declared
+    # (stage is a no-op).
+    manual_inputs: ManualInputs | None = None
 
     def source_filename(self, device_key: str, canonical: str) -> str:
         """Return the raw/ filename for a canonical name (identity if no mapping)."""
@@ -109,6 +135,16 @@ class Config:
 
     def framed_dir(self, device_key: str, locale: str) -> Path:
         return self._device_subdir(device_key, locale, "framed")
+
+    def manual_source_dir(self, device_key: str, locale: str) -> Path | None:
+        """Resolve the manual_inputs source dir for (device, locale), or None
+        if no manual_inputs is declared for this device."""
+        if self.manual_inputs is None:
+            return None
+        device_block = self.manual_inputs.for_device(device_key)
+        if device_block is None:
+            return None
+        return self.resolve(device_block.source.format(locale=locale))
 
     def _device_subdir(self, device_key: str, locale: str, sub: str) -> Path:
         template = self.input_paths.get(device_key)
@@ -231,6 +267,44 @@ def _build(raw: dict, config_dir: Path) -> Config:
                     )
             input_mapping[device_key] = dict(device_map)
 
+    manual_inputs: ManualInputs | None = None
+    if "manual_inputs" in raw:
+        mi_raw = raw["manual_inputs"]
+        if not isinstance(mi_raw, dict):
+            raise ConfigError("manual_inputs must be an object keyed by device")
+        by_device: dict[str, ManualInputDevice] = {}
+        for device_key, dev_raw in mi_raw.items():
+            if not isinstance(dev_raw, dict):
+                raise ConfigError(
+                    f"manual_inputs.{device_key} must be an object with "
+                    f"'source' and 'files' fields"
+                )
+            for k in ("source", "files"):
+                if k not in dev_raw:
+                    raise ConfigError(
+                        f"manual_inputs.{device_key} missing required field '{k}'"
+                    )
+            if not isinstance(dev_raw["source"], str):
+                raise ConfigError(
+                    f"manual_inputs.{device_key}.source must be a string path template"
+                )
+            files_raw = dev_raw["files"]
+            if not isinstance(files_raw, list) or not files_raw:
+                raise ConfigError(
+                    f"manual_inputs.{device_key}.files must be a non-empty list of filenames"
+                )
+            for fname in files_raw:
+                if not isinstance(fname, str):
+                    raise ConfigError(
+                        f"manual_inputs.{device_key}.files entries must be strings, "
+                        f"got {type(fname).__name__}"
+                    )
+            by_device[device_key] = ManualInputDevice(
+                source=dev_raw["source"],
+                files=list(files_raw),
+            )
+        manual_inputs = ManualInputs(by_device=by_device)
+
     pipeline: Pipeline | None = None
     if "pipeline" in raw:
         pl_raw = raw["pipeline"]
@@ -293,6 +367,7 @@ def _build(raw: dict, config_dir: Path) -> Config:
         subtitle=subtitle,
         pipeline=pipeline,
         input_mapping=input_mapping,
+        manual_inputs=manual_inputs,
     )
 
 

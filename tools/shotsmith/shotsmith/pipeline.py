@@ -19,10 +19,11 @@ from .captions import Captions, CaptionsError
 from .compose import ComposeResult, compose_locale
 from .config import Config
 from .frame import FrameError, FrameResult, frame_locale
+from .stage import StageResult, stage_locale
 from .verify import VerifyReport, format_report, verify
 
-VALID_STEPS = ("capture", "frame", "compose")
-DEFAULT_STEPS = ("frame", "compose")
+VALID_STEPS = ("capture", "stage", "frame", "compose")
+DEFAULT_STEPS = ("stage", "frame", "compose")
 
 
 class PipelineError(RuntimeError):
@@ -33,6 +34,7 @@ class PipelineError(RuntimeError):
 class PipelineResult:
     verify_report: VerifyReport
     capture_results: list[tuple[str, str, int]] = field(default_factory=list)  # (device, locale, exit_code)
+    stage_results: list[StageResult] = field(default_factory=list)
     frame_results: list[FrameResult] = field(default_factory=list)
     compose_results: list[ComposeResult] = field(default_factory=list)
 
@@ -84,6 +86,25 @@ def run(
                     raise PipelineError(
                         f"capture hook failed for {device_key}/{locale} "
                         f"(exit {exit_code})"
+                    )
+
+    if "stage" in steps:
+        # No-op when manual_inputs isn't configured. When it is, copy each
+        # declared file from <source>/<file> into <raw_dir>/<file>. Missing
+        # source files are reported as PipelineError because they're a real
+        # blocker — verify already flagged them, but we double-check here so
+        # `shotsmith stage` standalone is also safe.
+        for device_key in device_keys:
+            for locale in locales:
+                sr = stage_locale(
+                    config, locale=locale, device_key=device_key, dry_run=dry_run
+                )
+                result.stage_results.append(sr)
+                if sr.skipped:
+                    missing = ", ".join(f"{name} ({reason})" for name, reason in sr.skipped)
+                    raise PipelineError(
+                        f"stage failed for {device_key}/{locale}: missing "
+                        f"manual_inputs source(s): {missing}"
                     )
 
     if "frame" in steps:

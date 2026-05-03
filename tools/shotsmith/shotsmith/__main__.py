@@ -12,6 +12,7 @@ from .compose import ComposeResult, compose_locale
 from .config import Config, ConfigError, load as load_config
 from .frame import FrameError, FrameResult, frame_locale
 from .pipeline import DEFAULT_STEPS, VALID_STEPS, PipelineError, run as run_pipeline
+from .stage import StageResult, stage_locale
 from .verify import format_report, verify
 
 
@@ -56,6 +57,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Print what would be framed without invoking frames-cli.",
     )
 
+    p_stage = sub.add_parser(
+        "stage", help="Stage manual_inputs sources into raw/ (no-op without manual_inputs)"
+    )
+    add_common_filters(p_stage)
+    p_stage.add_argument(
+        "--dry-run", action="store_true",
+        help="Print what would be staged without copying.",
+    )
+
     p_verify = sub.add_parser("verify", help="Validate raw/+framed/+composed/ directory contract")
     add_common_filters(p_verify)
 
@@ -85,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_compose(args)
     if args.command == "frame":
         return _cmd_frame(args)
+    if args.command == "stage":
+        return _cmd_stage(args)
     if args.command == "verify":
         return _cmd_verify(args)
     if args.command == "pipeline":
@@ -160,6 +172,37 @@ def _cmd_frame(args) -> int:
     return 0
 
 
+def _cmd_stage(args) -> int:
+    config = _load_or_die(args.config)
+    locales = args.locale or config.locales
+    device_keys = args.device or config.device_keys()
+
+    if config.manual_inputs is None:
+        print("ℹ️  No manual_inputs declared in config — stage is a no-op.")
+        return 0
+
+    total_written = 0
+    total_missing = 0
+    for device_key in device_keys:
+        for locale in locales:
+            result = stage_locale(
+                config, locale=locale, device_key=device_key, dry_run=args.dry_run,
+            )
+            _print_stage_result(result, dry_run=args.dry_run)
+            total_written += len(result.written)
+            total_missing += len(result.skipped)
+
+    verb = "would stage" if args.dry_run else "staged"
+    if total_missing:
+        print(
+            f"\n❌ {verb} {total_written} file(s); "
+            f"{total_missing} missing source file(s) — see warnings above."
+        )
+        return 2
+    print(f"\n✅ Done. {verb} {total_written} file(s).")
+    return 0
+
+
 def _cmd_verify(args) -> int:
     config = _load_or_die(args.config)
     locales = args.locale or config.locales
@@ -223,6 +266,15 @@ def _print_frame_result(result: FrameResult, dry_run: bool) -> None:
         print(f"  {label}: {verb} {len(result.written)} image(s)")
     for filename, reason in result.skipped:
         print(f"  {label}: skipped {filename} ({reason})")
+
+
+def _print_stage_result(result: StageResult, dry_run: bool) -> None:
+    label = f"{result.device}/{result.locale}"
+    if result.written:
+        verb = "would stage" if dry_run else "staged"
+        print(f"  {label}: {verb} {len(result.written)} file(s)")
+    for filename, reason in result.skipped:
+        print(f"  ❌ {label}: missing {filename} ({reason})")
 
 
 if __name__ == "__main__":

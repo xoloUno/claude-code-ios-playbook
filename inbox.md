@@ -169,4 +169,80 @@ watch-screenshots.sh`, `scripts/compose-watch-marketing.sh`. Bonus: a
 ImageMagick layered draw (concentric rounded rects + alpha mask) and
 a sample appshot config for projects that want fancier captioning.
 
+### 2026-05-03 — Flara
+
+**Category:** pattern + suggestion
+**Context:** Recapturing all Flara screenshots end-to-end on the
+shotsmith v2 pipeline exposed that the screenshot pipeline has two
+distinct input classes that share a directory namespace but want
+opposite gitignore policies:
+- **Regenerable app captures** — XCUITest- or simctl-driven app
+  surfaces (HomeScreen, SymptomPicker, etc.). Fast to regenerate,
+  shift visually with every UI tweak. Live at
+  `fastlane/screenshots/<locale>/<device>/raw/` and are gitignored.
+- **Human-required system-surface captures** — iOS UI rendered by
+  SpringBoard, not the app: Notification Center stack with the Live
+  Activity expanded, Home Screen page showing the widget, Control
+  Center pulled down with the Control Widget. Slow to regenerate
+  (require a person in the loop because Quartz drag and Cmd+L
+  automation never reliably worked), and rarely change (only when
+  iOS major UI shifts, the Live Activity / widget design changes,
+  or a new locale is added). Live at `fastlane/system-surface-pngs/`
+  and are tracked.
+
+The Fastfile's `:compose_screenshots` lane stages the tracked dir
+into the gitignored dir right before invoking shotsmith, so the two
+flows merge for the actual compose step.
+
+**Lesson:** Pipelines that mix automated and manual capture should
+split inputs into two named directories with opposite gitignore
+policies. The split solves three problems at once: (1) keeps git
+history small by ignoring the regenerable bulk, (2) preserves the
+slow-to-regenerate inputs as a versionable source of truth so anyone
+can run the pipeline cold without you on the keyboard, and (3) makes
+the cadence intent legible — "regenerate this every UI tweak" vs
+"recapture once per release / when the surface changes."
+
+The pattern works well in Flara but has discoverability problems for
+new contributors: the separation is real but invisible. No README in
+either directory explains why one is gitignored and the other isn't.
+The dir name `system-surface-pngs/` is project-specific (LA stack,
+widget, CC) when the underlying pattern is general (manual-capture
+inputs that the pipeline stages but doesn't regenerate).
+
+**Suggested action:**
+
+1. Document this as the **"two-input-tree pattern"** in the playbook's
+   screenshot section. Make it explicit which dir is which and why.
+
+2. Recommend a more general directory name in the iOS template:
+   `fastlane/manual-captures/` rather than the Flara-specific
+   `system-surface-pngs/`. Projects that don't have manual-capture
+   surfaces (apps without Live Activity / widgets / Control Widget)
+   can skip the dir entirely.
+
+3. Ship a one-page `README.md` template that drops into
+   `manual-captures/` explaining: what lives here, when to recapture,
+   how the compose lane stages it, and the "once per release" cadence
+   convention. The README is the "loud about itself" mechanism that's
+   currently missing.
+
+4. Update the bootstrap iOS template's `.gitignore` to ignore
+   `fastlane/screenshots/` and `fastlane/shotsmith/composed/` but
+   **not** `fastlane/manual-captures/`. Calls out the policy in the
+   gitignore itself with a comment.
+
+5. Mention in the iOS template README that this dir is opt-in: list
+   the surfaces that typically warrant it (Live Activity, Home Screen
+   widget, Lock Screen widget, Control Widget) and the gestures
+   required to capture each. Reference Flara's
+   `fastlane/capture_widgets.sh` and `fastlane/capture_control_center.sh`
+   as the canonical implementation.
+
+6. Optional follow-up: shotsmith itself could grow a `manual_inputs`
+   config block that names the tracked dir directly, so the staging
+   step lives inside shotsmith instead of being copy-paste Ruby in
+   each project's Fastfile. That's a shotsmith change, not a playbook
+   change — capture as a separate inbox entry if pursued.
+
 

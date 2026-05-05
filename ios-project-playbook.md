@@ -941,15 +941,17 @@ A 2064×2752 iPad screenshot auto-frames as the matching iPad Pro 13" model.
 #### Track B — shotsmith (when you need captions + gradients + multi-locale)
 
 Apple Frames CLI only applies device bezels. For marketing screenshots with
-captions, gradient backgrounds, and multi-locale rendering, the playbook
-ships **shotsmith** — an in-house Python composer at
-[`tools/shotsmith/`](tools/shotsmith/) in this repo. It replaces the prior
-appshot-cli + `patch-appshot.sh` pipeline (retired 2026-05-03; see
-[CHANGELOG.md](CHANGELOG.md) for migration history). shotsmith wraps
-frames-cli for the bezel step and adds a Pillow (FreeType + HarfBuzz) layer
-for typography — gradients, captions, optional subtitles, per-device
-overrides, multi-locale, and a stable per-device directory contract that
-preserves raws and framed intermediates.
+captions, gradient backgrounds, and multi-locale rendering, use **shotsmith** —
+a standalone Python composer at
+[github.com/xoloUno/shotsmith](https://github.com/xoloUno/shotsmith). It
+replaces the prior appshot-cli + `patch-appshot.sh` pipeline (retired
+2026-05-03; see [CHANGELOG.md](CHANGELOG.md) for migration history).
+shotsmith was developed in this playbook from v0.1.0 through v0.2.0 and
+spun off to its own repo on 2026-05-03 for decoupled release cadence. It
+wraps frames-cli for the bezel step and adds a Pillow (FreeType +
+HarfBuzz) layer for typography — gradients, captions, optional subtitles,
+per-device overrides, multi-locale, and a stable per-device directory
+contract that preserves raws and framed intermediates.
 
 **The durable reference is [`.claude/rules/screenshot-pipeline.md`](.claude/rules/screenshot-pipeline.md)**.
 That rule covers the four artifact layers (`raw/` → `framed/` → `composed/`),
@@ -974,20 +976,38 @@ App Store Connect
 runtime dependency:
 
 ```bash
-cd /path/to/_playbook/tools/shotsmith
-pip3 install -r requirements.txt   # installs Pillow into the active python3
+pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0
+shotsmith --version   # verifies install
 ```
 
-`bootstrap.sh` symlinks `bin/shotsmith` in each project to
-`$PLAYBOOK_DIR/tools/shotsmith/bin/shotsmith`, so projects automatically pick
-up shotsmith updates when `/upgrade` syncs the playbook. frames-cli must also
-be on `PATH` (see Track A above for that one-time install).
+Or for development from a clone:
+
+```bash
+git clone https://github.com/xoloUno/shotsmith.git
+cd shotsmith && pip install -r requirements.txt
+ln -s "$(pwd)/bin/shotsmith" ~/.local/bin/shotsmith
+```
+
+frames-cli must also be on `PATH` (see Track A above for that one-time
+install).
+
+**Optional Claude Code skill** — shotsmith ships a standalone skill at
+`skill/SKILL.md` in its repo. Install once to give any session in any
+project shotsmith awareness:
+
+```bash
+mkdir -p ~/.claude/skills/shotsmith
+ln -s /path/to/shotsmith/skill/SKILL.md ~/.claude/skills/shotsmith/SKILL.md
+```
+
+When `bootstrap.sh` runs and shotsmith isn't on `PATH`, it prints these
+install hints and continues — bootstrap doesn't hard-block on optional
+tooling.
 
 **Project layout (bootstrap-emitted).** Two input trees with opposite gitignore
 policies — see the rule for the full rationale:
 
 ```
-bin/shotsmith                                     ← symlink to playbook tool
 fastlane/
 ├── shotsmith/
 │   ├── config.json                               ← TUNE THIS (gradient, captions, locales)
@@ -1008,7 +1028,7 @@ slash command (defined in the playbook, propagated to every project at
 bootstrap). All other screenshot directories are regenerable.
 
 **Tune `fastlane/shotsmith/config.json` per project.** Starter template
-(see [`tools/shotsmith/templates/config.example.json`](tools/shotsmith/templates/config.example.json)
+(see [shotsmith's `templates/config.example.json`](https://github.com/xoloUno/shotsmith/blob/main/templates/config.example.json)
 for the full schema with subtitle, dither, per-device overrides, and
 `input_mapping`):
 
@@ -1056,7 +1076,7 @@ it inside an `input_mapping` indirection. Omit the block entirely if your
 app has no manual-gesture surfaces.
 
 Three preset palettes are bundled at
-[`tools/shotsmith/templates/presets/`](tools/shotsmith/templates/presets/):
+[shotsmith's `templates/presets/`](https://github.com/xoloUno/shotsmith/tree/main/templates/presets):
 **mauve** (dusty purple → coral), **royal-purple** (deep violet → coral, used
 by Flara), and **apple-music** (deep red → coral). Copy any one as your
 starting point.
@@ -1092,18 +1112,19 @@ hands off to `deliver`:
 ./scripts/capture-screenshots.sh                   # writes to <locale>/<device>/raw/
 
 # 3. Stage manual-captures + run frame + compose
-bundle exec fastlane compose_screenshots           # invokes ./bin/shotsmith pipeline
+bundle exec fastlane compose_screenshots           # invokes `shotsmith pipeline`
 
 # 4. Upload
 bundle exec fastlane upload_screenshots
 ```
 
-The `compose_screenshots` lane (bootstrap-emitted) is now a one-line wrapper
-around `./bin/shotsmith pipeline` — staging is handled inside shotsmith via
-the `manual_inputs` config block (the `stage` step), and `input_mapping`
-renames the `90/91/92_` prefixes into canonical caption keys at frame time.
-Multi-locale runs in a single pass — `config.json` lists the locales,
-shotsmith iterates them.
+The `compose_screenshots` lane (bootstrap-emitted) is a one-line wrapper
+around `shotsmith pipeline` (with an install-check that prints a
+friendly hint if shotsmith isn't on PATH) — staging is handled inside
+shotsmith via the `manual_inputs` config block (the `stage` step), and
+`input_mapping` renames the `90/91/92_` prefixes into canonical caption
+keys at frame time. Multi-locale runs in a single pass — `config.json`
+lists the locales, shotsmith iterates them.
 
 > **Raw + framed preservation is automatic.** shotsmith's directory contract
 > writes to `raw/` and `framed/` siblings under each device dir and never

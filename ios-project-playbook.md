@@ -973,19 +973,22 @@ App Store Connect
 ```
 
 **One-time install (per machine).** shotsmith uses Pillow as its only
-runtime dependency:
+runtime dependency. Install via `pipx` (requires `brew install pipx`
+first if you don't have it):
 
 ```bash
 pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0
 shotsmith --version   # verifies install
 ```
 
-Or for development from a clone:
+Or from a clone if you'd rather skip pipx:
 
 ```bash
 git clone https://github.com/xoloUno/shotsmith.git
 cd shotsmith && pip install -r requirements.txt
+mkdir -p ~/.local/bin
 ln -s "$(pwd)/bin/shotsmith" ~/.local/bin/shotsmith
+shotsmith --version
 ```
 
 frames-cli must also be on `PATH` (see Track A above for that one-time

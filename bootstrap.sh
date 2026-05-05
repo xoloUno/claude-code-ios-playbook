@@ -95,10 +95,6 @@ fastlane/shotsmith/composed/         # composed (regenerable from raw + config)
 # Intentionally NOT ignored: fastlane/manual-captures/
 # These are tracked manual-gesture inputs (Live Activity stack, Home Screen
 # widget, Control Center) — recaptured once per release. Do not gitignore.
-# shotsmith binary symlink — points at $PLAYBOOK_DIR/tools/shotsmith/bin/
-# on the bootstrapping machine. Each machine re-runs bootstrap (or the
-# `ln -sfn` line) to refresh the link locally.
-bin/
 GITIGNORE
 # --- XcodeGen project.yml ---
 cat > project.yml << XCODEGEN
@@ -423,15 +419,33 @@ After recapturing, commit the changed PNGs with a message like
 diff system-surface drift release-over-release.
 MANUALCAPTURES
 
-# --- shotsmith install (symlink playbook tool into project bin/) ---
-# The compose_screenshots fastlane lane invokes ./bin/shotsmith. The tool
-# itself lives in $PLAYBOOK_DIR/tools/shotsmith/ — symlink rather than copy
-# so projects automatically pick up shotsmith updates when /upgrade syncs
-# the playbook. PLAYBOOK_DIR is set later (line ~1336); resolve it here from
-# SCRIPT_DIR (set at the top of bootstrap).
-mkdir -p bin
-ln -sfn "$SCRIPT_DIR/tools/shotsmith/bin/shotsmith" bin/shotsmith
-echo "✅ Symlinked bin/shotsmith → $SCRIPT_DIR/tools/shotsmith/bin/shotsmith"
+# --- shotsmith install check ---
+# shotsmith is shipped as a standalone tool at github.com/xoloUno/shotsmith
+# (spun off from this playbook in 2026-05-03). The compose_screenshots
+# fastlane lane invokes `shotsmith` from PATH. If it's not installed,
+# print the install hint and continue — bootstrap shouldn't hard-block on
+# optional tooling that's only needed at screenshot-render time.
+if ! command -v shotsmith >/dev/null 2>&1; then
+  cat <<'SHOTSMITH_HINT'
+ℹ️  shotsmith not found on PATH. Install it once per machine to enable
+   the `compose_screenshots` fastlane lane:
+
+       pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0
+
+   Or for development from a clone:
+
+       git clone https://github.com/xoloUno/shotsmith.git
+       cd shotsmith && pip install -r requirements.txt
+       ln -s "$(pwd)/bin/shotsmith" ~/.local/bin/shotsmith
+
+   Optional: install the Claude Code skill so any session is
+   shotsmith-aware:
+
+       mkdir -p ~/.claude/skills/shotsmith
+       ln -s /path/to/shotsmith/skill/SKILL.md ~/.claude/skills/shotsmith/SKILL.md
+
+SHOTSMITH_HINT
+fi
 
 cat > fastlane/Fastfile << 'FASTFILE'
 default_platform(:ios)
@@ -550,12 +564,19 @@ platform :ios do
   # populates fastlane/manual-captures/<locale>/.
   lane :compose_screenshots do |options|
     config = options[:config] || "shotsmith/config.json"
+    unless system("command -v shotsmith >/dev/null 2>&1")
+      UI.user_error!(
+        "shotsmith not found on PATH. Install it once per machine:\n" \
+        "  pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0\n" \
+        "See https://github.com/xoloUno/shotsmith for full install options."
+      )
+    end
     sh(
-      "./bin/shotsmith pipeline --config #{config.shellescape}",
+      "shotsmith pipeline --config #{config.shellescape}",
       error_callback: ->(_) {
         UI.user_error!(
           "shotsmith pipeline failed — run " \
-          "`./bin/shotsmith verify --config #{config}` to see specific errors. " \
+          "`shotsmith verify --config #{config}` to see specific errors. " \
           "Common cause: missing manual-capture sources — recapture via " \
           "/capture-manual-surfaces."
         )

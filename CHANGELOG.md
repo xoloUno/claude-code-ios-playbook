@@ -28,7 +28,107 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-03 — shotsmith spun off to its own repo: `xoloUno/shotsmith`
+
+shotsmith no longer ships in this playbook. It now lives at
+[github.com/xoloUno/shotsmith](https://github.com/xoloUno/shotsmith) with its
+own release cadence, its own CHANGELOG, and a standalone Claude Code skill.
+
+This is a **clean break** — no transition window, no backward-compat path.
+Flara (the only consumer at the time of the split) migrated atomically in
+the same release.
+
+### Why now
+
+The earlier `2026-05-03 — appshot retirement` entry settled the question of
+"is shotsmith ready?" but kept the in-tree-with-the-playbook install model.
+A user-driven re-weigh of the trade-offs landed on three reasons to spin off
+ahead of the original "2+ project users" criterion:
+
+1. **Decoupled release cadence** — shotsmith bug fixes ship without waiting
+   for a playbook PR window; playbook docs ship without dragging in-flight
+   shotsmith state.
+2. **Cleaner mental model** — `templates/`, `tests/`, `bin/`, etc. live
+   unambiguously in the shotsmith repo. The playbook's role is "tell
+   projects how to use shotsmith," not "ship shotsmith."
+3. **Standalone Claude Code skill** — `skill/SKILL.md` in the new repo,
+   user-installed at `~/.claude/skills/shotsmith/SKILL.md`, gives any
+   agent in any project shotsmith awareness with no per-project setup.
+
+The "schema stability for external users" concern that the original criterion
+guarded against is mitigated by keeping the new repo private through smoke-test,
+and by deferring PyPI publication until a second consumer surfaces.
+
+### What changed in the playbook
+
+**Deleted:**
+- `tools/shotsmith/` — entire directory, ~30 files. History preserved in
+  the new repo via `git subtree split --prefix=tools/shotsmith`.
+- `bootstrap.sh` `# --- shotsmith install (symlink playbook tool into project bin/) ---`
+  section — the bootstrap-emitted `bin/shotsmith` symlink to
+  `$PLAYBOOK_DIR/tools/shotsmith/bin/shotsmith`.
+- `bin/` from the bootstrap-emitted project `.gitignore`.
+
+**Added/updated:**
+- `bootstrap.sh` `# --- shotsmith install check ---` section — `command -v
+  shotsmith` check that prints a friendly install hint (`pipx install git+...`)
+  if shotsmith isn't on PATH. Bootstrap doesn't hard-block on optional tooling.
+- `bootstrap.sh` `:compose_screenshots` lane — invokes `shotsmith pipeline`
+  from PATH (was `./bin/shotsmith pipeline`); guarded by an
+  `unless system("command -v shotsmith")` install-check.
+- `ios-project-playbook.md` Phase 5 Track B — install instructions
+  switched from "from `tools/shotsmith` in the playbook" to
+  `pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0`.
+  Project layout diagram drops `bin/shotsmith`.
+- `tools/shotsmith/templates/...` references in Phase 5 Track B switched
+  from local relative paths to GitHub URLs in the new repo.
+
+### What changed in the new shotsmith repo
+
+(Documented in the standalone repo's `CHANGELOG.md`; summarized here for
+playbook readers.)
+
+- `LICENSE` file (MIT — license already declared in pyproject.toml).
+- `pyproject.toml` enriched with `[project.urls]` and PyPI classifiers
+  (Beta, MIT, macOS, Python 3.9-3.12, Multimedia/Graphics, Build Tools).
+- Standalone `CHANGELOG.md` seeded with v0.2.0 release notes.
+- `skill/SKILL.md` — Claude Code skill mirroring the frames-cli pattern.
+- `.github/workflows/test.yml` — pytest CI on macos-latest × Python 3.10/3.11/3.12.
+- README softened (5 playbook-specific references re-framed for a
+  general audience).
+
+### To adopt in your project
+
+1. **Pull the playbook via `/upgrade`** — the bootstrap symlink section is
+   gone, and `:compose_screenshots` now invokes `shotsmith` from PATH.
+2. **Install shotsmith on the machine** (one-time):
+   ```bash
+   pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0
+   ```
+3. **(Optional) Install the Claude Code skill:**
+   ```bash
+   git clone https://github.com/xoloUno/shotsmith.git ~/Code/shotsmith   # if not already
+   mkdir -p ~/.claude/skills/shotsmith
+   ln -s ~/Code/shotsmith/skill/SKILL.md ~/.claude/skills/shotsmith/SKILL.md
+   ```
+4. **If your project hardcodes `tools/shotsmith/bin/shotsmith` or
+   `./bin/shotsmith`** in its Fastfile or scripts, replace with `shotsmith`
+   on PATH. Add an install-check that surfaces the pipx hint on miss.
+5. **Re-run `bundle exec fastlane compose_screenshots`** — should produce
+   byte-identical output to the previous in-tree shotsmith. If it doesn't,
+   `shotsmith verify --config <path>` will name the cause.
+
+### Repo visibility
+
+`xoloUno/shotsmith` started private and flips to public after Flara's
+end-to-end smoke test passes. By the time you see this CHANGELOG entry on
+main, the repo should be public.
+
+---
+
 ## 2026-05-03 — shotsmith 0.2.0: `manual_inputs` config block + Superseded-by convention + vestigial lane cleanup
+
+> **Superseded by:** 2026-05-03 — shotsmith spun off to its own repo: `xoloUno/shotsmith`. The `tools/shotsmith/` directory referenced by this entry no longer exists; install shotsmith via `pipx install git+...` instead. Capability surface (manual_inputs, stage step, `shotsmith stage` subcommand, the verify-end-to-end win) is preserved verbatim in the standalone repo's v0.2.0 release.
 
 Three follow-ups from the Phase 6 wrap-up landed together. All three came
 out of the same `/curate` pass on `inbox.md` plus the user's call-out that

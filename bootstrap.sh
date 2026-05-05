@@ -428,14 +428,17 @@ MANUALCAPTURES
 if ! command -v shotsmith >/dev/null 2>&1; then
   cat <<'SHOTSMITH_HINT'
 ℹ️  shotsmith not found on PATH. Install it once per machine to enable
-   the `compose_screenshots` fastlane lane:
+   the `compose_screenshots` fastlane lane.
+
+   Via pipx (requires `brew install pipx` first if you don't have it):
 
        pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0
 
-   Or for development from a clone:
+   Or from a clone (no pipx required):
 
        git clone https://github.com/xoloUno/shotsmith.git
        cd shotsmith && pip install -r requirements.txt
+       mkdir -p ~/.local/bin
        ln -s "$(pwd)/bin/shotsmith" ~/.local/bin/shotsmith
 
    Optional: install the Claude Code skill so any session is
@@ -567,8 +570,9 @@ platform :ios do
     unless system("command -v shotsmith >/dev/null 2>&1")
       UI.user_error!(
         "shotsmith not found on PATH. Install it once per machine:\n" \
+        "  brew install pipx   # if pipx isn't already installed\n" \
         "  pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0\n" \
-        "See https://github.com/xoloUno/shotsmith for full install options."
+        "See https://github.com/xoloUno/shotsmith for the no-pipx alternative."
       )
     end
     sh(

@@ -10,9 +10,29 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "xoloUno" }]
+keywords = ["app-store", "screenshots", "ios", "fastlane", "pillow", "marketing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Build Tools",
+]
 dependencies = [
     "Pillow>=10.0,<13.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/xoloUno/shotsmith"
+Repository = "https://github.com/xoloUno/shotsmith"
+Issues = "https://github.com/xoloUno/shotsmith/issues"
+Changelog = "https://github.com/xoloUno/shotsmith/blob/main/CHANGELOG.md"
 
 [project.scripts]
 shotsmith = "shotsmith.__main__:main"

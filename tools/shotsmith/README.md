@@ -4,26 +4,45 @@ Compose App Store screenshots: gradient backgrounds, captions, multi-locale —
 takes already-framed PNGs (from `frames-cli` or any other framer) and produces
 ASC-ready submission images.
 
-Built as a replacement for `appshot-cli`'s caption + gradient layer. Uses
+Built as a CLI alternative to `appshot-cli`'s caption + gradient layer. Uses
 Pillow (FreeType + HarfBuzz) for typography. Pure Python, single dependency.
 Wraps `frames-cli` for device bezels.
 
 ## Status
 
-Phase 4.5 — orchestrator complete. iPhone 6.9" + iPad 13" supported.
-Multi-locale supported. Watch is not yet handled (see the playbook's
-`thank-you-so-much-drifting-cocoa.md` plan §3 for the deferred decision).
+v0.2.0 — orchestrator complete. iPhone 6.9" + iPad 13" supported. Multi-locale
+supported. Watch is intentionally not handled — Apple Watch ASC submissions
+are screen-only PNGs from `simctl io screenshot` because the watch hardware's
+display corner-radius clips any framing or caption art at viewing time. See
+the **Watch screenshots** note below.
+
+## Install
+
+```bash
+pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0
+shotsmith --version
+```
+
+For development from a clone:
+
+```bash
+git clone https://github.com/xoloUno/shotsmith.git
+cd shotsmith
+pip install -r requirements.txt
+./bin/shotsmith --version
+```
 
 ## Requirements
 
-- Python ≥ 3.9 (any python on `PATH` as `python3`)
-- Pillow (pinned in `requirements.txt`)
+- Python ≥ 3.9 (any `python3` on PATH)
+- Pillow (pinned in `requirements.txt`; pulled in automatically by `pipx install`)
 
 The `bin/shotsmith` shim resolves `python3` via `/usr/bin/env`. On stock macOS
 that's `/usr/bin/python3` (3.9) — which does **not** ship with Pillow. If you
-run shotsmith on a fresh Mac without Pillow installed, the shim prints the
-exact `pip install` command for your active Python and exits with a
-non-zero status. Copy-paste the command and re-run.
+run the shim from a clone without Pillow installed, it prints the exact
+`pip install` command for your active Python and exits with a non-zero
+status. Copy-paste the command and re-run. (`pipx install` avoids this entirely
+since it manages the Pillow install for you.)
 
 If you'd rather use a newer Python (e.g. Homebrew's `/usr/local/bin/python3`),
 invoke the shim through that interpreter directly:
@@ -32,20 +51,24 @@ invoke the shim through that interpreter directly:
 /usr/local/bin/python3 ./bin/shotsmith --version
 ```
 
-## Install
+## Watch screenshots
 
-From the playbook (development):
+shotsmith never composes Apple Watch screenshots. ASC submissions go straight
+from `simctl io screenshot` (raw 422×514 native for Ultra 3) to the upload
+payload — no framing, no gradient, no caption. The watch hardware's display
+corner-radius would clip added art at viewing time. For non-ASC marketing
+needs (web pages, press kits), run `frames-cli` on the raw capture rather
+than maintaining a separate composition pipeline.
+
+## Claude Code skill
+
+A standalone Claude Code skill is shipped at `skill/SKILL.md`. Install once
+to give any Claude Code session in any project native awareness of
+shotsmith's schema, subcommands, and directory contract:
 
 ```bash
-cd tools/shotsmith
-pip install -r requirements.txt
-./bin/shotsmith --version
-```
-
-As a package (once spun out to its own repo):
-
-```bash
-pipx install shotsmith
+mkdir -p ~/.claude/skills/shotsmith
+ln -s "$(pwd)/skill/SKILL.md" ~/.claude/skills/shotsmith/SKILL.md
 ```
 
 ## Directory contract
@@ -174,10 +197,12 @@ the same filename in `framed/`. So simple pipelines need no mapping at all.
 
 Some screenshot surfaces — Live Activity stack on the lock screen, Home Screen
 widget page, Control Center pulled down — can't reliably be captured by
-XCUITest or simctl scripts. The playbook's `/capture-manual-surfaces` slash
-command produces those PNGs as **tracked** inputs in
-`fastlane/manual-captures/<locale>/`, recaptured "once per release" when the
-underlying UI changes.
+XCUITest or simctl scripts. They need a human gesture in the simulator. The
+[xoloUno iOS project playbook](https://github.com/xoloUno/claude-code-ios-playbook)
+ships a `/capture-manual-surfaces` slash command for that flow, but any
+mechanism that produces tracked PNGs in a per-locale directory works — the
+filenames just need to match what `manual_inputs.{device}.files` declares.
+Recapture "once per release" when the underlying UI changes.
 
 The `manual_inputs` config block declares those sources. The `stage` pipeline
 step copies declared files from `<source>/<file>` into `<raw_dir>/<file>`
@@ -409,7 +434,8 @@ within `caption_area_height`.
 
 These are Apple's required ASC submission sizes. Apple auto-scales them down
 to smaller iPhone/iPad slots — uploading 6.9" + 13" covers every device class.
-See the iOS playbook's `build-deploy.md` for the full ASC matrix.
+See [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
+for the full ASC matrix.
 
 ## Tests
 
@@ -438,14 +464,19 @@ re-rendering recipe and Phase 2 adoption notes.
 
 ## Roadmap
 
-- **Phase 2**: side-by-side parity check against appshot output for Flara
-- **Phase 3**: multi-locale + iPad polish
-- **Phase 4**: Flara migration; retire `appshot-cli` and `patch-appshot.sh`
-- **Phase 5**: watch composition decision (depends on Apple's actual stance on
-  framed watch screenshots — see playbook plan §3)
-- **Phase 6**: bootstrap.sh integration; ship to new projects by default
-- **Future**: spin off to its own `xoloUno/shotsmith` repo + PyPI release once
-  the schema stabilizes after a few real ASC submissions
+- **PyPI publication** — pin install command currently uses
+  `pipx install git+https://...`; PyPI release once the schema settles
+  via a second project consumer (or external interest surfaces).
+- **Schema v3** — TBD; no breaking changes planned for v0.2.x. Likely
+  drivers: a non-Latin script that exposes shaping gaps in Pillow vs.
+  CoreText, or a project layout that doesn't fit the current
+  per-device input/output template model.
+- **Synthetic surface capture** — replace simulator-based capture of
+  Live Activity / widget / Control Center with SwiftUI `ImageRenderer`
+  scenes. See the project that gave shotsmith its origin (the
+  [xoloUno iOS project playbook](https://github.com/xoloUno/claude-code-ios-playbook))
+  for the agent-driven manual-capture loop that's the simpler
+  alternative — pursued there first.
 
 ## Why not appshot?
 

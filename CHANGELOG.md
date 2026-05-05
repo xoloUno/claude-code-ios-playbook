@@ -28,6 +28,36 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-05 — `/status` and `/wrapup` tailored to the playbook repo itself
+
+The playbook now ships **two** versions of the `/status` and `/wrapup` slash
+commands: one for downstream iOS projects (the existing CLAUDE.md / WORKLOG.md /
+MANUAL-TASKS.md flow) and one for the playbook repo itself (a docs/tooling repo
+with `CHANGELOG.md` and `inbox.md` instead). Bootstrap continues to emit the
+downstream version into new projects — there's no behavior change for any
+bootstrapped project.
+
+**Files affected:**
+- `.claude/templates/commands/status.md` — new home of the downstream `/status`
+  template. Identical contents to the previous `.claude/commands/status.md`.
+- `.claude/templates/commands/wrapup.md` — new home of the downstream `/wrapup`
+  template. Identical contents to the previous `.claude/commands/wrapup.md`.
+- `.claude/commands/status.md` — rewritten as a playbook-specific session
+  briefing (branch + `git status` + `CHANGELOG.md` head + `inbox.md` count).
+- `.claude/commands/wrapup.md` — rewritten with playbook-specific wrap-up
+  steps (CHANGELOG entry rules, branch routing for the playbook's own PRs).
+- `bootstrap.sh` — the slash-command copy step now sources from both
+  `.claude/commands/` (everything except `curate.md`) and
+  `.claude/templates/commands/` (downstream-only variants).
+
+**What to do in your project:**
+- Nothing. Re-running `/upgrade` or re-bootstrapping is a no-op for
+  `/status` and `/wrapup` content — the templates carry the same instructions
+  they did before. This entry exists so a downstream session reading the
+  CHANGELOG knows the bootstrap structural change is intentional and inert.
+
+---
+
 ## 2026-05-03 — shotsmith spun off to its own repo: `xoloUno/shotsmith`
 
 shotsmith no longer ships in this playbook. It now lives at

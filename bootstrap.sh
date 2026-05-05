@@ -1206,17 +1206,33 @@ Overall: ❌ FAIL — fix metadata char limits before deploy.
 If any check FAILs, refuse to proceed and offer to fix the failing items. Only after
 all checks PASS (or the user explicitly overrides) should /deploy or /release be invoked.
 PREFLIGHTCMD
-# --- Copy playbook slash commands (except curate, which is playbook-only) ---
+# --- Copy playbook slash commands ---
+# Commands live in two places:
+#   .claude/commands/           — used both in the playbook itself and downstream
+#                                 (curate is the lone exception: playbook-only)
+#   .claude/templates/commands/ — downstream-only versions of commands whose
+#                                 playbook-local variant is shaped differently
+#                                 (currently /status and /wrapup — the playbook
+#                                 has its own variants tailored to a docs/tooling
+#                                 repo, while downstream iOS projects need the
+#                                 CLAUDE.md / WORKLOG.md / MANUAL-TASKS.md flow).
 PLAYBOOK_DIR="$SCRIPT_DIR"
 CMDS_SRC="$PLAYBOOK_DIR/.claude/commands"
+TEMPLATES_CMDS_SRC="$PLAYBOOK_DIR/.claude/templates/commands"
 if [[ -d "$CMDS_SRC" ]]; then
   for cmd in "$CMDS_SRC"/*.md; do
     cmd_name=$(basename "$cmd")
     [[ "$cmd_name" == "curate.md" ]] && continue  # playbook-only command
     cp "$cmd" .claude/commands/"$cmd_name"
   done
-  echo "✓ Playbook slash commands copied (/inbox, /status, /wrapup, /context-health, /upgrade)"
 fi
+if [[ -d "$TEMPLATES_CMDS_SRC" ]]; then
+  for cmd in "$TEMPLATES_CMDS_SRC"/*.md; do
+    cmd_name=$(basename "$cmd")
+    cp "$cmd" .claude/commands/"$cmd_name"
+  done
+fi
+echo "✓ Playbook slash commands copied (/inbox, /status, /wrapup, /context-health, /upgrade, /conform, /capture-manual-surfaces)"
 # --- Claude Code rules (path-scoped, auto-loaded) ---
 RULES_SRC="$PLAYBOOK_DIR/.claude/rules"
 if [[ -d "$RULES_SRC" ]]; then

@@ -1,34 +1,51 @@
-Quick session orientation — run this at the start of every session.
+Quick session orientation for the playbook — run at the start of every session.
+
+This is the playbook repo itself, not a downstream iOS project. There's no
+`CLAUDE.md`, no `WORKLOG.md`, no `MANUAL-TASKS.md`. The state of the world lives
+in git, `CHANGELOG.md`, `inbox.md`, and open PRs.
 
 Steps:
-1. Read CLAUDE.md and summarize the **Current State** section (last updated date,
-   build status, last completed work, next up)
-2. Read the latest entry in `WORKLOG.md` (if it exists) — show date and key points
-3. Run `git log --oneline -10` — show recent commits
-4. Run `git branch --show-current` — confirm which branch we're on
-5. Run `git status` — flag any uncommitted changes from a previous session.
-   If uncommitted changes exist, ask the user whether to commit, stash, or discard
-   before proceeding.
-6. Check if `MANUAL-TASKS.md` exists and has unchecked items (`- [ ]`). If so,
-   list them and ask if any have been completed.
-7. Check for open Dependabot PRs: `gh pr list --label dependencies --state open`
-   (if `gh` is available). Mention any that are open.
-8. Check if the project has a `.playbook-version` file. If it exists, compare against
-   the playbook's CHANGELOG.md to see if there are newer entries. If outdated, suggest
-   running `/upgrade`.
+1. Run `git branch --show-current` and `git status --short` — current branch +
+   dirty state
+2. Run `git log --oneline -5` — recent commits on the current branch
+3. Run `git rev-list --left-right --count origin/main...HEAD 2>/dev/null` to
+   show ahead/behind state vs. `origin/main`
+4. Run `git fetch --dry-run --prune 2>&1` to detect local branches whose
+   remotes have been deleted (stale branches a previous session left behind).
+   Don't actually prune — just report.
+5. Check open PRs: `gh pr list --state open --limit 10` (if `gh` is available)
+6. Show the date and one-line title of the most recent CHANGELOG entry
+   (`grep -m1 '^## ' CHANGELOG.md`). This is the playbook's "current state"
+   for downstream `/upgrade` consumers.
+7. Count pending inbox entries: `grep -c '^### ' inbox.md` (each `### ` heading
+   is one un-curated lesson). If > 0, mention that `/curate` is available.
 
-Present all of this as a concise briefing — not a wall of text. Use this format:
+Present as a concise briefing — not a wall of text:
 
 ```
-## Session Briefing
+## Playbook Session Briefing
 
-**Project:** [app name] | **Branch:** [branch] | **Build:** [status]
-**Last session:** [date] — [one-line summary from WORKLOG]
-**Next up:** [from Current State]
+**Branch:** <branch> | **vs origin/main:** <N ahead, M behind>
+**Latest CHANGELOG entry:** <date> — <title>
+**Inbox:** <N pending entries> (run /curate to process)
+
+### Recent commits
+<git log --oneline -5 output>
+
+### Open PRs
+- #<N> <title> — <branch>
 
 ### Flags
-- ⚠️ [any uncommitted changes, pending manual tasks, stale rules, open Dependabot PRs]
-- ✓ Clean — no flags [if nothing to report]
+- ⚠️ <uncommitted changes, stale local branches, ahead-of-origin without push>
+- ✓ Clean — no flags <if nothing to report>
 ```
 
-After presenting the briefing, ask: "What would you like to work on?"
+After presenting, ask: "What would you like to work on?"
+
+## Things this command intentionally does NOT do
+
+- It does not read `CLAUDE.md` / `WORKLOG.md` / `MANUAL-TASKS.md` / `.playbook-version`.
+  Those are downstream-project artifacts; the playbook itself doesn't carry them.
+- It does not check Dependabot. The playbook has no app dependencies to update —
+  it's a documentation and tooling repo.
+- It does not auto-curate the inbox. That's `/curate`'s job, run intentionally.

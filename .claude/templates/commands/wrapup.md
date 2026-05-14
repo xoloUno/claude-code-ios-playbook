@@ -37,6 +37,9 @@ Steps:
    so the text reads natural to App Store reviewers and end users. Skip
    non-English `fastlane/metadata/<locale>/description.txt` files — they're
    translations; humanizing them risks breaking translation accuracy.
+   Non-English locales will drift between releases — that's intentional;
+   `/release` retranslates them fresh from the current en-US per
+   `.claude/rules/metadata-translation.md`.
    Requires the `writing-prose-like-a-human-for-agents` plugin (Tier 2 §11
    in `claude-code-plugins-setup.md`). If the plugin isn't installed, skip
    this step and mention it in the wrap-up summary.

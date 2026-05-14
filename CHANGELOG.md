@@ -28,6 +28,35 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-13 — Metadata translation rule + `/wrapup` note on locale drift
+
+Codifies the multi-locale App Store metadata workflow into a new rule:
+**en-US is the source of truth, humanized continuously via `/wrapup`;
+non-English locales drift during dev cycles and get retranslated fresh at
+`/release` time.** This is the token-efficient pattern — translation runs
+once per release, not every commit.
+
+The rule documents which metadata files get translated (`description.txt`,
+`name.txt`, `subtitle.txt`, `keywords.txt`, `promotional_text.txt`,
+`release_notes.txt`), which don't (URL files — handled by `legal-urls.md`),
+the release-time translation procedure, ASC character limits per file, and
+skip conditions for single-locale apps.
+
+The downstream `/wrapup` template's prose-humanizer step gained a note
+pointing at the new rule so future sessions understand the locale drift is
+intentional.
+
+**Files affected:**
+- `.claude/rules/metadata-translation.md` — new rule
+- `.claude/templates/commands/wrapup.md` — added a 3-line note in step 8 referencing the rule
+
+**What to do in your project:**
+- Run `/upgrade` to pull the new rule + updated wrapup template
+- If your project has multiple locales, the next `/release` will follow the new pattern automatically — Claude Code reads the rule and asks before writing translations
+- If your project is single-locale (en-US only), nothing changes — the rule's skip conditions short-circuit on day one
+
+---
+
 ## 2026-05-13 — Wire prose-humanizer into `/wrapup` for release notes and App Store metadata
 
 The downstream `/wrapup` template now invokes the `prose-humanizer` subagent

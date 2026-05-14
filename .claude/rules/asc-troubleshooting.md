@@ -1,6 +1,6 @@
 # App Store Connect Troubleshooting Rule
 
-ASC's API and fastlane's wrappers around it have well-known reliability quirks. When a
+ASC's API and fastlane's wrappers around it have reliability quirks. When a
 fastlane lane appears to hang or fail, check these first before assuming your work is
 broken.
 
@@ -12,9 +12,9 @@ emitting `Waiting for screenshots to appear before uploading. ... Server error g
 for tens of minutes.
 
 **Cause:** Fastlane polls ASC after upload to confirm files are visible. ASC's verify
-endpoint returns 500 transiently during high-load periods. Fastlane retries up to its
-`screenshot_processing_timeout` (default 3600s = one hour) before giving up. The actual
-files uploaded successfully — fastlane just can't confirm.
+endpoint returns 500 transiently under high load. Fastlane retries up to its
+`screenshot_processing_timeout` (default 3600s = one hour) before giving up. The files
+uploaded successfully — fastlane just can't confirm.
 
 **Fix — don't wait, verify directly:**
 
@@ -26,8 +26,8 @@ files uploaded successfully — fastlane just can't confirm.
    upload phase only, then kill it before the retry loop begins (watch for the
    `Waiting for screenshots to appear` log line).
 
-This is an ASC reliability issue, not a fastlane bug — Apple's verify endpoint genuinely
-flakes during high-load periods.
+This is an ASC reliability issue, not a fastlane bug — Apple's verify endpoint flakes
+under high load.
 
 ## ASC direct-query helper
 
@@ -110,7 +110,7 @@ or `.env.project` for reuse.
 ## When NOT to use this
 
 Don't reach for the direct API for routine work — fastlane is the right tool for normal
-metadata sync and uploads. Use the helper specifically when:
+metadata sync and uploads. Use the helper when:
 
 - A fastlane lane appears stuck in a verify/poll loop and you suspect ASC flakiness
 - You need to confirm state without running a fastlane lane (faster)

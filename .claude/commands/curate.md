@@ -10,7 +10,7 @@ Steps:
    - **Discard** — not useful, already covered, or too project-specific.
 4. Ask the user for their decision on each entry (or let them batch: "adopt all", etc.)
 5. For adopted entries:
-   - Make the actual change to the appropriate file (playbook, CLAUDE-TEMPLATE.md,
+   - Make the change to the appropriate file (playbook, CLAUDE-TEMPLATE.md,
      `.claude/rules/*.md`, `bootstrap.sh`, etc.)
    - Remove the entry from `inbox.md`
    - Add a CHANGELOG.md entry if the change is significant

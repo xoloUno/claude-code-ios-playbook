@@ -1,4 +1,4 @@
-Agent-driven capture loop for iOS system-surface screenshots that require human gestures
+Agent-driven capture loop for iOS system-surface screenshots that need human gestures
 (Live Activity on Lock Screen, Home Screen widget, Control Center). The agent automates
 prep — boot, language switch, status-bar override, app launch — and the user performs
 the Simulator gesture, then types `ready` in chat between surfaces.
@@ -78,8 +78,8 @@ Steps:
    - If any `simctl` command fails, report the exact command and stderr to the user and ask
      before retrying. Do not silently retry.
    - If the user cancels mid-loop, leave already-captured PNGs in place.
-   - Do NOT script Quartz drag or any other gesture automation. The whole point of this
-     command is that gestures are manual.
+   - Do NOT script Quartz drag or any other gesture automation. Gestures are manual by
+     design.
 
 6. **End-of-run summary.**
    - Print a tree of captured files under `fastlane/manual-captures/` (e.g. `tree

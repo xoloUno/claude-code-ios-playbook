@@ -1,4 +1,4 @@
-End-of-session wrap-up — commit, update docs, and leave the project clean.
+End-of-session wrap-up — commit and update docs.
 
 Steps:
 1. Run `git status` — review all changes (staged, unstaged, untracked)

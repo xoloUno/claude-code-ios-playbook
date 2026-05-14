@@ -81,10 +81,10 @@ installed. See https://github.com/github/github-mcp-server for setup.
 
 ### 2. XcodeBuildMCP
 
-The most impactful MCP server for iOS development. 59+ tools across builds,
+The main MCP server for iOS development. 59+ tools across builds,
 testing, simulator management, debugging, and UI automation. Claude Code can
 trigger Xcode builds, read structured error output, run tests, and manage
-simulators — all without you touching the terminal. Integrates natively with
+simulators — all without you touching the terminal. Integrates with
 Xcode 26.3+'s agent support.
 
 > **Breaking change in v2.5 (May 2026):** the `extraArgs` parameter was
@@ -117,7 +117,7 @@ claude mcp add --transport stdio XcodeBuildMCP \
 - Run unit tests and UI tests
 - List and boot simulators
 - Install and launch on simulator
-- All in a tight fix-build-fix loop without you intervening
+- All in a fix-build-fix loop without you intervening
 
 > **Tip:** Use `XCODEBUILDMCP_DYNAMIC_TOOLS=true` to enable dynamic tool loading —
 > reduces context window usage by only loading tools relevant to the current task.
@@ -135,7 +135,7 @@ that via GitHub Actions, which remains unchanged.
 ### 3. Apple Platform Build Tools Plugin
 
 A Claude Code plugin (not MCP server) with reference documentation for the
-entire xcrun ecosystem and a subagent that handles builds cleanly.
+xcrun ecosystem and a subagent that handles builds cleanly.
 
 **Install (inside Claude Code):**
 
@@ -182,7 +182,7 @@ xcodebuild flags correctly, not just that it can call it.
 
 ### 4. Apple Developer Documentation MCP Server
 
-**This directly replaces the manual "look up APIs before writing code" rule
+**This replaces the manual "look up APIs before writing code" rule
 in CLAUDE.md.** Instead of Claude Code needing to remember to search the web,
 it gets a dedicated tool that queries Apple's official documentation JSON API
 directly — framework references, symbol lookups, WWDC videos, code examples,
@@ -201,7 +201,7 @@ What it exposes:
 - Full documentation access via Apple's JSON API
 - Framework index — browse hierarchical API structures
 - Technology catalog for all platforms (iOS, macOS, watchOS, tvOS, visionOS)
-- Beta API and deprecation tracking (critical for iOS 26 work)
+- Beta API and deprecation tracking (needed for iOS 26 work)
 
 **Option B: `apple-doc-mcp` by MightyDillah** (more features, more setup)
 
@@ -213,7 +213,7 @@ claude mcp add --transport stdio apple-docs -- node /absolute/path/to/apple-doc-
 ```
 
 Extra features: persistent symbol indexing, wildcard search (`Grid*`, `*Item`),
-camelCase tokenization, framework-specific caching. More powerful but heavier.
+camelCase tokenization, framework-specific caching. Heavier setup.
 
 **Verify it works:** In Claude Code, ask:
 "Look up the current API for ActivityKit Live Activities on iOS 26."
@@ -234,8 +234,8 @@ is automatic — do not rely on training knowledge for new APIs.
 
 Apple shipped a built-in MCP server in Xcode 26.3. It exposes 20 native tools
 via `xcrun mcpbridge`, including a **DocumentationSearch** tool that does
-semantic search across Apple developer docs and WWDC transcripts. This is
-Apple's own documentation search, running locally.
+semantic search across Apple developer docs and WWDC transcripts. Apple's own
+documentation search, running locally.
 
 **Install:**
 
@@ -258,24 +258,22 @@ connects to Xcode's process via XPC.
 
 The standout tools for you:
 - **DocumentationSearch** — semantic search across Apple docs including WWDC
-  transcripts. This is the most authoritative source possible — it's Apple's
-  own search, not a third-party scraper.
+  transcripts. Apple's own search, not a third-party scraper.
 - **RenderPreview** — Claude Code can render SwiftUI previews and *see* the
-  result visually. For your app's UI work this means Claude can verify its
-  layout changes actually look right.
+  result visually. For UI work, Claude can verify its layout changes look right.
 - **BuildProject / GetBuildLog** — overlaps with XcodeBuildMCP but runs
   through Xcode's own build system rather than raw `xcodebuild`.
 
 **How this relates to XcodeBuildMCP:** They complement each other.
 XcodeBuildMCP works without Xcode running (59 tools, standalone via CLI).
 Apple's bridge requires Xcode running but gives you previews, documentation
-search, and deeper IDE integration (20 tools). Use both — Claude Code will
-pick the right one based on the task.
+search, and deeper IDE integration (20 tools). Use both — Claude Code picks
+the right one based on the task.
 
-**Note:** Apple's MCP bridge is now generally available with Xcode 26.3 and
+**Note:** Apple's MCP bridge is generally available with Xcode 26.3 and
 co-designed with Anthropic for Claude Agent integration. XcodeBuildMCP is
-the more battle-tested option. Start with XcodeBuildMCP as your primary
-build tool and add the Xcode bridge for documentation search and previews.
+the more tested option. Start with XcodeBuildMCP as your primary build tool
+and add the Xcode bridge for documentation search and previews.
 
 ---
 
@@ -283,8 +281,8 @@ build tool and add the Xcode bridge for documentation search and previews.
 
 SourceKit-LSP wrapper for Claude Code. Adds symbol navigation,
 find-references, real-time diagnostics, and rename refactoring against your
-Swift codebase — the same intelligence Xcode uses, surfaced inside Claude
-Code sessions instead of only the IDE.
+Swift codebase — the same intelligence Xcode uses, inside Claude Code sessions
+instead of only the IDE.
 
 **Install:**
 
@@ -307,7 +305,7 @@ if you see them missing.
 
 Packages "The Swift Programming Language" book as an LLM-searchable skill,
 auto-updated nightly from upstream. Currently tracks Swift 6.3 beta. Fills
-the gap that apple-docs MCP leaves: apple-docs covers Apple *frameworks*
+the gap apple-docs MCP leaves: apple-docs covers Apple *frameworks*
 (SwiftUI, ActivityKit, HealthKit) but not the Swift *language itself*
 (actors, macros, structured concurrency, opaque types). Claude's training
 memory of Swift 6.3 is unreliable; this skill grounds it in current syntax.
@@ -351,7 +349,7 @@ pair of eyes before merging.
 
 ### 7. Frontend Design Plugin (Official Anthropic)
 
-Activates specialized UI/UX knowledge when building interfaces — accessibility,
+Activates UI/UX knowledge when building interfaces — accessibility,
 responsive patterns, design system thinking.
 
 **Install (inside Claude Code):**
@@ -360,16 +358,15 @@ responsive patterns, design system thinking.
 /plugin install frontend-design@claude-plugins-official
 ```
 
-**When to use:** Before building any new UI view, especially for apps where
-design quality matters (all of them, but particularly consumer-facing ones
-like consumer-facing apps).
+**When to use:** Before building any new UI view, especially for
+consumer-facing apps.
 
 ---
 
 ### 8. xclaude-plugin (Modular iOS Toolkit)
 
 8 workflow-specific MCP servers with 24 tools. Enable only what you need
-to keep context lean.
+to keep context small.
 
 **Install:**
 
@@ -422,7 +419,7 @@ claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
 
 ### 10. PR Review Toolkit (Official Anthropic)
 
-Multiple specialized review agents covering tests, types, error handling,
+Multiple review agents covering tests, types, error handling,
 and simplification. Pairs with `/ultrareview` (full cloud review) and any
 project-level `/review` slash command — use pr-review-toolkit for focused
 reviews mid-PR, `/ultrareview` for the final pre-merge pass.
@@ -438,7 +435,7 @@ reviews mid-PR, `/ultrareview` for the final pre-merge pass.
 ### 11. Prose Humanizer (kylehughes)
 
 Skill + subagent that scrub AI-tells from prose: weak verbs, exaggeration,
-unjustified adjectives, monotone sentence rhythm. Highly relevant to the
+unjustified adjectives, monotone sentence rhythm. Relevant to the
 playbook's release surfaces: `fastlane/metadata/*/description.txt`,
 `release-notes-draft.md`, README, App Store subtitles. App Store reviewers
 and users both penalize text that reads obviously AI-written.
@@ -488,7 +485,7 @@ On first use, DM your bot — it replies with a 6-character pairing code.
 Enter the code and you're connected. After pairing, switch to allowlist
 mode so strangers can't message your bot.
 
-**Practical use case for you:** Start a Claude Code session on your Mac,
+**Use case for you:** Start a Claude Code session on your Mac,
 kick off a build or a multi-file refactor, then walk away. Check progress
 from your phone via Telegram. Send "what's the status?" or "push to dev
 when you're done" from anywhere.
@@ -512,17 +509,17 @@ claude plugin marketplace add jeremylongshore/claude-code-plugins-plus-skills
 ```
 
 **What it adds:** Skills for Swift patterns, Xcode project management,
-testing strategies, and iOS-specific best practices. Think of it as a
-senior iOS dev's cheat sheet baked into Claude Code's awareness.
+testing strategies, and iOS-specific best practices. A senior iOS dev's
+cheat sheet baked into Claude Code's awareness.
 
 **Worth trying after** you're comfortable with the Tier 1 and 2 tools
-and want Claude Code to have deeper iOS-specific pattern knowledge.
+and want Claude Code to have deeper iOS pattern knowledge.
 
 ---
 
 ### 11. claude-superpowers (Swift-Focused Community Collection)
 
-A curated collection of Claude Code plugins and skills specifically for
+A collection of Claude Code plugins and skills for
 Swift development, code migration, and AI-assisted workflows.
 
 **Install:**
@@ -601,7 +598,7 @@ whether something better has come along. Here's a low-friction routine:
 4. **Quick web search:** Ask Claude (in this chat, not Claude Code) to
    search for "best Claude Code MCP servers iOS development [current year]"
    — the landscape changes fast enough that a fresh search every few months
-   is genuinely useful.
+   is useful.
 
 5. **Check the awesome lists:**
    - https://github.com/jmanhype/awesome-claude-code
@@ -678,9 +675,9 @@ Add this to your iOS Project Playbook or personal task list:
   (98.6% vs 70.4%) and composite rules for fewer false positives. Gitleaks still works,
   but consider migrating: `brew install betterleaks` and replace `gitleaks` in your
   `lefthook.yml`.
-- **Fastlane `match` caching** — Fastlane 2.232+ includes intelligent caching in `match`
+- **Fastlane `match` caching** — Fastlane 2.232+ includes caching in `match`
   (up to 100x faster profile retrieval) and automatic certificate renewal. If you use
-  `match` for signing, update Fastlane for a significant speedup.
+  `match` for signing, update Fastlane for a speedup.
 
 ---
 

@@ -17,7 +17,7 @@ Steps:
    the playbook's CHANGELOG.md to see if there are newer entries. If outdated, suggest
    running `/upgrade`.
 
-Present all of this as a concise briefing — not a wall of text. Use this format:
+Present this as a brief — not a wall of text. Use this format:
 
 ```
 ## Session Briefing

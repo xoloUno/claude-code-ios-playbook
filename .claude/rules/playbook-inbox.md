@@ -22,7 +22,7 @@ or rules for future projects, append an entry to the shared playbook inbox file:
 
 - Project-specific details (those go in WORKLOG.md)
 - Things already documented in the playbook
-- Ephemeral issues (transient build failures, network blips)
+- Transient issues (build failures, network blips)
 
 ## When to write
 
@@ -37,7 +37,7 @@ dropping the lesson.
 
 **Category:** gotcha | suggestion | pattern | correction | tooling
 **Context:** [what was being done when this was discovered]
-**Lesson:** [the actual insight — be specific]
+**Lesson:** [the insight — be specific]
 **Suggested action:** [what should change in playbook/template/rules, or "none — just FYI"]
 ```
 

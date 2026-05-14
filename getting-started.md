@@ -74,7 +74,7 @@ It will ask you questions — choose "GitHub.com", "HTTPS", "Yes" to authenticat
 
 ### Install Claude Code MCP servers
 
-These give Claude Code superpowers (building, GitHub access, Apple docs lookup). You install them once and they work for all projects.
+These give Claude Code building, GitHub access, and Apple docs lookup. Install them once and they work for all projects.
 
 Paste each of these one at a time in Terminal:
 
@@ -193,7 +193,7 @@ bash '_playbook/bootstrap.sh'
 
 Followed by a list of manual steps. If you see any red error text, something went wrong — the error message usually tells you what.
 
-**What just happened:** The script created a `MyApp/` folder inside your Code folder with an entire Xcode project, Fastlane config, GitHub Actions workflows, SwiftLint config, pre-commit hooks, legal doc templates, and more. It also created a GitHub repo and pushed everything to it.
+**What just happened:** The script created a `MyApp/` folder inside your Code folder with an Xcode project, Fastlane config, GitHub Actions workflows, SwiftLint config, pre-commit hooks, and legal doc templates. It also created a GitHub repo and pushed everything to it.
 
 ### Step 3: Set up the pre-commit hooks
 
@@ -218,9 +218,8 @@ If bootstrap completed without that warning, this step is already done — skip 
 ### Step 4: Customize CLAUDE.md (first Claude Code session)
 
 The bootstrap script already created `CLAUDE.md` in your project with your app name,
-bundle ID, and URL scheme filled in. The remaining project-specific sections (core problem,
-core loop, tech stack, UI direction, scope list) are best filled in during your first
-Claude Code session.
+bundle ID, and URL scheme filled in. Fill in the remaining sections (core problem,
+core loop, tech stack, UI direction, scope list) during your first Claude Code session.
 
 1. If you have a product spec from a previous Claude chat, download it (e.g., `MyApp_Spec.md`)
    and drop it into your project folder: `iCloud Drive > Code > myapp`
@@ -365,12 +364,11 @@ Here's what a typical evening coding session looks like:
 3. **Start Claude Code:** `claude`
 4. **Tell it what to work on:** "Let's build the LAS file importer today"
 5. **Claude Code works** — it reads your CLAUDE.md, checks the spec, writes code, builds with XcodeBuildMCP, fixes errors, commits to a feature branch
-6. **When done:** Claude Code updates CLAUDE.md's "Current State" section and writes a detailed session diary entry to `WORKLOG.md`, then commits and pushes
+6. **When done:** Claude Code updates CLAUDE.md's "Current State" section and writes a session diary entry to `WORKLOG.md`, then commits and pushes
 7. **If there are manual tasks:** Claude Code writes them to `MANUAL-TASKS.md`
 8. **When ready for TestFlight:** run `/deploy` — builds, signs, and uploads from your machine. No GitHub Actions credits needed
 
-That's the whole workflow. Everything else (linting, secret scanning, conventional
-commits, dependency updates) happens automatically in the background.
+That's the whole workflow. Linting, secret scanning, conventional commits, and dependency updates happen automatically in the background.
 
 ---
 

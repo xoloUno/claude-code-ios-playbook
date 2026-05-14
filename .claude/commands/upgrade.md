@@ -5,8 +5,8 @@ this project's last upgrade.
 
 Steps:
 1. Read this project's `.playbook-version` file. If it doesn't exist, this project has
-   never been upgraded — all CHANGELOG entries are potentially relevant. Set the baseline
-   to "beginning of time."
+   never been upgraded — all CHANGELOG entries are relevant. Set the baseline to
+   "beginning of time."
 2. Determine the playbook location from `.claude/rules/playbook-inbox.md` — look for the
    line starting with `**Inbox location:**` and extract the directory path. If the rule
    doesn't exist or still has `PLAYBOOK_PATH`, ask the user for the playbook directory.
@@ -16,7 +16,7 @@ Steps:
    - What changed (summary)
    - The "How to upgrade your project" steps
    - Your recommendation: **apply** (you can make this change now), **skip** (not relevant
-     to this project), or **manual** (requires human action)
+     to this project), or **manual** (needs human action)
 6. Ask the user which entries to apply
 7. For each applied entry:
    - Make the changes described in the upgrade steps
@@ -35,4 +35,4 @@ Important:
 - Read each file before modifying it
 - If a change conflicts with project-specific customizations, flag it and ask the user
 - Never overwrite project-specific content in CLAUDE.md (scope, decisions, data models, etc.)
-- Rule files can be safely replaced since they're generic; commands may have project tweaks
+- Rule files can be replaced safely since they're generic; commands may have project tweaks

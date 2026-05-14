@@ -7,7 +7,7 @@ For an app with 12 locales, that's 36+ files plus Swift code — a 38+-file scav
 when the host changes.
 
 **Plan for the URL host moving at least once during the app's life.** Common scenarios:
-free GitHub Pages → custom domain at launch, hosting subscription expiration, consolidating
+free GitHub Pages to custom domain at launch, hosting subscription expiration, consolidating
 legal pages for multiple apps under one domain.
 
 ## The pattern
@@ -135,7 +135,7 @@ ASC's review can flag a broken privacy link in the description even when the ded
 `privacy_url` field is correct.
 
 The `sed` pattern matches only URLs ending in `/privacy.html` or `/terms.html`, so
-Apple's EULA URL and any unrelated marketing links are left untouched.
+Apple's EULA URL and unrelated marketing links are left untouched.
 
 ## Rules
 

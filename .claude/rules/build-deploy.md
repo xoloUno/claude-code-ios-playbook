@@ -30,7 +30,7 @@ bundle exec fastlane release
 set -a && source .env.fastlane && set +a && bundle exec fastlane beta
 ```
 
-Local deploy saves ~250 GitHub Actions credits per upload and gives faster feedback.
+Local deploy saves ~250 GitHub Actions credits per upload and is faster.
 **Prerequisite:** `.env.fastlane` must exist in project root. See `ios-project-playbook.md` §1.6.
 
 > **App extensions (widgets, etc.):** If this project has extension targets, the Fastfile
@@ -61,8 +61,7 @@ Screenshots go in `fastlane/screenshots/en-US/` — see `ios-project-playbook.md
 One-time install: clone the repo, `pip3 install --user Pillow`, symlink `frames`
 into `~/.local/bin/`, then run `frames setup` (or point at a pre-downloaded asset
 folder). The bundled Claude Code skill lives at `~/.claude/skills/frames-cli/SKILL.md`
-— install once globally for agent-native awareness. See Phase 5 of the playbook for
-the full flow.
+— install once globally for agent-native awareness. See Phase 5 of the playbook.
 
 **Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 
@@ -76,15 +75,14 @@ the full flow.
 
 ASC accepts only 6.9" (iPhone) and 13" (iPad) as submissions per [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
 Uploading only 6.3" or 11" blocks "Add for Review." Apple auto-scales 6.9" down to
-every smaller iPhone size and 13" to 11" iPad. See `ios-project-playbook.md` §Phase 5
-for the full workflow.
+every smaller iPhone size and 13" to 11" iPad. See `ios-project-playbook.md` §Phase 5.
 
 ## Version Lifecycle
 
 After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
 in `project.yml` to the next minor version. ASC closes the version train on approval —
 new TestFlight builds will be rejected until the version is incremented. See
-`ios-project-playbook.md` §6.5 for details.
+`ios-project-playbook.md` §6.5.
 
 ## Cloud Session Limitations
 
@@ -99,7 +97,7 @@ Local sessions have access to: **XcodeBuildMCP** (builds, tests, simulators),
 **Apple Docs MCP** (API verification), **GitHub MCP** (CI status, PRs), and
 **Context7** (third-party library docs).
 
-See `_playbook/claude-code-plugins-setup.md` for full setup instructions.
+See `_playbook/claude-code-plugins-setup.md` for setup instructions.
 
 Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 build verification (push to branch → Build Check workflow). For API

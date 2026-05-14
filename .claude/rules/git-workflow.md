@@ -20,8 +20,7 @@ Never commit directly to `main`. Merge from `dev` or feature branches only.
 
 **Concurrent Claude Code sessions:** Use **worktrees** (`/worktree`) when running
 multiple sessions against the same repo. A branch only isolates commit history —
-files on disk are shared. Without worktrees, sessions overwrite each other's
-uncommitted work.
+files on disk are shared. Without worktrees, sessions overwrite each other's work.
 
 ## Commit Convention
 
@@ -49,8 +48,8 @@ At session end:
 Commit early and often — don't accumulate a session's worth of changes in one
 giant commit. A good rhythm: commit after each logical unit of work (a feature
 wired up, a bug fixed, a refactor complete). This makes `git log` useful and
-reverts surgical. If a session produces more than ~3 files of changes, consider
-whether it should be multiple commits.
+reverts surgical. If a session produces more than ~3 files of changes, it should
+probably be multiple commits.
 
 ## Tagging Releases
 

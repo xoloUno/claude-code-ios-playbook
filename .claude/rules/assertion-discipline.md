@@ -1,10 +1,10 @@
 # Assertion Discipline Rule
 
 Some claims are too costly to get wrong. When planning or recommending an action, verify
-before asserting in these high-stakes categories — do NOT recall from training memory.
+before asserting in these high-stakes categories — do not recall from training memory.
 
-This complements the auto-memory "Before recommending from memory" rule (which covers
-file paths, function names, and feature flags). Same principle, expanded scope.
+This extends the auto-memory "Before recommending from memory" rule (which covers
+file paths, function names, and feature flags). Same principle, wider scope.
 
 ## Categories that require verification
 
@@ -33,7 +33,7 @@ gh api repos/{owner}/{repo}/pages 2>/dev/null  # Pages config if any
 ```
 
 Recommending "make the repo public to fix Pages" without checking can expose all source
-code. Free-tier GH Pages now works for private repos in many configurations — verify the
+code. Free-tier GH Pages now works for private repos in many configurations — check the
 current state before suggesting visibility changes.
 
 ### Fastlane / ASC operational behavior
@@ -54,10 +54,10 @@ the operation. Many capabilities are simulator-version-specific.
 ## How to apply
 
 When you catch yourself about to assert in one of these categories, pause and ask:
-"Have I verified this in this session, or am I recalling from training?" If it's recall,
-verify first, even if it costs an extra tool call. The cost of one extra check is small;
-the cost of a confidently wrong recommendation in these categories is large (lost work,
-exposed source, days of iteration on a screenshot pipeline that won't pass review).
+"Have I checked this in this session, or am I recalling from training?" If it's recall,
+check first, even if it costs an extra tool call. One extra check is cheap; a
+confidently wrong recommendation in these categories is expensive — lost work,
+exposed source, days of iteration on a screenshot pipeline that won't pass review.
 
 ## Why this rule exists
 
@@ -65,5 +65,5 @@ This rule was added after a planning session where two factual mistakes landed i
 quick succession: claiming the App Store renders watch screenshots inside a stylized
 frame (false — flat rectangles), and recommending a private→public repo toggle to "fix"
 GH Pages (would have exposed all source). Both came from training memory, both were
-caught by the user. High-stakes claim categories deserve the same verify-first
+caught by the user. High-stakes claim categories need the same verify-first
 discipline already applied to code paths and feature flags.

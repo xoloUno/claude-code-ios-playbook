@@ -24,7 +24,7 @@ adaptations automatically. Use standard components and let the system style them
 Before writing code using any Apple framework introduced at or after WWDC25, Claude Code
 MUST use the **apple-docs MCP tool** to look up the current API. This replaces web search
 — the MCP tool queries Apple's official documentation JSON API directly and returns
-accurate, up-to-date results including beta status and deprecation flags. For third-party
+current results including beta status and deprecation flags. For third-party
 libraries (TelemetryDeck, Sentry, etc.), use the **Context7 MCP tool** if available.
 
 If MCP tools are unavailable (e.g. cloud session), fall back to web search on

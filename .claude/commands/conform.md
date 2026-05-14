@@ -45,7 +45,7 @@ Steps:
      judgment call. Just surface for review.
 
    **Check E — Doc bloat (severity: LOW, advisory)**
-   - Check for the presence of `MILESTONES.md`, `FEEDBACK.md`, or files matching
+   - Check for `MILESTONES.md`, `FEEDBACK.md`, or files matching
      `SESSION-*.md` / `LOG-*.md` at project root (these aren't part of the playbook shape).
    - If found: drift = DOC_BLOAT. Recommendation: see Appendix C of `ios-project-playbook.md`
      for the consolidation walkthrough.

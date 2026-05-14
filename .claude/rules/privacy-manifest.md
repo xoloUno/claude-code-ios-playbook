@@ -20,7 +20,7 @@ Update `PrivacyInfo.xcprivacy` whenever you add code that uses any of these API 
 | **Disk space** | `FileManager` `.volumeAvailableCapacityKey` | `E174.1` (check before writing) |
 | **Active keyboards** | `UITextInputMode.activeInputModes` | `54BD.1` (local keyboard info) |
 
-The bootstrap template includes `CA92.1` (UserDefaults) by default since virtually every
+The bootstrap template includes `CA92.1` (UserDefaults) by default since almost every
 app uses it.
 
 ## How to update

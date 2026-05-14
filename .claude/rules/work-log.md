@@ -10,8 +10,8 @@ reverse chronological order. CLAUDE.md is the reference doc (rarely changes); WO
 is the session diary (changes every session).
 
 **Why:** When returning to a project after days or weeks, Claude Code reads the worklog
-and resumes work contextually — decisions, blockers, and what changed are all there
-without re-reading the entire codebase or git history.
+to resume work — decisions, blockers, and what changed are all there without re-reading
+the entire codebase or git history.
 
 **At session end:** Append a new entry at the top (below the header) with this format:
 

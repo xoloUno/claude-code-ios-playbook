@@ -28,6 +28,33 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-13 — Prose humanizer pass across playbook docs, rules, commands, and templates
+
+Ran the `writing-prose-like-a-human-for-agents` plugin's `prose-humanizer`
+subagent across every prose surface in the playbook. Net change: **-16 lines
+across 29 files** (192 deletions, 176 insertions). The pass cuts decorative
+adjectives (`complete`, `production-ready`, `seamless`, `vibrant`), inflated
+verbs (`leverages`, `showcases`, `serves as`), significance inflation
+(`pivotal`, `critical`, `genuinely`), and trailing participial editorializing.
+No code blocks, file paths, commands, or technical content were modified.
+
+The playbook now includes the prose humanizer in its recommended Tier 2
+plugin list with a `/release` usage hook for downstream projects to clean
+their App Store metadata and release notes pre-submission.
+
+**Files affected:**
+- 6 top-level docs: `README.md`, `getting-started.md`, `ios-project-playbook.md`, `CLAUDE-TEMPLATE.md`, `claude-code-plugins-setup.md`, `CONTRIBUTING.md`
+- 15 rules: every file under `.claude/rules/`
+- 6 commands: every file under `.claude/commands/` except `inbox.md` and `status.md` (already lean)
+- 2 templates: `.claude/templates/commands/status.md`, `.claude/templates/commands/wrapup.md`
+
+**What to do in your project:**
+- Newly-bootstrapped projects pick up the cleaner prose automatically.
+- Existing projects: optional. Run `/upgrade` to pull the latest rule files into your project if you want the consistent prose. No behavior changes — the rules' substance is identical, only the surrounding prose is tightened.
+- Adopt the humanizer in your own workflow: install via `claude plugin install writing-prose-like-a-human-for-agents@writing-prose-like-a-human-for-agents` (marketplace must be added first — see `claude-code-plugins-setup.md` §11). Then run `use prose-humanizer on <file>` before App Store metadata submission or any user-facing prose ship.
+
+---
+
 ## 2026-05-13 — Plugin/MCP setup refresh: deprecated GH MCP, new plugins, Xcode 26.5
 
 GitHub's `@modelcontextprotocol/server-github` npm package was deprecated and

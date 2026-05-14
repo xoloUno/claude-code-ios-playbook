@@ -28,6 +28,27 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-13 — Wire prose-humanizer into `/wrapup` for release notes and App Store metadata
+
+The downstream `/wrapup` template now invokes the `prose-humanizer` subagent
+on `release-notes-draft.md` and `fastlane/metadata/en-US/description.txt`
+when either was modified in the session. This catches AI-tells (decorative
+adjectives, inflated verbs, significance padding) at the natural choke point
+before commit — App Store reviewers and end users both penalize text that
+reads obviously AI-written.
+
+Non-English `description.txt` locales are explicitly skipped — they're
+translations, and the humanizer doesn't preserve translation accuracy.
+
+**Files affected:**
+- `.claude/templates/commands/wrapup.md` — new step 8 invokes the humanizer subagent on touched user-facing prose; existing steps renumbered (8→9, 9→10, etc.)
+
+**What to do in your project:**
+- After running `/upgrade` to pull the updated template, your project's `.claude/commands/wrapup.md` will include the humanizer step. Make sure the plugin is installed first: `claude plugin install writing-prose-like-a-human-for-agents@writing-prose-like-a-human-for-agents` (marketplace must be added — see `claude-code-plugins-setup.md` §11).
+- If you don't install the plugin, the step is a no-op and the wrap-up flow falls through cleanly.
+
+---
+
 ## 2026-05-13 — Prose humanizer pass across playbook docs, rules, commands, and templates
 
 Ran the `writing-prose-like-a-human-for-agents` plugin's `prose-humanizer`

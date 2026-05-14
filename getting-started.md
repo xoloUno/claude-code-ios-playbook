@@ -94,11 +94,13 @@ claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
 claude mcp add --transport stdio xcode -- xcrun mcpbridge
 ```
 
-For the GitHub MCP, you need a personal access token. Go to https://github.com/settings/tokens, click "Generate new token (classic)", check the `repo` and `workflow` boxes, click Generate, and copy the token. Then paste this command but replace `ghp_YOUR_TOKEN_HERE` with the token you just copied:
+For the GitHub MCP, use GitHub's official hosted server. You'll need a personal access token. Go to https://github.com/settings/tokens, click "Generate new token (classic)", check the `repo` and `workflow` boxes, click Generate, and copy the token. Then paste this command but replace `ghp_YOUR_TOKEN_HERE` with the token you just copied:
 
 ```
-claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=ghp_YOUR_TOKEN_HERE -- npx -y @modelcontextprotocol/server-github
+claude mcp add --transport http github https://api.githubcopilot.com/mcp/ --header "Authorization: Bearer ghp_YOUR_TOKEN_HERE"
 ```
+
+> The older `@modelcontextprotocol/server-github` npm package is deprecated and archived as of early 2026. Use GitHub's official hosted server (above) instead.
 
 ### Install Claude Code plugins
 

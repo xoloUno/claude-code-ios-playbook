@@ -28,6 +28,31 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-13 — Plugin/MCP setup refresh: deprecated GH MCP, new plugins, Xcode 26.5
+
+GitHub's `@modelcontextprotocol/server-github` npm package was deprecated and
+archived in early 2026; the playbook now points to GitHub's official hosted
+server at `https://api.githubcopilot.com/mcp/`. Four new plugins are
+documented (Tier 1: `swift-lsp`, `programming-swift-skill`; Tier 2:
+`pr-review-toolkit`, `writing-prose-like-a-human-for-agents`). The
+`apple-platform-build-tools` marketplace install string was corrected — the
+marketplace's internal name (`apple-platform-build-tools`) differs from its
+repo slug (`apple-platform-build-tools-claude-code-plugin`), and the prior
+example used the slug. Xcode 26.5 agentic features and the XcodeBuildMCP
+v2.5 `extraArgs → launchArgs` breaking rename are now flagged.
+
+**Files affected:**
+- `claude-code-plugins-setup.md` — GitHub MCP §1 fully rewritten (deprecation note + hosted/Docker install); XcodeBuildMCP §2 version pin dropped, breaking-rename callout added; Apple Platform Build Tools §3 install string and JSON example corrected with explanatory callout; new Tier 1 entries §6 (Swift LSP) and §7 (Swift Programming Language Skill); new Tier 2 entries §10 (PR Review Toolkit) and §11 (Prose Humanizer with `/release` usage hook); "Notable Tool Updates (May 2026)" section added; Betterleaks URL corrected to `betterleaks/betterleaks` (was `AikidoSec/betterleaks`)
+- `getting-started.md` — GitHub MCP install command updated to hosted server + deprecation note
+
+**What to do in your project:**
+- If `~/.claude/settings.json` references `apple-platform-build-tools@apple-platform-build-tools-claude-code-plugin`, rename the **plugin@marketplace** part to `apple-platform-build-tools@apple-platform-build-tools`. Keep the `repo` URL itself full-length (`kylehughes/apple-platform-build-tools-claude-code-plugin`).
+- If you still have the deprecated GitHub MCP installed (`claude mcp list` shows `npx -y @modelcontextprotocol/server-github`), migrate: `claude mcp remove github && claude mcp add --transport http github https://api.githubcopilot.com/mcp/ --header "Authorization: Bearer $GH_TOKEN"`.
+- Optional: install the four new plugins. See `claude-code-plugins-setup.md` §6, §7, §10, §11 for commands.
+- Grep your scripts/skills for `extraArgs` — rename to `launchArgs` if you find any (XcodeBuildMCP v2.5 breaking rename). Most projects won't have hits.
+
+---
+
 ## 2026-05-05 — `/status` and `/wrapup` tailored to the playbook repo itself
 
 The playbook now ships **two** versions of the `/status` and `/wrapup` slash

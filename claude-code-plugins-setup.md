@@ -40,21 +40,33 @@ breaking anything. Unused servers don't consume context tokens until activated.
 
 ## Tier 1 — Install These First
 
-### 1. GitHub MCP Server (Official, by Anthropic)
+### 1. GitHub MCP Server (Official, by GitHub)
 
 Gives Claude Code direct access to your GitHub repos, issues, PRs, Actions
 logs, and CI/CD status. Instead of you checking why a TestFlight deploy
 failed, Claude Code reads the Actions log itself.
 
-**Install:**
+> **Migration note:** The old `@modelcontextprotocol/server-github` npm package
+> was deprecated and archived in early 2026. Use GitHub's official **hosted**
+> server below — it's HTTP-based, GitHub-maintained, and gets new features
+> (dependency scanning, secret scanning, Projects) ahead of any local
+> alternative. If you still have the deprecated server installed, run
+> `claude mcp remove github` before adding the new one.
+
+**Install (hosted, recommended):**
 
 ```bash
 # You need a GitHub Personal Access Token (classic or fine-grained)
 # with repo, workflow, and read:org scopes.
-# If you already authenticated gh CLI, you can reuse that token.
+# If you already authenticated gh CLI, you can reuse that token (gh auth token).
 
-claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=ghp_YOUR_TOKEN_HERE -- npx -y @modelcontextprotocol/server-github
+claude mcp add --transport http github https://api.githubcopilot.com/mcp/ \
+  --header "Authorization: Bearer ghp_YOUR_TOKEN_HERE"
 ```
+
+**Local alternative (Docker):** if you'd rather self-host, GitHub publishes
+`ghcr.io/github/github-mcp-server` as a Docker image. Requires Docker
+installed. See https://github.com/github/github-mcp-server for setup.
 
 **What it enables Claude Code to do:**
 - Check GitHub Actions build status and read failure logs
@@ -67,13 +79,19 @@ claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=ghp_YOUR_TOKEN_HERE -- npx
 
 ---
 
-### 2. XcodeBuildMCP (v2.0.7)
+### 2. XcodeBuildMCP
 
-The most impactful MCP server for iOS development. 59 tools across builds,
+The most impactful MCP server for iOS development. 59+ tools across builds,
 testing, simulator management, debugging, and UI automation. Claude Code can
 trigger Xcode builds, read structured error output, run tests, and manage
 simulators — all without you touching the terminal. Integrates natively with
-Xcode 26.3's agent support.
+Xcode 26.3+'s agent support.
+
+> **Breaking change in v2.5 (May 2026):** the `extraArgs` parameter was
+> renamed to `launchArgs`. If you have any custom scripts or skills that pass
+> `extraArgs` to XcodeBuildMCP tools, grep and rename. The version isn't
+> pinned here because `@latest` always installs current — but watch the
+> changelog when XcodeBuildMCP makes major-version bumps.
 
 **Install:**
 
@@ -122,7 +140,7 @@ entire xcrun ecosystem and a subagent that handles builds cleanly.
 **Install (inside Claude Code):**
 
 ```
-/plugin install apple-platform-build-tools@apple-platform-build-tools-claude-code-plugin
+/plugin install apple-platform-build-tools@apple-platform-build-tools
 ```
 
 Or add to your project's `.claude/settings.json` so it's always available:
@@ -130,10 +148,10 @@ Or add to your project's `.claude/settings.json` so it's always available:
 ```json
 {
   "enabledPlugins": {
-    "apple-platform-build-tools@apple-platform-build-tools-claude-code-plugin": true
+    "apple-platform-build-tools@apple-platform-build-tools": true
   },
   "extraKnownMarketplaces": {
-    "apple-platform-build-tools-claude-code-plugin": {
+    "apple-platform-build-tools": {
       "source": {
         "source": "github",
         "repo": "kylehughes/apple-platform-build-tools-claude-code-plugin"
@@ -142,6 +160,13 @@ Or add to your project's `.claude/settings.json` so it's always available:
   }
 }
 ```
+
+> **Watch the marketplace name.** The repo is named
+> `apple-platform-build-tools-claude-code-plugin`, but the marketplace's own
+> manifest names itself `apple-platform-build-tools`. Install strings use the
+> marketplace name, not the repo slug, so `<plugin>@<marketplace>` is
+> `apple-platform-build-tools@apple-platform-build-tools` — yes, the same
+> name twice because Kyle reused it.
 
 **What it adds:**
 - Agent Skill with reference docs for xcodebuild, simctl, devicectl,
@@ -254,6 +279,50 @@ build tool and add the Xcode bridge for documentation search and previews.
 
 ---
 
+### 6. Swift LSP Plugin (Official Anthropic)
+
+SourceKit-LSP wrapper for Claude Code. Adds symbol navigation,
+find-references, real-time diagnostics, and rename refactoring against your
+Swift codebase — the same intelligence Xcode uses, surfaced inside Claude
+Code sessions instead of only the IDE.
+
+**Install:**
+
+```
+/plugin install swift-lsp@claude-plugins-official
+```
+
+**What it adds:** cross-file symbol nav (much faster than grep when you ask
+"where is `FooViewModel` used?"), real-time type/diagnostic info,
+rename-symbol refactoring. Complements XcodeBuildMCP — XcodeBuildMCP runs
+the build; swift-lsp answers structural questions about the code.
+
+**Known wart:** [issue #21335](https://github.com/anthropics/claude-code/issues/21335) —
+LSP tools occasionally don't expose on first install. Restart Claude Code
+if you see them missing.
+
+---
+
+### 7. Swift Programming Language Skill (kylehughes, unofficial)
+
+Packages "The Swift Programming Language" book as an LLM-searchable skill,
+auto-updated nightly from upstream. Currently tracks Swift 6.3 beta. Fills
+the gap that apple-docs MCP leaves: apple-docs covers Apple *frameworks*
+(SwiftUI, ActivityKit, HealthKit) but not the Swift *language itself*
+(actors, macros, structured concurrency, opaque types). Claude's training
+memory of Swift 6.3 is unreliable; this skill grounds it in current syntax.
+
+**Install:**
+
+```bash
+claude plugin marketplace add kylehughes/the-unofficial-swift-programming-language-skill
+claude plugin install programming-swift-skill@the-unofficial-swift-programming-language-skill
+```
+
+**Pair with:** apple-docs MCP (§4). Together they cover language + frameworks.
+
+---
+
 ## Tier 2 — Add When Comfortable
 
 ### 6. Official Code Review Plugin
@@ -348,6 +417,43 @@ claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
 - Integrating any new SPM dependency you haven't used before
 - When Claude Code generates code with methods that don't exist
   (hallucinated APIs) — Context7 grounds it in real docs
+
+---
+
+### 10. PR Review Toolkit (Official Anthropic)
+
+Multiple specialized review agents covering tests, types, error handling,
+and simplification. Pairs with `/ultrareview` (full cloud review) and any
+project-level `/review` slash command — use pr-review-toolkit for focused
+reviews mid-PR, `/ultrareview` for the final pre-merge pass.
+
+**Install:**
+
+```
+/plugin install pr-review-toolkit@claude-plugins-official
+```
+
+---
+
+### 11. Prose Humanizer (kylehughes)
+
+Skill + subagent that scrub AI-tells from prose: weak verbs, exaggeration,
+unjustified adjectives, monotone sentence rhythm. Highly relevant to the
+playbook's release surfaces: `fastlane/metadata/*/description.txt`,
+`release-notes-draft.md`, README, App Store subtitles. App Store reviewers
+and users both penalize text that reads obviously AI-written.
+
+**Install:**
+
+```bash
+claude plugin marketplace add kylehughes/writing-prose-like-a-human-for-agents
+claude plugin install writing-prose-like-a-human-for-agents@writing-prose-like-a-human-for-agents
+```
+
+**Usage hook for `/release`:** run the subagent against
+`fastlane/metadata/en-US/description.txt` and `release-notes-draft.md` as a
+pre-submit pass before `upload_metadata`. The subagent edits in place and
+returns a summary of changes.
 
 ---
 
@@ -547,10 +653,28 @@ Add this to your iOS Project Playbook or personal task list:
 
 ---
 
+## Notable Tool Updates (May 2026)
+
+- **GitHub MCP server deprecation** — the legacy `@modelcontextprotocol/server-github`
+  npm package was archived in early 2026. GitHub now publishes the official
+  successor at `github/github-mcp-server`, available as a hosted HTTP server
+  (`https://api.githubcopilot.com/mcp/`) or via Docker (`ghcr.io/github/github-mcp-server`).
+  The hosted server is the easiest path and gets new features (dependency
+  scanning, secret scanning, Projects) ahead of any local alternative. See
+  Tier 1 §1 for the migration command.
+- **Xcode 26.5 agentic features** — Apple added message queuing and
+  clarifying-question capability for external coding agents (Claude
+  included). The `xcrun mcpbridge` tool surface is unchanged from 26.3 —
+  no new tools to wire up, just better UX inside Xcode itself when Claude
+  Code is driving the work.
+- **XcodeBuildMCP `extraArgs → launchArgs` (v2.5, May 2026)** — breaking
+  rename in the simulator launch tool. Grep any custom scripts/skills for
+  `extraArgs` and rename. Most playbook users won't be affected.
+
 ## Notable Tool Updates (April 2026)
 
-- **Betterleaks** — the original Gitleaks creator launched [Betterleaks](https://github.com/AikidoSec/betterleaks)
-  (v1.1.0) as a drop-in successor. Same CLI flags and config files, but better recall
+- **Betterleaks** — the original Gitleaks creator launched [Betterleaks](https://github.com/betterleaks/betterleaks)
+  (v1.1.0) as a drop-in successor, sponsored by AikidoSec. Same CLI flags and config files, but better recall
   (98.6% vs 70.4%) and composite rules for fewer false positives. Gitleaks still works,
   but consider migrating: `brew install betterleaks` and replace `gitleaks` in your
   `lefthook.yml`.

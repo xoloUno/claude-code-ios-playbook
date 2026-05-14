@@ -28,6 +28,83 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-13 — Metadata translation rule + `/wrapup` note on locale drift
+
+Codifies the multi-locale App Store metadata workflow into a new rule:
+**en-US is the source of truth, humanized continuously via `/wrapup`;
+non-English locales drift during dev cycles and get retranslated fresh at
+`/release` time.** This is the token-efficient pattern — translation runs
+once per release, not every commit.
+
+The rule documents which metadata files get translated (`description.txt`,
+`name.txt`, `subtitle.txt`, `keywords.txt`, `promotional_text.txt`,
+`release_notes.txt`), which don't (URL files — handled by `legal-urls.md`),
+the release-time translation procedure, ASC character limits per file, and
+skip conditions for single-locale apps.
+
+The downstream `/wrapup` template's prose-humanizer step gained a note
+pointing at the new rule so future sessions understand the locale drift is
+intentional.
+
+**Files affected:**
+- `.claude/rules/metadata-translation.md` — new rule
+- `.claude/templates/commands/wrapup.md` — added a 3-line note in step 8 referencing the rule
+
+**What to do in your project:**
+- Run `/upgrade` to pull the new rule + updated wrapup template
+- If your project has multiple locales, the next `/release` will follow the new pattern automatically — Claude Code reads the rule and asks before writing translations
+- If your project is single-locale (en-US only), nothing changes — the rule's skip conditions short-circuit on day one
+
+---
+
+## 2026-05-13 — Wire prose-humanizer into `/wrapup` for release notes and App Store metadata
+
+The downstream `/wrapup` template now invokes the `prose-humanizer` subagent
+on `release-notes-draft.md` and `fastlane/metadata/en-US/description.txt`
+when either was modified in the session. This catches AI-tells (decorative
+adjectives, inflated verbs, significance padding) at the natural choke point
+before commit — App Store reviewers and end users both penalize text that
+reads obviously AI-written.
+
+Non-English `description.txt` locales are explicitly skipped — they're
+translations, and the humanizer doesn't preserve translation accuracy.
+
+**Files affected:**
+- `.claude/templates/commands/wrapup.md` — new step 8 invokes the humanizer subagent on touched user-facing prose; existing steps renumbered (8→9, 9→10, etc.)
+
+**What to do in your project:**
+- After running `/upgrade` to pull the updated template, your project's `.claude/commands/wrapup.md` will include the humanizer step. Make sure the plugin is installed first: `claude plugin install writing-prose-like-a-human-for-agents@writing-prose-like-a-human-for-agents` (marketplace must be added — see `claude-code-plugins-setup.md` §11).
+- If you don't install the plugin, the step is a no-op and the wrap-up flow falls through cleanly.
+
+---
+
+## 2026-05-13 — Prose humanizer pass across playbook docs, rules, commands, and templates
+
+Ran the `writing-prose-like-a-human-for-agents` plugin's `prose-humanizer`
+subagent across every prose surface in the playbook. Net change: **-16 lines
+across 29 files** (192 deletions, 176 insertions). The pass cuts decorative
+adjectives (`complete`, `production-ready`, `seamless`, `vibrant`), inflated
+verbs (`leverages`, `showcases`, `serves as`), significance inflation
+(`pivotal`, `critical`, `genuinely`), and trailing participial editorializing.
+No code blocks, file paths, commands, or technical content were modified.
+
+The playbook now includes the prose humanizer in its recommended Tier 2
+plugin list with a `/release` usage hook for downstream projects to clean
+their App Store metadata and release notes pre-submission.
+
+**Files affected:**
+- 6 top-level docs: `README.md`, `getting-started.md`, `ios-project-playbook.md`, `CLAUDE-TEMPLATE.md`, `claude-code-plugins-setup.md`, `CONTRIBUTING.md`
+- 15 rules: every file under `.claude/rules/`
+- 6 commands: every file under `.claude/commands/` except `inbox.md` and `status.md` (already lean)
+- 2 templates: `.claude/templates/commands/status.md`, `.claude/templates/commands/wrapup.md`
+
+**What to do in your project:**
+- Newly-bootstrapped projects pick up the cleaner prose automatically.
+- Existing projects: optional. Run `/upgrade` to pull the latest rule files into your project if you want the consistent prose. No behavior changes — the rules' substance is identical, only the surrounding prose is tightened.
+- Adopt the humanizer in your own workflow: install via `claude plugin install writing-prose-like-a-human-for-agents@writing-prose-like-a-human-for-agents` (marketplace must be added first — see `claude-code-plugins-setup.md` §11). Then run `use prose-humanizer on <file>` before App Store metadata submission or any user-facing prose ship.
+
+---
+
 ## 2026-05-13 — Plugin/MCP setup refresh: deprecated GH MCP, new plugins, Xcode 26.5
 
 GitHub's `@modelcontextprotocol/server-github` npm package was deprecated and

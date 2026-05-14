@@ -1,7 +1,7 @@
 # CLAUDE.md — [APP_NAME]
 
-This file is the single source of truth for every Claude Code session on this project.
-Read it fully before writing any code or suggesting any architecture changes.
+This file is the source of truth for every Claude Code session on this project.
+Read it fully before writing any code or suggesting architecture changes.
 
 > **Reference:** For CI/CD setup, StoreKit 2 subscription setup, and App Store submission
 > procedures, see `ios-project-playbook.md` in the `_playbook/` directory.
@@ -63,7 +63,7 @@ and HealthKit. No user accounts. No server.]
 | Language | Swift 6 | Modern concurrency, strict safety |
 | UI | SwiftUI | Required for widgets and controls |
 | Data | [UserDefaults / SwiftData / etc.] | [Why] |
-| Subscriptions | StoreKit 2 (native) | Built-in, no dependency, ASC analytics now sufficient |
+| Subscriptions | StoreKit 2 (native) | Built-in, no dependency, ASC analytics now enough |
 | Minimum deployment | iOS 26.0 | Current OS; unlocks iOS 26 APIs |
 
 ---

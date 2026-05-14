@@ -2,7 +2,7 @@ End-of-session wrap-up for the playbook — commit cleanly, push, leave the repo
 
 This is the playbook repo itself. Wrap-up looks different from a downstream iOS
 project: there's no `CLAUDE.md` Current State to update, no `WORKLOG.md` diary,
-no `release-notes-draft.md`. The durable session record is `CHANGELOG.md` (for
+no `release-notes-draft.md`. The session record is `CHANGELOG.md` (for
 downstream consumers) and the commit history.
 
 Steps:
@@ -61,7 +61,7 @@ Steps:
      chat is not authorization to push to `main`.
 8. **Inbox housekeeping (only if relevant):** if this session adopted entries from
    `inbox.md` into the playbook, the curate workflow already handled deletions —
-   but double-check `inbox.md` no longer references work that's now landed.
+   but check that `inbox.md` no longer references work that's now landed.
 9. Confirm to the user: what was committed, what branch, PR URL (if applicable),
    what's next.
 

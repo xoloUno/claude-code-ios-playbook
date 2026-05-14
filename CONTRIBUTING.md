@@ -1,7 +1,6 @@
 # Contributing
 
-Thanks for your interest in improving the playbook! This project is a living document
-built from real iOS shipping experience with Claude Code.
+Thanks for your interest in improving the playbook. This project is built from real iOS shipping experience with Claude Code.
 
 ## How to contribute
 
@@ -19,8 +18,7 @@ built from real iOS shipping experience with Claude Code.
 - **Match the tone.** Pragmatic, operational, direct. Explain *why* when a decision
   matters. No academic abstractions.
 - **Keep it scannable.** Use tables for comparisons, code blocks for commands,
-  callouts for warnings. If a section is getting long, consider whether it can
-  be condensed or split.
+  callouts for warnings. If a section is long, consider condensing or splitting it.
 
 ## What makes a good contribution
 
@@ -39,5 +37,5 @@ built from real iOS shipping experience with Claude Code.
 
 ## CHANGELOG
 
-When adding new content, add a dated entry to `CHANGELOG.md` following the existing
+When adding new content, add a dated entry to `CHANGELOG.md` in the existing
 format: what changed, which files, and how to upgrade existing projects.

@@ -24,7 +24,7 @@ When you notice degradation:
 
 For long sessions (multiple features or a complex debugging arc):
 - Commit after each logical milestone, not just at session end
-- Update WORKLOG.md incrementally if the session is producing many changes
+- Update WORKLOG.md as you go if the session is producing many changes
 - If the user hasn't committed in a while and changes are accumulating, suggest a checkpoint
 
 ## Recovery After Crash or Disconnect

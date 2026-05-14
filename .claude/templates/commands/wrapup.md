@@ -1,4 +1,4 @@
-End-of-session wrap-up — commit, update docs, and leave the project clean.
+End-of-session wrap-up — commit and update docs.
 
 Steps:
 1. Run `git status` — review all changes (staged, unstaged, untracked)
@@ -30,9 +30,22 @@ Steps:
    - None. [if nothing is blocked]
    ```
 7. **Update `release-notes-draft.md`** if any user-facing changes were made
-8. **Check scope items** in CLAUDE.md — check off any completed items
-9. **Create/update `MANUAL-TASKS.md`** if the session produced human-only tasks
-10. Push to `dev` or feature branch (not `main` unless the user explicitly asks)
-11. Confirm to the user: what was committed, what branch, what's next
+8. **Run prose-humanizer on touched user-facing prose.** If this session
+   modified `release-notes-draft.md` or `fastlane/metadata/en-US/description.txt`,
+   invoke the `prose-humanizer` subagent on each before commit. The subagent
+   cuts AI-tells (decorative adjectives, inflated verbs, significance padding)
+   so the text reads natural to App Store reviewers and end users. Skip
+   non-English `fastlane/metadata/<locale>/description.txt` files — they're
+   translations; humanizing them risks breaking translation accuracy.
+   Non-English locales will drift between releases — that's intentional;
+   `/release` retranslates them fresh from the current en-US per
+   `.claude/rules/metadata-translation.md`.
+   Requires the `writing-prose-like-a-human-for-agents` plugin (Tier 2 §11
+   in `claude-code-plugins-setup.md`). If the plugin isn't installed, skip
+   this step and mention it in the wrap-up summary.
+9. **Check scope items** in CLAUDE.md — check off any completed items
+10. **Create/update `MANUAL-TASKS.md`** if the session produced human-only tasks
+11. Push to `dev` or feature branch (not `main` unless the user explicitly asks)
+12. Confirm to the user: what was committed, what branch, what's next
 
-If there are no changes to commit, say so and skip to step 11.
+If there are no changes to commit, say so and skip to step 12.

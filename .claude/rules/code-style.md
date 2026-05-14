@@ -18,9 +18,8 @@ globs: **/*.swift
 
 ## Claude Code Hooks (`.claude/hooks.json`)
 
-A PostToolUse hook runs SwiftLint automatically after every file edit or creation.
-This is deterministic — unlike CLAUDE.md instructions, hooks always fire. If SwiftLint
-reports issues, fix them before committing.
+A PostToolUse hook runs SwiftLint after every file edit or creation. Unlike CLAUDE.md
+instructions, hooks always fire. If SwiftLint reports issues, fix them before committing.
 
 ## Pre-Commit Hooks (Lefthook)
 
@@ -30,8 +29,7 @@ reports issues, fix them before committing.
 3. **Conventional commit validation** — reject commit messages that don't match
    the `type(scope): description` format
 
-These fire automatically on `git commit`. Claude Code's commits go through the same
-hooks — no bypass.
+These fire on `git commit`. Claude Code's commits go through the same hooks — no bypass.
 
 ## Claude Code Slash Commands (`.claude/commands/`)
 
@@ -51,5 +49,5 @@ hooks — no bypass.
 
 ## Dependabot (`.github/dependabot.yml`)
 
-Automatically creates PRs for outdated SPM dependencies weekly. Review and merge
-them — don't let dependencies go stale.
+Creates PRs for outdated SPM dependencies weekly. Review and merge them — don't let
+dependencies go stale.

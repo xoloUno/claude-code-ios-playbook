@@ -44,13 +44,12 @@ Solo dev with limited hours — be strategic, not exhaustive.
 When the test target has `TEST_HOST` set (test bundle loaded INTO the host app
 process at runtime) and the project uses SwiftData `@Model` types, do NOT compile
 shared model/service files into the test target. Use `@testable import <App>` only.
-Two type copies in one process (`App.Foo` vs `AppTests.Foo`) crash SwiftData hard
-on the first `context.insert(...)` with `EXC_BREAKPOINT` deep in
-`SwiftData.framework`.
+Two type copies in one process (`App.Foo` vs `AppTests.Foo`) crash SwiftData on
+the first `context.insert(...)` with `EXC_BREAKPOINT` deep in `SwiftData.framework`.
 
 This is silent because both compilations are valid in isolation, the build
 succeeds, and CI rarely runs tests. Xcode 16+'s `PBXFileSystemSynchronizedRootGroup`
-membership exception sets make it especially easy to add shared files to multiple
+membership exception sets make it easy to add shared files to multiple
 targets by accident.
 
 ## Running tests

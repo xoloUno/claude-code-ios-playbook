@@ -2,9 +2,8 @@
 
 Every script that captures a Simulator screenshot for the App Store must run the
 same `xcrun simctl status_bar override` block before launching the target app.
-The flags exist for concrete reasons — refactors that "simplify" the block by
-dropping flags produce screenshots that get rejected, look amateur, or surface
-visual bugs in Control Center.
+Refactors that "simplify" the block by dropping flags produce screenshots that
+get rejected, look amateur, or surface visual bugs in Control Center.
 
 ## The canonical block
 
@@ -40,7 +39,7 @@ Run this **after** `xcrun simctl boot "$DEVICE"` and **before**
 - The agent-driven `/capture-manual-surfaces` flow (Control Center, Notification Center, etc.)
 
 The playbook's `bootstrap.sh` emits these scripts with the block intact. If you
-refactor any of them, the block goes through last and stays whole.
+refactor any of them, the block stays whole.
 
 ## Refactor checklist
 
@@ -51,7 +50,7 @@ When you touch a capture script:
    apply to a process that's already started.
 2. All seven flags from the canonical block must be present. If you have a
    reason to drop one, write a comment explaining why next to the override
-   call so the next refactor doesn't re-drop it without thought.
+   call so the next refactor doesn't re-drop it.
 3. Re-capture one screenshot post-refactor and visually confirm: 9:41 in the
    clock, no carrier name, no 5G/LTE label, full bars on both icons,
    full battery + lightning bolt.
@@ -66,5 +65,4 @@ silently dropped `--operatorName ""` and `--dataNetwork hide` from all of
 them. The drop wasn't caught for weeks because the captures still rendered —
 just with "Carrier" visible and the Control Center status row wrapping. By
 the time it surfaced, those flags had to be re-added across multiple scripts
-in multiple projects. This rule documents *why* the flags exist so the next
-refactor leaves them alone.
+in multiple projects. This rule documents *why* the flags exist.

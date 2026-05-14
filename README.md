@@ -4,11 +4,10 @@
 [![Platform](https://img.shields.io/badge/platform-iOS_26+-blue.svg)](https://developer.apple.com/ios/)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-purple.svg)](https://docs.anthropic.com/en/docs/claude-code)
 
-A complete operational playbook for building and shipping iOS apps as a solo indie
-developer using [Claude Code](https://docs.anthropic.com/en/docs/claude-code). One
-script bootstraps a full Xcode project with CI/CD, code signing, linting, pre-commit
-hooks, and App Store submission pipeline — then Claude Code handles the day-to-day
-development.
+A playbook for building and shipping iOS apps as a solo indie developer using
+[Claude Code](https://docs.anthropic.com/en/docs/claude-code). One script bootstraps
+an Xcode project with CI/CD, code signing, linting, pre-commit hooks, and an
+App Store submission pipeline. Claude Code handles day-to-day development.
 
 ## Table of Contents
 
@@ -26,14 +25,14 @@ development.
 3. Run `bash bootstrap.sh` from the parent directory where you want the project folder created
 4. Open the project folder in Claude Code and start building
 
-You get a production-ready Xcode project with GitHub Actions CI/CD, Fastlane for
-TestFlight and App Store deployment, SwiftLint, Gitleaks, conventional commits,
-and a `CLAUDE.md` that teaches Claude Code how to work in your project.
+You get an Xcode project with GitHub Actions CI/CD, Fastlane for TestFlight and
+App Store deployment, SwiftLint, Gitleaks, conventional commits, and a `CLAUDE.md`
+that tells Claude Code how to work in your project.
 
 ## What this is
 
-This playbook is written for Claude Code to follow — every step is concrete, tested, and
-copy-pasteable. It covers the full lifecycle:
+This playbook is written for Claude Code to follow. Every step is concrete, tested, and
+copy-pasteable. It covers:
 
 - **Bootstrap** a new iOS project with one command
 - **CI/CD** with GitHub Actions (build checks, TestFlight deploys, App Store releases)
@@ -47,8 +46,8 @@ copy-pasteable. It covers the full lifecycle:
 
 ## Who this is for
 
-Solo indie iOS developers who want to ship apps efficiently with Claude Code as their
-primary development tool. The playbook assumes:
+Solo indie iOS developers who want to ship apps with Claude Code as their primary
+development tool. The playbook assumes:
 
 - Apple Developer Program membership
 - macOS with Xcode installed
@@ -61,12 +60,12 @@ If you're brand new, start with `getting-started.md`.
 
 | File | What it does |
 |---|---|
-| **`ios-project-playbook.md`** | The main playbook. Covers every phase from bootstrap to post-launch monitoring. This is what Claude Code reads to understand how your projects work. |
-| **`bootstrap.sh`** | One-command project bootstrap script. Creates a full Xcode project, Fastlane config, GitHub Actions workflows, linting, hooks, legal templates, and pushes to GitHub. |
+| **`ios-project-playbook.md`** | The main playbook. Covers bootstrap through post-launch monitoring. What Claude Code reads to understand your projects. |
+| **`bootstrap.sh`** | One-command project bootstrap script. Creates an Xcode project, Fastlane config, GitHub Actions workflows, linting, hooks, legal templates, and pushes to GitHub. |
 | **`getting-started.md`** | Step-by-step guide for first-time setup. Walks through prerequisites, creating your first project, and daily workflow. Start here if this is your first time. |
 | **`CLAUDE-TEMPLATE.md`** | Template for per-project `CLAUDE.md` files. The bootstrap script uses this to generate each project's Claude Code configuration. |
 | **`claude-code-plugins-setup.md`** | Guide for setting up Claude Code plugins and MCP servers for iOS development (XcodeBuildMCP, Apple's Xcode MCP bridge, etc.). |
-| **`CHANGELOG.md`** | Documents playbook updates with upgrade instructions for existing projects. |
+| **`CHANGELOG.md`** | Playbook updates with upgrade instructions for existing projects. |
 | **`.env.playbook.example`** | Template for your personal configuration (Team ID, ASC credentials, GitHub org). Copy to `.env.playbook` and fill in your values once. |
 | **`.env.project.example`** | Template for per-project configuration (`APP_NAME`, `BUNDLE_ID`, `REPO_NAME`, `MINIMUM_IOS`). Copy to `.env.project` and edit before each new project. |
 
@@ -100,7 +99,7 @@ The script hard-fails if `.env.project` is missing, so create it first.
 
 The script prints manual steps you'll need to complete in the Apple Developer Portal
 and App Store Connect (registering the bundle ID, creating a provisioning profile, etc.).
-See `getting-started.md` for a detailed walkthrough with screenshots.
+See `getting-started.md` for a walkthrough with screenshots.
 
 ### Start developing
 

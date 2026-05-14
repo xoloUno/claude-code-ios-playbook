@@ -1,8 +1,8 @@
 # iOS Project Playbook
 
-Master operational guide for solo indie iOS development. Covers the full lifecycle from
-project creation to App Store submission. Written for Claude Code to follow — every step
-is concrete, copy-pasteable, and tested.
+Operational guide for solo indie iOS development. Covers project creation through App
+Store submission. Written for Claude Code to follow — every step is copy-pasteable and
+tested.
 
 **Last verified:** April 2026 (Xcode 26.3, macOS 26, GitHub Actions `macos-26` runners)
 
@@ -143,7 +143,7 @@ Go to your repo → **Settings → Secrets and variables → Actions** and add:
 | `PROVISIONING_PROFILE_NAME` | Exact name from portal (e.g. "MyApp App Store") | **No — per app** |
 
 **Reuse tip:** The first five secrets are identical across all your apps. Only the provisioning
-profile secrets change per app. Consider using GitHub Organization secrets for the shared ones.
+profile secrets change per app. Use GitHub Organization secrets for the shared ones.
 
 ### 1.4 How the CI/CD Works
 
@@ -219,7 +219,7 @@ Once verified, use `/deploy` in Claude Code sessions for all future TestFlight u
 The GitHub Actions TestFlight workflow remains available via `gh workflow run testflight.yml`
 for emergencies (e.g., local machine unavailable).
 
-**Key gotchas learned the hard way:**
+**Gotchas learned the hard way:**
 
 1. **Never use cloud-managed signing on CI** — manual signing with `update_code_signing_settings` is reliable. Cloud signing randomly fails on headless runners.
 2. **Provisioning profile name must match in three places:** Apple Developer Portal, `update_code_signing_settings`, and `export_options.provisioningProfiles`. A mismatch in any one silently produces an unsigned build.
@@ -740,9 +740,8 @@ extension import the same key constants without drift.
 
 ## Phase 5: Screenshot Workflow
 
-Screenshots are required for App Store submission and are the single biggest factor in
-conversion. This workflow handles the full pipeline: automated capture on simulators,
-professional framing and design, and export at correct sizes.
+Screenshots are required for App Store submission and drive conversion. This workflow
+covers automated capture on simulators, framing, and export at the required sizes.
 
 ### Required Device Sizes (blocks submission if missing)
 
@@ -771,8 +770,7 @@ ASC-accepted simulator (17 Pro Max / iPad 13") and let Apple Frames CLI's
 dimensions still meet ASC's required 6.9" / 13" submission sizes; only the
 displayed frame changes.
 
-Minimum 1 screenshot per required size. Upload 3–5 on the 6.9" primary for
-marketing impact.
+Minimum 1 screenshot per required size. Upload 3–5 on the 6.9" primary.
 
 ### Step 1: Automated Capture with Fastlane Snapshot
 
@@ -830,8 +828,8 @@ and device, plus an HTML summary page for review.
 
 #### Reference: cleanest manual status-bar override
 
-`override_status_bar(true)` in the Snapfile sets sensible defaults (9:41, full
-signal, charged) but leaves the carrier name and 5G/LTE label visible. For
+`override_status_bar(true)` in the Snapfile sets defaults (9:41, full signal,
+charged) but leaves the carrier name and 5G/LTE label visible. For
 manual `simctl` runs (e.g., the `widget_screenshots` and `control_center_screenshot`
 lanes — which the bootstrap installs with the full override), use:
 
@@ -859,8 +857,8 @@ though most iPads represent Wi-Fi-only).
 #### XCUITest tips that save reshoots
 
 - **Prefer direct accessibility-identifier taps** over `press(forDuration:)` +
-  contextMenu items in screenshot tests. Direct taps are faster and dramatically
-  more reliable, especially when the underlying view uses SwiftUI's
+  contextMenu items in screenshot tests. Direct taps are faster and more
+  reliable, especially when the underlying view uses SwiftUI's
   Button-inside-Button + `.contextMenu` composition.
 - **Synchronously detect `-FASTLANE_SNAPSHOT` in any service that reads
   `UserDefaults` in `init()`** (theme manager, settings singleton, feature
@@ -886,7 +884,7 @@ init() {
 ### Step 2: Frame Screenshots
 
 Raw simulator screenshots won't convert users. Two tracks — pick based on how much
-marketing polish you need.
+polish you need.
 
 #### Track A — Apple Frames CLI (recommended default)
 
@@ -953,7 +951,7 @@ HarfBuzz) layer for typography — gradients, captions, optional subtitles,
 per-device overrides, multi-locale, and a stable per-device directory
 contract that preserves raws and framed intermediates.
 
-**The durable reference is [`.claude/rules/screenshot-pipeline.md`](.claude/rules/screenshot-pipeline.md)**.
+**The reference is [`.claude/rules/screenshot-pipeline.md`](.claude/rules/screenshot-pipeline.md)**.
 That rule covers the four artifact layers (`raw/` → `framed/` → `composed/`),
 the two-input-tree pattern (regenerable XCUITest captures vs. tracked
 manual-gesture captures), the agent-driven manual-capture loop, and the watch
@@ -1345,8 +1343,8 @@ fastlane/screenshots/en-US/
 | **Marketing-heavy app** | Fastlane `snapshot` + `/capture-manual-surfaces` | `fastlane compose_screenshots` (Track B — shotsmith) | Fastlane `deliver` |
 
 Don't over-engineer this on your first app. Raw capture + Apple Frames CLI gets
-you professional framed screenshots in under 5 minutes. Add shotsmith captions
-and branded gradients later when you need marketing polish.
+you framed screenshots in under 5 minutes. Add shotsmith captions and gradients
+later if you need them.
 
 ---
 
@@ -1606,12 +1604,12 @@ lean as it grows.
 | Tool | Why this one | Alternatives considered |
 |---|---|---|
 | **XcodeGen** | YAML project definition, never touch `.pbxproj`. Clean diffs, no merge conflicts on project files. | Tuist (Swift-based config, better for large modular projects but heavier), manual `.pbxproj` (merge conflicts are brutal) |
-| **Fastlane** | De facto iOS automation standard. One command for signing, building, uploading. Huge community and plugin ecosystem. | Xcode Cloud (25 free hrs/month but limited customization), manual `xcodebuild` (works but tedious at scale) |
+| **Fastlane** | The iOS automation standard. One command for signing, building, uploading. Large plugin ecosystem. | Xcode Cloud (25 free hrs/month but limited customization), manual `xcodebuild` (works but tedious at scale) |
 | **SwiftLint** | Standard Swift linter, 200+ rules, 30% faster in recent versions. Catches style issues pre-commit. | swift-format (Apple's official formatter, but fewer rules and less community adoption) |
 | **Lefthook** | Fast Go binary, parallel hook execution, no runtime dependencies. Config is one YAML file. | Husky (Node.js dependency — overkill for a Swift project), pre-commit (Python dependency) |
-| **Gitleaks** | Catches secrets in staged files before commit. Simple, fast, no config needed for common patterns. | Betterleaks (successor by original Gitleaks creator — better recall, drop-in replacement, recommended for new projects) |
+| **Gitleaks** | Catches secrets in staged files before commit. Fast, no config needed for common patterns. | Betterleaks (successor by original Gitleaks creator — better recall, drop-in replacement, recommended for new projects) |
 | **GitHub Actions** | Free for public repos, generous minutes for private. `macos-26` runners with Xcode 26.3. | Xcode Cloud (limited customization), Bitrise (free tier exists, iOS-focused), CircleCI |
-| **Conventional Commits** | Machine-parseable commit messages. Enables automated changelogs, semantic versioning. Enforced by Lefthook hook. | Free-form commits (no tooling integration) |
+| **Conventional Commits** | Machine-parseable commit messages. Enables automated changelogs and semantic versioning. Enforced by Lefthook hook. | Free-form commits (no tooling integration) |
 
 ## Appendix B: Decision Trees
 

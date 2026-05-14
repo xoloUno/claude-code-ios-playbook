@@ -5,9 +5,9 @@ globs: **/MANUAL-TASKS.md, **/CLAUDE.md
 
 # Manual Tasks Handoff Rule
 
-Whenever a session produces tasks that require human action — things Claude Code cannot
+When a session produces tasks that require human action — things Claude Code cannot
 do itself — Claude Code MUST write them to `MANUAL-TASKS.md` in the project root rather
-than listing them in the chat. This prevents tasks from getting buried in conversation
+than listing them in chat. This keeps tasks from getting buried in conversation
 history and avoids wasting tokens re-listing them later.
 
 **When to create/update this file:**
@@ -17,9 +17,9 @@ history and avoids wasting tokens re-listing them later.
 - Tasks requiring physical device testing that Claude Code cannot perform
 - Any step that requires a human login, GUI interaction, or manual verification
 
-**Before writing tasks:** Claude Code should first check whether it can actually perform
+**Before writing tasks:** Claude Code should first check whether it can perform
 the task itself (via MCP tools, CLI, or Fastlane). Only write tasks to the file that
-genuinely require human hands.
+require human hands.
 
 **File format:**
 

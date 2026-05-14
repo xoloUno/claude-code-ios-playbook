@@ -1,6 +1,6 @@
 Check session health — gauge how heavy this session is and whether to checkpoint.
 
-**Important caveat:** Claude Code does not expose token counts or context window usage
+**Caveat:** Claude Code does not expose token counts or context window usage
 directly. This command uses observable proxy signals to estimate session weight and
 recommend action.
 
@@ -16,7 +16,7 @@ Steps:
 4. **Stale uncommitted work:** If there are uncommitted changes, check when the last
    commit was made. If more than ~30 minutes of work is uncommitted, flag it.
 5. **WORKLOG freshness:** Check if WORKLOG.md was updated today. If not and there have
-   been commits, it's falling behind.
+   been commits, it's behind.
 
 Present results as a compact health dashboard:
 
@@ -34,7 +34,7 @@ Present results as a compact health dashboard:
 ### Recommendation
 [One of:]
 - ✓ **Healthy** — session is clean, keep going
-- ⚠️ **Checkpoint recommended** — significant uncommitted work. Consider committing
+- ⚠️ **Checkpoint recommended** — uncommitted work has piled up. Commit
   current progress before continuing.
 - 🔴 **Checkpoint now** — large amount of uncommitted changes at risk. Commit and push
   before doing more work.

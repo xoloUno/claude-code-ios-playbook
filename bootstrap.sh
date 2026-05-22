@@ -49,15 +49,21 @@ for cmd in git xcodegen gh; do
   command -v "$cmd" &>/dev/null || { echo "❌ Required tool '$cmd' not found. Install it first."; exit 1; }
 done
 gh auth status &>/dev/null || { echo "❌ GitHub CLI not authenticated. Run: gh auth login"; exit 1; }
-if [[ -d "$REPO_NAME" ]]; then
-  echo "❌ Directory '$REPO_NAME' already exists. Remove it or choose a different REPO_NAME."
+
+# Create project as a sibling of the playbook, not inside it
+PROJECT_PARENT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$PROJECT_PARENT/$REPO_NAME"
+
+if [[ -d "$PROJECT_DIR" ]]; then
+  echo "❌ Directory '$PROJECT_DIR' already exists. Remove it or choose a different REPO_NAME."
   exit 1
 fi
 echo "✓ All prerequisites met"
 
 echo "🚀 Bootstrapping $APP_NAME..."
+echo "📁 Project directory: $PROJECT_DIR"
 # --- Create project directory ---
-mkdir -p "$REPO_NAME" && cd "$REPO_NAME"
+mkdir -p "$PROJECT_DIR" && cd "$PROJECT_DIR"
 # --- Git init ---
 git init
 require_dir .git

@@ -28,6 +28,28 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-21 — Fix bootstrap env file quoting and project directory placement
+
+`bootstrap.sh` failed immediately when `PRIMARY_SIM` contained spaces (e.g.
+`iPhone 17 Pro`) because the `.env.project.example` template didn't quote its
+values. Bash parsed `PRIMARY_SIM=iPhone 17 Pro` as "set variable to `iPhone`,
+then execute `17` as a command" and exited with error 127. Both `.env.*.example`
+templates now quote all values. Separately, the script created the new project
+directory relative to CWD, which put it inside the playbook when run as
+`bash bootstrap.sh` from within `_playbook/`. It now always creates projects as
+siblings of the playbook directory.
+
+**Files affected:**
+- `.env.project.example` — all values quoted (fixes the `PRIMARY_SIM` crash)
+- `.env.playbook.example` — all values quoted for consistency
+- `bootstrap.sh` — project directory created via `$SCRIPT_DIR/..` instead of CWD
+
+**What to do in your project:**
+- Nothing — these only affect newly-bootstrapped projects
+- If you copied `.env.project.example` to `.env.project` before this fix, add quotes around any values that contain spaces (especially `PRIMARY_SIM`)
+
+---
+
 ## 2026-05-13 — Metadata translation rule + `/wrapup` note on locale drift
 
 Codifies the multi-locale App Store metadata workflow into a new rule:

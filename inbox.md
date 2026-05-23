@@ -167,4 +167,73 @@ Both changes are scoped for a focused `/wrapup` session — one skill
 file edit, no behavior change for the common case (running `/wrapup`
 in a bootstrapped iOS project on a feature branch).
 
+### 2026-05-14 — Flara
+
+**Category:** gotcha
+**Context:** Building Flara for iPhone 17 Pro sim (iOS 26.5) via the
+`apple-platform-build-tools:builder` agent. App crashed at startup
+with `EXC_BREAKPOINT (SIGTRAP)` from `_os_crash` called inside
+`CKContainer.__allocating_init(identifier:)`. Crash report:
+`~/Library/Logs/DiagnosticReports/Flara-2026-05-14-024316.ips`.
+**Lesson:** The builder agent's default of passing
+`CODE_SIGNING_ALLOWED=NO` to `xcodebuild` for sim builds strips
+entitlements from the binary. For apps that declare
+`com.apple.developer.icloud-services` (or any Apple-framework
+entitlement asserted at framework init time — CloudKit, MapKit,
+WeatherKit, App Attest, etc.), this causes a hard trap at process
+launch. Explicit ad-hoc signing via `CODE_SIGN_IDENTITY="-"` also
+fails the same way on iOS 26.5 sim. The only mode that works:
+**no signing overrides whatsoever** — Xcode picks "Sign to Run
+Locally" automatically and the entitlements file is still applied.
+**Suggested action:** Update the
+`apple-platform-build-tools:builder` agent's default behavior
+(wherever its xcodebuild invocation template lives) to NOT pass
+`CODE_SIGNING_ALLOWED=NO` for sim builds. Alternatively, document
+the pitfall prominently in the agent's prompt-engineering guide so
+delegators know to override the default in their prompts when the
+target app uses entitlement-asserting frameworks. The behavior was
+verified by three sequential build attempts: (1) with
+`CODE_SIGNING_ALLOWED=NO` — crashed; (2) with `CODE_SIGN_IDENTITY="-"`
+— still crashed; (3) with no signing flag — succeeded and ran.
+
+### 2026-05-20 — Broadsheet
+
+**Category:** gotcha
+**Context:** Running `/upgrade` to sync rule files from the playbook. After
+copying refreshed `.claude/rules/*.md` files from playbook into the project,
+`git add .claude/rules/manual-tasks.md` failed with "paths are ignored by
+.gitignore". Same issue affected `.claude/rules/work-log.md`. Discovered both
+files had been **untracked since project bootstrap (Apr 10)** — no prior
+session noticed because previous `/upgrade` runs didn't try to stage these
+files (they were diff-identical to playbook so never appeared in a changeset).
+**Lesson:** The bootstrap-emitted `.gitignore` includes unanchored entries for
+the Claude Code scratchpads:
+```
+# Claude Code local scratchpads
+MANUAL-TASKS.md
+WORKLOG.md
+```
+On macOS, Git defaults `core.ignorecase=true` (APFS is case-insensitive), so
+`MANUAL-TASKS.md` also matches `.claude/rules/manual-tasks.md` and `WORKLOG.md`
+matches `.claude/rules/work-log.md`. Result: every macOS-bootstrapped project
+silently fails to track those two rule files. The drift is invisible because
+the on-disk content matches the playbook source — `/conform` Check A reports
+"OK" (diff is identical), and `git status` shows nothing because git thinks
+the files don't exist. The bug only surfaces when something tries to `git add`
+them explicitly.
+**Suggested action:** Update `bootstrap.sh` to emit the scratchpad patterns
+anchored to project root:
+```
+# Anchored to project root so case-insensitive macOS gitignore doesn't also
+# catch .claude/rules/manual-tasks.md and .claude/rules/work-log.md.
+/MANUAL-TASKS.md
+/WORKLOG.md
+```
+Also worth adding a check to `/conform` Check F (or a new check) that runs
+`git ls-files <rule-file>` for each `.claude/rules/*.md` and flags any that
+exist on disk but aren't tracked by git — this would surface the same drift
+in existing projects that won't be re-bootstrapped. The fix in Broadsheet
+was a 2-line `.gitignore` edit (`MANUAL-TASKS.md` → `/MANUAL-TASKS.md`,
+`WORKLOG.md` → `/WORKLOG.md`); both rule files immediately became trackable.
+
 

@@ -265,6 +265,7 @@ struct LogView: View {
                         .font(.system(.caption, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
+                        .textSelection(.enabled)
                         .id("log-bottom")
                 }
                 .onChange(of: viewModel.logOutput) {

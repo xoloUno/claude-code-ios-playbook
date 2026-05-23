@@ -135,12 +135,8 @@ final class LauncherViewModel {
     // MARK: - Auto-fill helpers
 
     func autoFillDerivedFields() {
-        if project.bundleID.isEmpty || project.bundleID == derivedBundleID {
-            project.bundleID = derivedBundleID
-        }
-        if project.repoName.isEmpty || project.repoName == derivedRepoName {
-            project.repoName = derivedRepoName
-        }
+        project.bundleID = derivedBundleID
+        project.repoName = derivedRepoName
     }
 
     // MARK: - Bootstrap execution

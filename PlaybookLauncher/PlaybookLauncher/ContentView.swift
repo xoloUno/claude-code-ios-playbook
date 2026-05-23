@@ -4,6 +4,11 @@ struct ContentView: View {
     @State private var viewModel = LauncherViewModel()
     @State private var showLog = false
     @State private var editingIdentity = false
+    @FocusState private var focusedField: ProjectField?
+
+    enum ProjectField: Hashable {
+        case repoName, bundleIDSuffix, appName
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -157,7 +162,7 @@ struct ContentView: View {
             Label("New Project", systemImage: "plus.app")
                 .font(.headline)
 
-            // Bundle ID: prefix label + editable suffix
+            // Bundle ID: prefix label + editable suffix (primary input)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Bundle ID")
                     .font(.subheadline.weight(.medium))
@@ -176,20 +181,57 @@ struct ContentView: View {
                     )
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
+                    .focused($focusedField, equals: .bundleIDSuffix)
                     .onChange(of: viewModel.project.bundleIDSuffix) {
+                        viewModel.sanitizeBundleIDSuffix()
                         viewModel.autoFillFromSuffix()
                     }
                 }
             }
 
             FormField("Repo Name", text: $viewModel.project.repoName, prompt: "my-app")
+                .focused($focusedField, equals: .repoName)
+                .onChange(of: viewModel.project.repoName) {
+                    viewModel.sanitizeRepoName()
+                }
 
             FormField("App Name", text: $viewModel.project.appName, prompt: "MyApp")
+                .focused($focusedField, equals: .appName)
+                .onChange(of: viewModel.project.appName) {
+                    viewModel.sanitizeAppName()
+                }
+
+            // Trim hyphens when focus leaves a field
+            .onChange(of: focusedField) { old, _ in
+                if old == .bundleIDSuffix { viewModel.commitBundleIDSuffix() }
+                if old == .repoName { viewModel.commitRepoName() }
+            }
 
             HStack(spacing: 16) {
-                FormField("Min iOS", text: $viewModel.project.minimumIOS, prompt: "26.0")
-                    .frame(maxWidth: 120)
-                FormField("Simulator", text: $viewModel.project.primarySim, prompt: "iPhone 17 Pro")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Min iOS")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Picker("Min iOS", selection: $viewModel.project.minimumIOS) {
+                        ForEach(LauncherViewModel.minimumIOSOptions, id: \.self) { version in
+                            Text(version).tag(version)
+                        }
+                    }
+                    .labelsHidden()
+                }
+                .frame(maxWidth: 100)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Simulator")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Picker("Simulator", selection: $viewModel.project.primarySim) {
+                        ForEach(viewModel.availableSimulators, id: \.self) { sim in
+                            Text(sim).tag(sim)
+                        }
+                    }
+                    .labelsHidden()
+                }
             }
         }
     }

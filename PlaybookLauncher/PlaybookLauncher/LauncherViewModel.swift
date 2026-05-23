@@ -37,6 +37,12 @@ final class LauncherViewModel {
             .joined()
     }
 
+    // MARK: - Picker options
+
+    static let minimumIOSOptions = ["26.0", "18.0", "17.0", "16.0"]
+
+    var availableSimulators: [String] = []
+
     // MARK: - Bootstrap execution state
 
     var isRunning = false
@@ -69,6 +75,7 @@ final class LauncherViewModel {
         }
 
         loadIdentity()
+        loadAvailableSimulators()
     }
 
     func savePlaybookPath() {
@@ -139,11 +146,100 @@ final class LauncherViewModel {
 
     // MARK: - Auto-fill helpers
 
-    /// Called on every keystroke in the bundle ID suffix field.
+    /// Called on every keystroke in the bundle ID suffix field (primary input).
     /// Derives repo name and app name from the suffix.
     func autoFillFromSuffix() {
         project.repoName = project.bundleIDSuffix
         project.appName = Self.pascalCase(from: project.bundleIDSuffix)
+    }
+
+    /// Strip characters that aren't valid in a Swift type name.
+    /// Letters and numbers only, first character forced uppercase.
+    func sanitizeAppName() {
+        let filtered = project.appName.filter { $0.isLetter || $0.isNumber }
+        let capitalized = filtered.prefix(1).uppercased() + filtered.dropFirst()
+        if capitalized != project.appName {
+            project.appName = capitalized
+        }
+    }
+
+    /// Live: force lowercase, strip everything except alphanumeric + hyphens.
+    func sanitizeBundleIDSuffix() {
+        let lowered = project.bundleIDSuffix.lowercased()
+        let filtered = lowered.filter { $0.isLetter || $0.isNumber || $0 == "-" }
+        if filtered != project.bundleIDSuffix {
+            project.bundleIDSuffix = filtered
+        }
+    }
+
+    /// On blur: trim leading/trailing hyphens.
+    func commitBundleIDSuffix() {
+        let trimmed = project.bundleIDSuffix.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        if trimmed != project.bundleIDSuffix {
+            project.bundleIDSuffix = trimmed
+        }
+    }
+
+    /// Live: strip everything except alphanumeric, hyphens, dots, underscores.
+    func sanitizeRepoName() {
+        let filtered = project.repoName.filter { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "." || $0 == "_" }
+        if filtered != project.repoName {
+            project.repoName = filtered
+        }
+    }
+
+    /// On blur: trim leading/trailing hyphens.
+    func commitRepoName() {
+        let trimmed = project.repoName.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        if trimmed != project.repoName {
+            project.repoName = trimmed
+        }
+    }
+
+    /// Query xcrun simctl for available iOS simulators.
+    func loadAvailableSimulators() {
+        Task.detached {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+            process.arguments = ["simctl", "list", "devices", "available", "-j"]
+
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = Pipe()
+
+            do {
+                try process.run()
+                process.waitUntilExit()
+            } catch {
+                return
+            }
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let devicesMap = json["devices"] as? [String: [[String: Any]]]
+            else { return }
+
+            var names: [String] = []
+            for (runtime, devices) in devicesMap {
+                // Only iOS simulators
+                guard runtime.contains("iOS") || runtime.contains("iphonesimulator") else { continue }
+                for device in devices {
+                    if let name = device["name"] as? String,
+                       let isAvailable = device["isAvailable"] as? Bool,
+                       isAvailable
+                    {
+                        if !names.contains(name) {
+                            names.append(name)
+                        }
+                    }
+                }
+            }
+
+            let sorted = names.sorted()
+            await MainActor.run { [sorted] in
+                self.availableSimulators = sorted
+            }
+        }
     }
 
     // MARK: - Bootstrap execution

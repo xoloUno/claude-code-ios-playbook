@@ -28,6 +28,21 @@ signal during multi-version skips.
 
 ---
 
+## 2026-05-23 — PlaybookLauncher: SwiftUI macOS app for project creation
+
+New `PlaybookLauncher/` directory contains a SwiftUI macOS app that wraps
+`bootstrap.sh` with a form UI. Instead of manually editing `.env.playbook` and
+`.env.project` then running the script, you fill in text fields and click Create.
+Developer identity fields persist across runs (set once, reuse for every project).
+Bundle ID and repo name auto-derive from your domain and app name. Bootstrap output
+streams live in a log sheet.
+
+**Files affected:**
+- `PlaybookLauncher/` — new directory (project.yml + 5 Swift source files)
+
+**What to do in your project:**
+- Nothing — this is a playbook-level tool, not copied into downstream projects
+
 ## 2026-05-21 — Fix bootstrap env file quoting and project directory placement
 
 `bootstrap.sh` failed immediately when `PRIMARY_SIM` contained spaces (e.g.

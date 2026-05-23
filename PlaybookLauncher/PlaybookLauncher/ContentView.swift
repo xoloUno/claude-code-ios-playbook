@@ -157,14 +157,34 @@ struct ContentView: View {
             Label("New Project", systemImage: "plus.app")
                 .font(.headline)
 
-            FormField("App Name", text: $viewModel.project.appName, prompt: "MyApp")
-                .onChange(of: viewModel.project.appName) {
-                    viewModel.autoFillDerivedFields()
+            // Bundle ID: prefix label + editable suffix
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Bundle ID")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 0) {
+                    if !viewModel.bundleIDPrefix.isEmpty {
+                        Text(viewModel.bundleIDPrefix + ".")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 6)
+                    }
+                    TextField(
+                        "app identifier",
+                        text: $viewModel.project.bundleIDSuffix,
+                        prompt: Text("my-app")
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.body, design: .monospaced))
+                    .onChange(of: viewModel.project.bundleIDSuffix) {
+                        viewModel.autoFillFromSuffix()
+                    }
                 }
+            }
 
-            FormField("Bundle ID", text: $viewModel.project.bundleID, prompt: viewModel.derivedBundleID.isEmpty ? "com.example.myapp" : viewModel.derivedBundleID)
+            FormField("Repo Name", text: $viewModel.project.repoName, prompt: "my-app")
 
-            FormField("Repo Name", text: $viewModel.project.repoName, prompt: viewModel.derivedRepoName.isEmpty ? "myapp" : viewModel.derivedRepoName)
+            FormField("App Name", text: $viewModel.project.appName, prompt: "MyApp")
 
             HStack(spacing: 16) {
                 FormField("Min iOS", text: $viewModel.project.minimumIOS, prompt: "26.0")

@@ -14,22 +14,27 @@ final class LauncherViewModel {
 
     // MARK: - Derived fields
 
-    /// Auto-derive bundle ID from domain + app name.
-    /// User can edit to override.
-    var derivedBundleID: String {
-        guard !identity.developerDomain.isEmpty, !project.appName.isEmpty else { return "" }
-        let parts = identity.developerDomain.split(separator: ".").reversed()
-        let sanitizedName = project.appName
-            .replacingOccurrences(of: " ", with: "")
-            .lowercased()
-        return (parts.map(String.init) + [sanitizedName]).joined(separator: ".")
+    /// Reverse-domain prefix from the identity's domain (e.g., "uno.xolo").
+    var bundleIDPrefix: String {
+        guard !identity.developerDomain.isEmpty else { return "" }
+        return identity.developerDomain
+            .split(separator: ".")
+            .reversed()
+            .joined(separator: ".")
     }
 
-    /// Auto-derive repo name from app name.
-    var derivedRepoName: String {
-        project.appName
-            .lowercased()
-            .replacingOccurrences(of: " ", with: "-")
+    /// Full bundle ID = prefix + suffix (e.g., "uno.xolo.test-app").
+    var fullBundleID: String {
+        guard !bundleIDPrefix.isEmpty, !project.bundleIDSuffix.isEmpty else { return "" }
+        return bundleIDPrefix + "." + project.bundleIDSuffix
+    }
+
+    /// PascalCase app name from the suffix (e.g., "test-app" → "TestApp").
+    static func pascalCase(from identifier: String) -> String {
+        identifier
+            .split(omittingEmptySubsequences: true) { $0 == "-" || $0 == " " || $0 == "_" }
+            .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }
+            .joined()
     }
 
     // MARK: - Bootstrap execution state
@@ -134,9 +139,11 @@ final class LauncherViewModel {
 
     // MARK: - Auto-fill helpers
 
-    func autoFillDerivedFields() {
-        project.bundleID = derivedBundleID
-        project.repoName = derivedRepoName
+    /// Called on every keystroke in the bundle ID suffix field.
+    /// Derives repo name and app name from the suffix.
+    func autoFillFromSuffix() {
+        project.repoName = project.bundleIDSuffix
+        project.appName = Self.pascalCase(from: project.bundleIDSuffix)
     }
 
     // MARK: - Bootstrap execution
@@ -181,7 +188,7 @@ final class LauncherViewModel {
     private func buildEnvProject() -> String {
         """
         APP_NAME="\(project.appName)"
-        BUNDLE_ID="\(project.bundleID)"
+        BUNDLE_ID="\(fullBundleID)"
         REPO_NAME="\(project.repoName)"
         MINIMUM_IOS="\(project.minimumIOS)"
         PRIMARY_SIM="\(project.primarySim)"

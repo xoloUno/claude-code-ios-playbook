@@ -10,12 +10,12 @@ Steps:
 1. **Check provisioning profiles** before anything else. Run:
    `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
    Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
-   and `provisioningProfiles` is installed. If any are missing, STOP — do not run fastlane.
+   and `provisioningProfiles` is installed (__PROVISIONING_PROFILES__). If any are missing, STOP — do not run fastlane.
    Tell the user which profiles are missing and that they need to download them from
    Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
    Offer to fall back to GitHub Actions instead.
-2. **Verify metadata is populated and within ASC limits.** Check that `fastlane/metadata/en-US/`
-   files are not empty placeholders. At minimum: name.txt, description.txt, keywords.txt,
+2. **Verify metadata is populated and within ASC limits.** Check that the `fastlane/metadata/`
+   locale dirs (__METADATA_LOCALES__) are not empty placeholders. At minimum: name.txt, description.txt, keywords.txt,
    and release_notes.txt must have real content. Warn the user about any empty files.
    Validate character limits — reject if exceeded:
    - name.txt: 30 chars max

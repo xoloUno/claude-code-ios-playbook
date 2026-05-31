@@ -1047,7 +1047,8 @@ CLAUDEHOOKS
 # Shared with the submodule bridge via compose-claude.sh so the two paths can't drift.
 # Honor an explicit $PLAYBOOK_HOME (set via ~/.config/playbook/config); else self-locate.
 PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
-"$PLAYBOOK_DIR/compose-claude.sh" "$PWD" ios "$PRIMARY_SIM"
+export PRIMARY_SIM PROVISIONING_PROFILES METADATA_LOCALES
+"$PLAYBOOK_DIR/compose-claude.sh" "$PWD" ios
 # build-check.yml is scaffolding (not .claude), so fill its __PRIMARY_SIM__ marker here.
 [[ -f .github/workflows/build-check.yml ]] && sed -i '' "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" .github/workflows/build-check.yml
 # --- Playbook version marker (for /upgrade command) ---

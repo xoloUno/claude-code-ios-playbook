@@ -7,10 +7,16 @@
 #   • the submodule bridge — an existing iOS app refreshing .claude/ from the pinned
 #     _playbook submodule (Stage 1a). Run after `git submodule update`.
 #
-# Usage:  compose-claude.sh <target-dir> [pack] [primary-sim]
-#   target-dir   project root to write .claude/ into            (required)
-#   pack         platform pack under packs/<pack>/              (default: ios)
-#   primary-sim  value for the __PRIMARY_SIM__ marker / sim swap (default: iPhone 17 Pro)
+# Usage:  compose-claude.sh <target-dir> [pack]
+#   target-dir   project root to write .claude/ into   (required)
+#   pack         platform pack under packs/<pack>/      (default: ios)
+#
+# Per-project values come from the environment (export them, or `set -a; source
+# .env.project; set +a` first), each with a generic default so an unconfigured project
+# still composes cleanly:
+#   PRIMARY_SIM            build/test simulator           (default: iPhone 17 Pro)
+#   PROVISIONING_PROFILES  ASC profile names for deploy   (default: see the Fastfile)
+#   METADATA_LOCALES       metadata locale dirs to check  (default: en-US)
 #
 # Source location: $PLAYBOOK_HOME if set, else this script's own directory (so the
 # submodule copy self-locates without any env). macOS `sed -i ''` — run locally.
@@ -19,9 +25,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
 
-TARGET="${1:?usage: compose-claude.sh <target-dir> [pack] [primary-sim]}"
+TARGET="${1:?usage: compose-claude.sh <target-dir> [pack]}"
 PACK="${2:-ios}"
-PRIMARY_SIM="${3:-iPhone 17 Pro}"
+PRIMARY_SIM="${PRIMARY_SIM:-iPhone 17 Pro}"
+PROVISIONING_PROFILES="${PROVISIONING_PROFILES:-see the Fastfile}"
+METADATA_LOCALES="${METADATA_LOCALES:-en-US}"
 
 mkdir -p "$TARGET/.claude/commands" "$TARGET/.claude/rules"
 
@@ -65,10 +73,16 @@ done
 if [[ -f "$TARGET/.claude/rules/playbook-inbox.md" ]]; then
   sed -i '' "s|PLAYBOOK_PATH|$PLAYBOOK_DIR|g" "$TARGET/.claude/rules/playbook-inbox.md"
 fi
-# preflight uses a __PRIMARY_SIM__ marker — always fill it (even with the default).
-if [[ -f "$TARGET/.claude/commands/preflight.md" ]]; then
-  sed -i '' "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" "$TARGET/.claude/commands/preflight.md"
-fi
+# Per-project markers in command files: scalars with generic defaults, like __PRIMARY_SIM__.
+# Each app fills these from its .env.project; unset → the generic default above.
+for f in "$TARGET/.claude/commands"/*.md; do
+  [[ -e "$f" ]] || continue
+  sed -i '' \
+    -e "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" \
+    -e "s|__PROVISIONING_PROFILES__|${PROVISIONING_PROFILES}|g" \
+    -e "s|__METADATA_LOCALES__|${METADATA_LOCALES}|g" \
+    "$f"
+done
 # build-deploy/testing carry the literal default sim — only swap when overridden.
 if [[ "${PRIMARY_SIM}" != "iPhone 17 Pro" ]]; then
   for f in "$TARGET/.claude/rules/build-deploy.md" "$TARGET/.claude/rules/testing.md"; do

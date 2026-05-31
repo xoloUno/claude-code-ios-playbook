@@ -10,7 +10,7 @@ Steps:
 1. **Check provisioning profiles** before anything else. Run:
    `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
    Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
-   and `provisioningProfiles` is installed. If any are missing, STOP — do not run fastlane.
+   and `provisioningProfiles` is installed (__PROVISIONING_PROFILES__). If any are missing, STOP — do not run fastlane.
    Tell the user which profiles are missing and that they need to download them from
    Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
    Offer to fall back to GitHub Actions instead.

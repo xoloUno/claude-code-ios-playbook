@@ -86,7 +86,13 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   they don't shadow the shared source)
   - [x] carve rules → `core/rules` + `packs/ios/rules` (commit `0113986`)
   - [x] carve iOS commands → `packs/ios/commands` (commit `e3ce3cc`); bootstrap output verified byte-identical
-  - [ ] project-side bridge (symlink Python utils, submodule iOS apps) + de-bootstrap each
+  - [x] extract `compose-claude.sh` (shared by bootstrap **and** the bridge, so they can't drift)
+  - [x] genericize deploy commands with per-project markers `__PROVISIONING_PROFILES__` /
+        `__METADATA_LOCALES__` (+ existing `__PRIMARY_SIM__`) — found Flara had woven its ASC
+        profiles + es-ES/es-MX locales into `release.md`; markers let each app fill specifics at
+        compose time so the bridge refreshes generic source without clobbering project config
+  - [ ] project-side bridge (submodule iOS apps; symlink Python utils) + de-bootstrap each
+        (broadsheet/teewye are clean; Flara also has an app-only `media-handling.md` rule to keep)
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
   `autoUpdate:true` + semver `version`/tag; retire `.playbook-version`/`/upgrade` as primary,
   keep a `/conform` drift-check verb

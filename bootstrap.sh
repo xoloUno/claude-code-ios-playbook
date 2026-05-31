@@ -1043,85 +1043,13 @@ cat > .claude/hooks.json << 'CLAUDEHOOKS'
   }
 }
 CLAUDEHOOKS
-# --- Claude Code custom slash commands ---
-# Commands live in three places:
-#   packs/<pack>/commands/      — platform commands (ios: feature/test/review/
-#                                 deploy/release/preflight). A bootstrapped iOS
-#                                 project composes the ios pack, mirroring rules.
-#   .claude/commands/           — universal/playbook commands, copied downstream
-#                                 (curate is the lone exception: playbook-only)
-#   .claude/templates/commands/ — downstream-only versions of commands whose
-#                                 playbook-local variant is shaped differently
-#                                 (currently /status and /wrapup — the playbook
-#                                 has its own variants tailored to a docs/tooling
-#                                 repo, while downstream iOS projects need the
-#                                 CLAUDE.md / WORKLOG.md / MANUAL-TASKS.md flow).
-# Honor an explicit $PLAYBOOK_HOME (set via ~/.config/playbook/config); otherwise
-# self-locate. Keeps the playbook path movable from one place when the repo relocates.
-mkdir -p .claude/commands
+# --- Claude Code rules + slash commands (composed from core/ + the ios pack) ---
+# Shared with the submodule bridge via compose-claude.sh so the two paths can't drift.
+# Honor an explicit $PLAYBOOK_HOME (set via ~/.config/playbook/config); else self-locate.
 PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
-# Pack commands (platform-specific). Pack selection generalizes in a later stage.
-CMDS_SRCS=("$PLAYBOOK_DIR/packs/ios/commands")
-cmds_copied=0
-for src in "${CMDS_SRCS[@]}"; do
-  [[ -d "$src" ]] || continue
-  for cmd in "$src"/*.md; do
-    [[ -e "$cmd" ]] || continue
-    cp "$cmd" .claude/commands/
-    cmds_copied=$((cmds_copied + 1))
-  done
-done
-# Universal/playbook commands (+ downstream-only template variants)
-CMDS_SRC="$PLAYBOOK_DIR/.claude/commands"
-TEMPLATES_CMDS_SRC="$PLAYBOOK_DIR/.claude/templates/commands"
-if [[ -d "$CMDS_SRC" ]]; then
-  for cmd in "$CMDS_SRC"/*.md; do
-    cmd_name=$(basename "$cmd")
-    [[ "$cmd_name" == "curate.md" ]] && continue  # playbook-only command
-    cp "$cmd" .claude/commands/"$cmd_name"
-  done
-fi
-if [[ -d "$TEMPLATES_CMDS_SRC" ]]; then
-  for cmd in "$TEMPLATES_CMDS_SRC"/*.md; do
-    cmd_name=$(basename "$cmd")
-    cp "$cmd" .claude/commands/"$cmd_name"
-  done
-fi
-echo "✓ Playbook slash commands copied ($cmds_copied ios pack + universal: /inbox, /status, /wrapup, /context-health, /upgrade, /conform, /capture-manual-surfaces)"
-# --- Claude Code rules (path-scoped, auto-loaded) ---
-# Rules live in core/ (universal) + packs/<pack>/ (platform). A bootstrapped iOS
-# project composes core + the ios pack. (Pack selection generalizes in a later stage.)
-RULES_SRCS=("$PLAYBOOK_DIR/core/rules" "$PLAYBOOK_DIR/packs/ios/rules")
-mkdir -p .claude/rules
-rules_copied=0
-for src in "${RULES_SRCS[@]}"; do
-  [[ -d "$src" ]] || continue
-  for rule in "$src"/*.md; do
-    [[ -e "$rule" ]] || continue
-    cp "$rule" .claude/rules/
-    rules_copied=$((rules_copied + 1))
-  done
-done
-# Substitute playbook path into the inbox rule so sessions know where to write
-if [[ -f .claude/rules/playbook-inbox.md ]]; then
-  sed -i '' "s|PLAYBOOK_PATH|$PLAYBOOK_DIR|g" .claude/rules/playbook-inbox.md
-fi
-if [[ "$rules_copied" -gt 0 ]]; then
-  echo "✓ Claude Code rules copied to .claude/rules/ ($rules_copied: core + ios pack)"
-else
-  echo "⚠️  No rules found in core/ or packs/ios/ — skipping rule generation"
-fi
-# --- Substitute PRIMARY_SIM into emitted files ---
-# Marker substitution (always runs, even with default value)
-for f in .github/workflows/build-check.yml .claude/commands/preflight.md; do
-  [[ -f "$f" ]] && sed -i '' "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" "$f"
-done
-# Literal substitution in copied rule files (only when overridden)
-if [[ "${PRIMARY_SIM}" != "iPhone 17 Pro" ]]; then
-  for f in .claude/rules/build-deploy.md .claude/rules/testing.md; do
-    [[ -f "$f" ]] && sed -i '' "s|iPhone 17 Pro|${PRIMARY_SIM}|g" "$f"
-  done
-fi
+"$PLAYBOOK_DIR/compose-claude.sh" "$PWD" ios "$PRIMARY_SIM"
+# build-check.yml is scaffolding (not .claude), so fill its __PRIMARY_SIM__ marker here.
+[[ -f .github/workflows/build-check.yml ]] && sed -i '' "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" .github/workflows/build-check.yml
 # --- Playbook version marker (for /upgrade command) ---
 cat > .playbook-version << 'PBVERSION'
 # Last synced with playbook CHANGELOG

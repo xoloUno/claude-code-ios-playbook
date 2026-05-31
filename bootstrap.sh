@@ -1044,177 +1044,11 @@ cat > .claude/hooks.json << 'CLAUDEHOOKS'
 }
 CLAUDEHOOKS
 # --- Claude Code custom slash commands ---
-mkdir -p .claude/commands
-cat > .claude/commands/feature.md << 'FEATURECMD'
-Scaffold a new feature module for $ARGUMENTS:
-1. Create `Views/$ARGUMENTSView.swift` with a basic SwiftUI view + preview
-2. Create `ViewModels/$ARGUMENTSViewModel.swift` with @Observable class
-3. Create `Tests/$ARGUMENTSTests.swift` with Swift Testing import and placeholder test
-4. Wire it into the navigation/routing structure
-5. Follow all conventions in CLAUDE.md (adaptive colors, no force unwraps, etc.)
-FEATURECMD
-cat > .claude/commands/test.md << 'TESTCMD'
-Generate Swift Testing tests for $ARGUMENTS:
-1. Import Testing framework
-2. Test all public methods with parameterized inputs where appropriate
-3. Test error cases and edge conditions
-4. Use @Test macro and #expect/#require assertions
-5. Follow Arrange-Act-Assert pattern
-6. Name tests descriptively: test_methodName_condition_expectedResult
-TESTCMD
-cat > .claude/commands/review.md << 'REVIEWCMD'
-Review the current changes (staged or unstaged) for:
-1. Swift 6 concurrency safety — @MainActor, Sendable conformance, data races
-2. Retain cycles — closures capturing self without [weak self] where needed
-3. Accessibility — VoiceOver labels, Dynamic Type support, color contrast
-4. Privacy manifest — any new API usage that needs NSPrivacyAccessedAPITypes
-5. Force unwraps or unhandled optionals
-6. Any deviation from CLAUDE.md conventions
-Be specific about file names and line numbers. Suggest fixes, not just problems.
-REVIEWCMD
-cat > .claude/commands/deploy.md << 'DEPLOYCMD'
-Deploy the current state to TestFlight from this local machine.
-
-Prerequisites — abort if any fail:
-- This MUST be a local session (not cloud — cloud sessions cannot run fastlane)
-- `.env.fastlane` must exist in the project root
-- Must be on `main` branch (offer to merge dev/feature branch first if not)
-- Provisioning profiles must be installed locally (see check below)
-
-Steps:
-1. **Check provisioning profiles** before anything else. Run:
-   `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
-   Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
-   and `provisioningProfiles` is installed. If any are missing, STOP — do not run fastlane.
-   Tell the user which profiles are missing and that they need to download them from
-   Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
-   Offer to fall back to GitHub Actions instead.
-2. Verify build compiles: build for iOS Simulator via XcodeBuildMCP
-3. Run SwiftLint: `/opt/homebrew/bin/swiftlint lint --strict --quiet`
-4. Run: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
-5. If upload succeeds, ask user if they want to tag this release
-6. Push main with `[skip ci]` to sync remote without triggering any workflows
-7. Update "Current State" in CLAUDE.md with the deploy
-
-Fallback if local build/upload fails:
-- Restore any project files modified by fastlane: `git checkout -- *.xcodeproj`
-- Trigger the GitHub Actions workflow: `gh workflow run testflight.yml`
-- Monitor: `gh run list --workflow=testflight.yml --limit 1`
-DEPLOYCMD
-cat > .claude/commands/release.md << 'RELEASECMD'
-Submit the current state to App Store Connect from this local machine.
-
-Prerequisites — abort if any fail:
-- This MUST be a local session (not cloud — cloud sessions cannot run fastlane)
-- `.env.fastlane` must exist in the project root
-- Must be on `main` branch (offer to merge dev/feature branch first if not)
-- Provisioning profiles must be installed locally (see check below)
-
-Steps:
-1. **Check provisioning profiles** before anything else. Run:
-   `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
-   Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
-   and `provisioningProfiles` is installed. If any are missing, STOP — do not run fastlane.
-   Tell the user which profiles are missing and that they need to download them from
-   Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
-   Offer to fall back to GitHub Actions instead.
-2. **Verify metadata is populated and within ASC limits.** Check that `fastlane/metadata/en-US/`
-   files are not empty placeholders. At minimum: name.txt, description.txt, keywords.txt,
-   and release_notes.txt must have real content. Warn the user about any empty files.
-   Validate character limits — reject if exceeded:
-   - name.txt: 30 chars max
-   - subtitle.txt: 30 chars max
-   - description.txt: 4000 chars max
-   - keywords.txt: 100 chars max (comma-separated, no spaces after commas)
-   - release_notes.txt: 4000 chars max
-   - promotional_text.txt: 170 chars max
-3. **Sync metadata** to App Store Connect:
-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane upload_metadata`
-4. Verify build compiles: build for iOS Simulator via XcodeBuildMCP
-5. Run SwiftLint: `/opt/homebrew/bin/swiftlint lint --strict --quiet`
-6. **Build and upload binary:**
-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane release`
-7. Ask user if screenshots need uploading. If yes and `fastlane/screenshots/` has content:
-   `bundle exec fastlane upload_screenshots`
-   Otherwise remind them to upload manually in App Store Connect.
-8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
-9. Push main with `[skip ci]` to sync remote without triggering any workflows
-10. Update "Current State" in CLAUDE.md with the release
-
-Fallback if local build/upload fails:
-- Restore any project files modified by fastlane: `git checkout -- *.xcodeproj`
-- Trigger the GitHub Actions workflow: `gh workflow run release.yml`
-- Monitor: `gh run list --workflow=release.yml --limit 1`
-RELEASECMD
-cat > .claude/commands/preflight.md << 'PREFLIGHTCMD'
-Pre-deploy gate — validate everything before kicking off a build/upload cycle.
-
-Run this before /deploy or /release. Catches missing simulators, ASC character-limit
-violations, and forgotten metadata fields — all of which fail late and waste a full
-build cycle.
-
-Steps:
-
-1. **Simulator availability** — Run `xcrun simctl list devices available` and confirm
-   the project's required simulators exist. Standard set:
-   - iPhone 6.9" screenshots: iPhone 17 Pro Max
-   - iPad 13" screenshots: iPad Pro 13-inch (M5)
-   - Build/run target: __PRIMARY_SIM__
-   Skip iPad checks if the project does not ship iPad. If a required sim is missing,
-   FAIL — suggest `xcrun simctl create` or downloading the runtime via
-   Xcode > Settings > Platforms.
-
-2. **ASC metadata character limits** — For each locale directory under
-   `fastlane/metadata/`, validate text files against ASC limits using `wc -m`
-   (subtract 1 for trailing newline):
-   - `name.txt` ≤ 30
-   - `subtitle.txt` ≤ 30
-   - `keywords.txt` ≤ 100
-   - `description.txt` ≤ 4000
-   - `release_notes.txt` ≤ 4000
-   - `promotional_text.txt` ≤ 170
-   Report file path, current count, and overage for any file over limit.
-
-3. **Metadata field completeness** — For each locale dir, confirm BOTH
-   `release_notes.txt` AND `promotional_text.txt` exist and are non-empty (not just
-   whitespace, not just stale placeholders like "Initial release."). Catches
-   multi-locale ships where a field gets forgotten on some locales.
-
-4. **Git state** —
-   - `git status` must be clean (warn if untracked files)
-   - Current branch must NOT be `main` — should be `dev`, `release/*`, or feature/*
-   - Branch should be pushed and up-to-date with origin
-
-5. **Version sanity** — Read `MARKETING_VERSION` from `project.yml`. Ask the user
-   what version they think they're shipping. If mismatch, FAIL.
-
-6. **Build number** — Read `CURRENT_PROJECT_VERSION` from `project.yml`. Check whether
-   a git tag like `v<MARKETING>-beta.<BUILD>` already exists. If yes, warn — the build
-   number likely needs a bump.
-
-Present results as a PASS / FAIL / WARN table:
-
-```
-## Preflight — v1.2.0 build 71
-
-| Check | Status | Detail |
-|---|---|---|
-| Simulators | ✅ PASS | iPhone 17 Pro Max, iPad Pro 13" M5 available |
-| Metadata char limits | ❌ FAIL | en-US/subtitle.txt: 31 chars (max 30) |
-| Metadata completeness | ✅ PASS | All 12 locales have release_notes + promotional_text |
-| Git state | ⚠️ WARN | On dev, 2 unpushed commits |
-| Version | ✅ PASS | MARKETING_VERSION 1.2.0 matches |
-| Build number | ✅ PASS | 71 (no existing tag) |
-
-Overall: ❌ FAIL — fix metadata char limits before deploy.
-```
-
-If any check FAILs, refuse to proceed and offer to fix the failing items. Only after
-all checks PASS (or the user explicitly overrides) should /deploy or /release be invoked.
-PREFLIGHTCMD
-# --- Copy playbook slash commands ---
-# Commands live in two places:
-#   .claude/commands/           — used both in the playbook itself and downstream
+# Commands live in three places:
+#   packs/<pack>/commands/      — platform commands (ios: feature/test/review/
+#                                 deploy/release/preflight). A bootstrapped iOS
+#                                 project composes the ios pack, mirroring rules.
+#   .claude/commands/           — universal/playbook commands, copied downstream
 #                                 (curate is the lone exception: playbook-only)
 #   .claude/templates/commands/ — downstream-only versions of commands whose
 #                                 playbook-local variant is shaped differently
@@ -1224,7 +1058,20 @@ PREFLIGHTCMD
 #                                 CLAUDE.md / WORKLOG.md / MANUAL-TASKS.md flow).
 # Honor an explicit $PLAYBOOK_HOME (set via ~/.config/playbook/config); otherwise
 # self-locate. Keeps the playbook path movable from one place when the repo relocates.
+mkdir -p .claude/commands
 PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
+# Pack commands (platform-specific). Pack selection generalizes in a later stage.
+CMDS_SRCS=("$PLAYBOOK_DIR/packs/ios/commands")
+cmds_copied=0
+for src in "${CMDS_SRCS[@]}"; do
+  [[ -d "$src" ]] || continue
+  for cmd in "$src"/*.md; do
+    [[ -e "$cmd" ]] || continue
+    cp "$cmd" .claude/commands/
+    cmds_copied=$((cmds_copied + 1))
+  done
+done
+# Universal/playbook commands (+ downstream-only template variants)
 CMDS_SRC="$PLAYBOOK_DIR/.claude/commands"
 TEMPLATES_CMDS_SRC="$PLAYBOOK_DIR/.claude/templates/commands"
 if [[ -d "$CMDS_SRC" ]]; then
@@ -1240,7 +1087,7 @@ if [[ -d "$TEMPLATES_CMDS_SRC" ]]; then
     cp "$cmd" .claude/commands/"$cmd_name"
   done
 fi
-echo "✓ Playbook slash commands copied (/inbox, /status, /wrapup, /context-health, /upgrade, /conform, /capture-manual-surfaces)"
+echo "✓ Playbook slash commands copied ($cmds_copied ios pack + universal: /inbox, /status, /wrapup, /context-health, /upgrade, /conform, /capture-manual-surfaces)"
 # --- Claude Code rules (path-scoped, auto-loaded) ---
 # Rules live in core/ (universal) + packs/<pack>/ (platform). A bootstrapped iOS
 # project composes core + the ios pack. (Pack selection generalizes in a later stage.)

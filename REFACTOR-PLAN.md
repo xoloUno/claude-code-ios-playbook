@@ -93,11 +93,14 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         `__METADATA_LOCALES__` (+ existing `__PRIMARY_SIM__`) — found Flara had woven its ASC
         profiles + es-ES/es-MX locales into `release.md`; markers let each app fill specifics at
         compose time so the bridge refreshes generic source without clobbering project config
-  - [x] submodule bridge for the 3 iOS apps — `_playbook` pinned to playbook `main` (`49a8c88`),
+  - [x] submodule bridge for the 3 iOS apps — `_playbook` pinned to playbook `main` (`d7badf0`),
         `.claude/` recomposed via `compose-claude.sh`, inbox repointed to `~/dev/_playbook`,
         `_playbook` SwiftLint-excluded. Flara's profiles/12 locales in `.env.project`, its app-only
         `media-handling.md` preserved. Pushed to `chore/playbook-bridge` per app for review, NOT
-        merged (Flara `a2a2e59`, broadsheet `76596ba`, teewye `ad9d1fe`).
+        merged (Flara `fc73d71`, broadsheet `297ab9f`, teewye `53f9851`).
+  - [x] fixed playbook `build-deploy.md` drift (documented frames-cli `screenshots`/`frame_screenshots`
+        lanes bootstrap doesn't emit → `compose_screenshots`/shotsmith, `d7badf0`) and propagated to all 3.
+        Verified: every shared rule + generic command is byte-identical across the 3 apps.
   - [ ] review + merge the three `chore/playbook-bridge` branches to app mains
   - [ ] symlink bridge for the non-iOS repos (c3d-bridge-modeler, shotsmith, devpulse — minimal content)
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,

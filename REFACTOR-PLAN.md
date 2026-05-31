@@ -7,7 +7,9 @@
 > `~/dev` is canonical; iCloud copies retained as rollback pending deletion approval.
 > **Stage 1a carve COMPLETE (2026-05-31)** — rules (`0113986`) + iOS commands (`e3ce3cc`)
 > carved into `core/` + `packs/`; bootstrap output verified byte-identical both times.
-> Next: the Stage 1a project-side **bridge** + **de-bootstrap** (first touches the app repos).
+> **Stage 1a iOS bridge done (2026-05-31)** — `compose-claude.sh` + genericized deploy markers
+> (`40c2ed5`); all 3 iOS apps bridged to the pinned `_playbook` submodule on `chore/playbook-bridge`
+> review branches (unmerged). Next: review/merge those + the non-iOS symlink bridge.
 
 ---
 
@@ -91,8 +93,13 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         `__METADATA_LOCALES__` (+ existing `__PRIMARY_SIM__`) — found Flara had woven its ASC
         profiles + es-ES/es-MX locales into `release.md`; markers let each app fill specifics at
         compose time so the bridge refreshes generic source without clobbering project config
-  - [ ] project-side bridge (submodule iOS apps; symlink Python utils) + de-bootstrap each
-        (broadsheet/teewye are clean; Flara also has an app-only `media-handling.md` rule to keep)
+  - [x] submodule bridge for the 3 iOS apps — `_playbook` pinned to playbook `main` (`49a8c88`),
+        `.claude/` recomposed via `compose-claude.sh`, inbox repointed to `~/dev/_playbook`,
+        `_playbook` SwiftLint-excluded. Flara's profiles/12 locales in `.env.project`, its app-only
+        `media-handling.md` preserved. Pushed to `chore/playbook-bridge` per app for review, NOT
+        merged (Flara `a2a2e59`, broadsheet `76596ba`, teewye `ad9d1fe`).
+  - [ ] review + merge the three `chore/playbook-bridge` branches to app mains
+  - [ ] symlink bridge for the non-iOS repos (c3d-bridge-modeler, shotsmith, devpulse — minimal content)
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
   `autoUpdate:true` + semver `version`/tag; retire `.playbook-version`/`/upgrade` as primary,
   keep a `/conform` drift-check verb

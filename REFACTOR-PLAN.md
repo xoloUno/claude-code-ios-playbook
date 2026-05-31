@@ -4,7 +4,10 @@
 > is lost, start here. Last updated **2026-05-30**.
 > **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
 > all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
-> `~/dev` is canonical; iCloud copies retained as rollback pending deletion approval. Next: Stage 1a.
+> `~/dev` is canonical; iCloud copies retained as rollback pending deletion approval.
+> **Stage 1a carve COMPLETE (2026-05-31)** — rules (`0113986`) + iOS commands (`e3ce3cc`)
+> carved into `core/` + `packs/`; bootstrap output verified byte-identical both times.
+> Next: the Stage 1a project-side **bridge** + **de-bootstrap** (first touches the app repos).
 
 ---
 
@@ -81,6 +84,9 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
 - [ ] **Stage 1a — Bridge (drift stops fast):** carve `core/` + `packs/`; symlink into Python
   utils, submodule into iOS apps; **de-bootstrap** each (delete old copied commands/rules so
   they don't shadow the shared source)
+  - [x] carve rules → `core/rules` + `packs/ios/rules` (commit `0113986`)
+  - [x] carve iOS commands → `packs/ios/commands` (commit `e3ce3cc`); bootstrap output verified byte-identical
+  - [ ] project-side bridge (symlink Python utils, submodule iOS apps) + de-bootstrap each
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
   `autoUpdate:true` + semver `version`/tag; retire `.playbook-version`/`/upgrade` as primary,
   keep a `/conform` drift-check verb
@@ -187,7 +193,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
 - [ ] **HELD (irreversible):** delete the iCloud copies once `~/dev` is confirmed in daily use.
 - [ ] (optional) `git push` `_playbook` `main` for off-machine backup.
 - [ ] shotsmith still has 1 uncommitted file (present in both copies) — commit/stash when convenient.
-- [ ] **Next: Stage 1a** — carve `core/` + `packs/`, symlink/submodule bridge, de-bootstrap projects.
+- [x] **Stage 1a carve** — rules (`0113986`) + iOS commands (`e3ce3cc`) carved into `core/`+`packs/`; bootstrap output verified byte-identical.
+- [ ] **Next: Stage 1a bridge** — symlink Python utils, submodule iOS apps, de-bootstrap projects (first changes that touch the app repos).
 
 ## 10. References
 

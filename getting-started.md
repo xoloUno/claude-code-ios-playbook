@@ -128,7 +128,7 @@ This file is gitignored — it never leaves your machine.
 1. Open Terminal and run:
 
 ```
-cd ~/Library/Mobile\ Documents/com~apple~CloudDocs/Code/_playbook
+cd ~/dev/_playbook
 cp .env.playbook.example .env.playbook
 ```
 
@@ -150,7 +150,7 @@ itself — all configuration lives in env files.
 1. Open Terminal and run:
 
 ```
-cd ~/Library/Mobile\ Documents/com~apple~CloudDocs/Code/_playbook
+cd ~/dev/_playbook
 cp .env.project.example .env.project
 ```
 

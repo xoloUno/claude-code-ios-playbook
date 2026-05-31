@@ -2,8 +2,9 @@
 
 > **Purpose:** the single durable reference for this multi-session initiative. If context
 > is lost, start here. Last updated **2026-05-30**.
-> **Status:** direction FINALIZED after an adversarial multi-agent review. Stage 0
-> (reversible half) IN PROGRESS — see the Sequence tracker below.
+> **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
+> all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
+> `~/dev` is canonical; iCloud copies retained as rollback pending deletion approval. Next: Stage 1a.
 
 ---
 
@@ -63,17 +64,20 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
 
 ## 4. Sequence (status tracker)
 
-- [ ] **Stage 0 — Hygiene & safe migration**
+- [x] **Stage 0 — Hygiene & safe migration** — done & verified; only the held iCloud-delete remains
   - [x] gitignore/​de-iCloud `.build`/build artifacts (removed `Flara/build`, 568 MB)
   - [x] `$PLAYBOOK_HOME` indirection: `~/.config/playbook/config` (source of truth) +
         `~/.zshenv` loader + `bootstrap.sh` honors it + `/upgrade` resolves via it.
-        **Verified** (new shells resolve it; path valid; bootstrap parses). *Edits to
-        `bootstrap.sh` + `upgrade.md` are uncommitted on `main`.*
-  - [ ] verify `/upgrade` resolves via env var on one project (still on iCloud)
-  - [ ] `git fsck --full` each repo → force-materialize → **clone (not `mv`)** to `~/dev`
-  - [ ] `git fsck` + a real build in `~/dev`; copy gitignored keepers (`.env*`, WORKLOG, MANUAL-TASKS)
-  - [ ] rewrite the ~4 cosmetic hardcoded-path lines; point the config line at `~/dev/_playbook`
-  - [ ] keep iCloud copies as rollback until `~/dev` is proven green, *then* delete
+        **Verified**; committed to `_playbook` `main` (local, not pushed).
+  - [x] `$PLAYBOOK_HOME` resolution verified (fresh shell → `~/dev/_playbook`)
+  - [x] `git fsck --full` clean on all 7 → migrated via **`rsync -a`** (chosen over clone to preserve
+        gitignored secrets in one pass; iCloud copies untouched = rollback) → fsck-clean in `~/dev`
+  - [x] real build in `~/dev` (Flara compiles; FlaraKit resolves to the new path); keepers verified
+        (`.env.playbook` / `.env.project` / `.env.fastlane` / `WORKLOG` / `MANUAL-TASKS`)
+  - [x] config repointed → `~/dev/_playbook`; `getting-started.md` paths fixed (downstream
+        `playbook-inbox.md` left fallback-only → Stage 1; gitignored `settings.local.json` regenerable)
+  - [ ] **HELD (irreversible, awaits Erik):** delete iCloud copies once `~/dev` is confirmed in daily use
+  - [ ] (optional) push `_playbook` `main` to origin for off-machine backup
 - [ ] **Stage 1a — Bridge (drift stops fast):** carve `core/` + `packs/`; symlink into Python
   utils, submodule into iOS apps; **de-bootstrap** each (delete old copied commands/rules so
   they don't shadow the shared source)
@@ -119,8 +123,9 @@ auto-updates silently across projects, so a staleness-check verb still earns its
 on iCloud (because `/upgrade` historically string-scrapes the hardcoded path), verify, then
 move.
 
-**Method:** **clone (not `mv`)** — gives a fresh fsck-clean object store and leaves the iCloud
-copy as instant rollback.
+**Method (executed 2026-05-30):** **`rsync -a`** (excluding build/venv dirs) rather than clone —
+preserves gitignored secrets/worklogs in one pass; iCloud copies left untouched as rollback;
+`git fsck` after confirmed integrity on all 7. (Clone would have dropped the gitignored keepers.)
 
 **Gotcha — clone drops what isn't committed:** `git clone` copies committed history only. It
 will NOT bring over uncommitted changes or **gitignored** files — which for these repos
@@ -176,11 +181,13 @@ the workflow output (run `wf_e73fd29f-ed9`).
 
 ## 9. Open items / immediate next steps
 
-- [ ] Decide: commit the two `_playbook` edits (`bootstrap.sh`, `upgrade.md`) on a branch
-  (`chore/playbook-home-indirection`) — `git-workflow` rule forbids committing to `main`.
-- [ ] Commit this plan doc alongside (or keep local).
-- [ ] shotsmith: commit/stash its 1 uncommitted file before any migration.
-- [ ] **Trigger the clone-to-`~/dev`** when ready (the next deliberate, user-triggered step).
+- [x] Committed the two `_playbook` edits + this plan doc (branch `chore/playbook-home-indirection`,
+  merged to `main` locally — not pushed).
+- [x] Migration to `~/dev` done & verified (all 7 repos; Flara builds; secrets transferred).
+- [ ] **HELD (irreversible):** delete the iCloud copies once `~/dev` is confirmed in daily use.
+- [ ] (optional) `git push` `_playbook` `main` for off-machine backup.
+- [ ] shotsmith still has 1 uncommitted file (present in both copies) — commit/stash when convenient.
+- [ ] **Next: Stage 1a** — carve `core/` + `packs/`, symlink/submodule bridge, de-bootstrap projects.
 
 ## 10. References
 

@@ -43,11 +43,9 @@ Local deploy saves ~250 GitHub Actions credits per upload and is faster.
 # Via slash command (recommended — validates metadata, syncs, builds, uploads)
 /release
 
-# Individual lanes for granular control
-bundle exec fastlane screenshots         # Capture + frame in one command (chains frame_screenshots)
-bundle exec fastlane frame_screenshots   # Re-frame already-captured screenshots
-bundle exec fastlane widget_screenshots  # Lock screen (Live Activity) + home screen (widget) via simctl
-bundle exec fastlane control_center_screenshot # Control Center (Control Widget apps only) via Quartz drag
+# Individual lanes for granular control (the lanes bootstrap emits)
+bundle exec fastlane widget_screenshots  # Live Activity + widget via simctl — or prefer /capture-manual-surfaces
+bundle exec fastlane compose_screenshots # Shotsmith pipeline: stage → frame → compose (captioned + gradient)
 bundle exec fastlane upload_metadata     # Sync metadata only
 bundle exec fastlane upload_screenshots  # Upload screenshots only
 bundle exec fastlane release             # Build + upload binary with metadata
@@ -56,12 +54,12 @@ bundle exec fastlane release             # Build + upload binary with metadata
 Metadata lives in `fastlane/metadata/en-US/`. Edit those files before running `/release`.
 Screenshots go in `fastlane/screenshots/en-US/` — see `ios-project-playbook.md` §4.5.
 
-**Framing prerequisite:** Both `screenshots` and `frame_screenshots` shell out to
-[frames-cli](https://github.com/viticci/frames-cli), which must be on `PATH`.
-One-time install: clone the repo, `pip3 install --user Pillow`, symlink `frames`
-into `~/.local/bin/`, then run `frames setup` (or point at a pre-downloaded asset
-folder). The bundled Claude Code skill lives at `~/.claude/skills/frames-cli/SKILL.md`
-— install once globally for agent-native awareness. See Phase 5 of the playbook.
+**Screenshot tooling prerequisite:** `compose_screenshots` shells out to
+[shotsmith](https://github.com/xoloUno/shotsmith), which wraps frames-cli internally for
+device bezels. Install once per machine:
+`pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0`. The full directory
+contract and the human-in-the-loop manual-capture step are in
+[`screenshot-pipeline.md`](screenshot-pipeline.md) and the `/capture-manual-surfaces` command.
 
 **Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 

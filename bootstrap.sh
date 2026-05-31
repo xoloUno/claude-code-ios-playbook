@@ -1222,7 +1222,9 @@ PREFLIGHTCMD
 #                                 has its own variants tailored to a docs/tooling
 #                                 repo, while downstream iOS projects need the
 #                                 CLAUDE.md / WORKLOG.md / MANUAL-TASKS.md flow).
-PLAYBOOK_DIR="$SCRIPT_DIR"
+# Honor an explicit $PLAYBOOK_HOME (set via ~/.config/playbook/config); otherwise
+# self-locate. Keeps the playbook path movable from one place when the repo relocates.
+PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
 CMDS_SRC="$PLAYBOOK_DIR/.claude/commands"
 TEMPLATES_CMDS_SRC="$PLAYBOOK_DIR/.claude/templates/commands"
 if [[ -d "$CMDS_SRC" ]]; then

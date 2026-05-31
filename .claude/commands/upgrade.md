@@ -7,9 +7,15 @@ Steps:
 1. Read this project's `.playbook-version` file. If it doesn't exist, this project has
    never been upgraded — all CHANGELOG entries are relevant. Set the baseline to
    "beginning of time."
-2. Determine the playbook location from `.claude/rules/playbook-inbox.md` — look for the
-   line starting with `**Inbox location:**` and extract the directory path. If the rule
-   doesn't exist or still has `PLAYBOOK_PATH`, ask the user for the playbook directory.
+2. Determine the playbook location, using the first option below that resolves to an
+   existing directory containing `CHANGELOG.md`:
+   a. The `$PLAYBOOK_HOME` environment variable, if set.
+   b. The `PLAYBOOK_HOME` value in `~/.config/playbook/config` (`source` it, or grep the
+      line). This is the canonical pointer — it survives the playbook repo moving.
+   c. **Legacy fallback** — the `**Inbox location:**` line in
+      `.claude/rules/playbook-inbox.md`, with the trailing `/inbox.md` stripped. Skip this
+      if the line still contains the literal `PLAYBOOK_PATH` token.
+   d. If none of the above resolve, ask the user for the playbook directory.
 3. Read the playbook's `CHANGELOG.md`
 4. Identify all entries with dates **after** the project's `.playbook-version` date
 5. For each relevant entry (newest first), present:

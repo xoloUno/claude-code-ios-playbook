@@ -1242,19 +1242,27 @@ if [[ -d "$TEMPLATES_CMDS_SRC" ]]; then
 fi
 echo "✓ Playbook slash commands copied (/inbox, /status, /wrapup, /context-health, /upgrade, /conform, /capture-manual-surfaces)"
 # --- Claude Code rules (path-scoped, auto-loaded) ---
-RULES_SRC="$PLAYBOOK_DIR/.claude/rules"
-if [[ -d "$RULES_SRC" ]]; then
-  mkdir -p .claude/rules
-  for rule in "$RULES_SRC"/*.md; do
+# Rules live in core/ (universal) + packs/<pack>/ (platform). A bootstrapped iOS
+# project composes core + the ios pack. (Pack selection generalizes in a later stage.)
+RULES_SRCS=("$PLAYBOOK_DIR/core/rules" "$PLAYBOOK_DIR/packs/ios/rules")
+mkdir -p .claude/rules
+rules_copied=0
+for src in "${RULES_SRCS[@]}"; do
+  [[ -d "$src" ]] || continue
+  for rule in "$src"/*.md; do
+    [[ -e "$rule" ]] || continue
     cp "$rule" .claude/rules/
+    rules_copied=$((rules_copied + 1))
   done
-  # Substitute playbook path into the inbox rule so sessions know where to write
-  if [[ -f .claude/rules/playbook-inbox.md ]]; then
-    sed -i '' "s|PLAYBOOK_PATH|$PLAYBOOK_DIR|g" .claude/rules/playbook-inbox.md
-  fi
-  echo "✓ Claude Code rules copied to .claude/rules/"
+done
+# Substitute playbook path into the inbox rule so sessions know where to write
+if [[ -f .claude/rules/playbook-inbox.md ]]; then
+  sed -i '' "s|PLAYBOOK_PATH|$PLAYBOOK_DIR|g" .claude/rules/playbook-inbox.md
+fi
+if [[ "$rules_copied" -gt 0 ]]; then
+  echo "✓ Claude Code rules copied to .claude/rules/ ($rules_copied: core + ios pack)"
 else
-  echo "⚠️  No .claude/rules/ found in playbook — skipping rule generation"
+  echo "⚠️  No rules found in core/ or packs/ios/ — skipping rule generation"
 fi
 # --- Substitute PRIMARY_SIM into emitted files ---
 # Marker substitution (always runs, even with default value)

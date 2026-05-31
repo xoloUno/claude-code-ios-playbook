@@ -26,8 +26,9 @@ Steps:
 6. Ask the user which entries to apply
 7. For each applied entry:
    - Make the changes described in the upgrade steps
-   - For rule file updates: copy the latest version from the playbook's `.claude/rules/`
-     directory, re-applying the `PLAYBOOK_PATH` substitution if needed
+   - For rule file updates: copy the latest version from the playbook's `core/rules/` or
+     `packs/<pack>/rules/` directory (rules were reorganized into core + packs),
+     re-applying the `PLAYBOOK_PATH` substitution if needed
    - For template/config changes: apply the specific changes described
 8. After all entries are processed, update `.playbook-version` with today's date:
    ```

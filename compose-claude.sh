@@ -18,12 +18,18 @@
 #   PROVISIONING_PROFILES  ASC profile names for deploy   (default: see the Fastfile)
 #   METADATA_LOCALES       metadata locale dirs to check  (default: en-US)
 #
-# Source location: $PLAYBOOK_HOME if set, else this script's own directory (so the
-# submodule copy self-locates without any env). macOS `sed -i ''` — run locally.
+# Sources load from this script's own tree (the submodule self-locates with no env). The
+# inbox path resolves to $PLAYBOOK_HOME (the central playbook, from ~/.config/playbook/config)
+# so captured lessons aggregate there, never in a per-app submodule checkout.
+# macOS `sed -i ''` — run locally.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
+# Sources come from THIS script's own playbook tree — the submodule when the bridge runs it,
+# the central playbook when bootstrap calls it through its resolved path.
+PLAYBOOK_DIR="$SCRIPT_DIR"
+# Inbox lives in the canonical playbook home so lessons land centrally, not per-app.
+PLAYBOOK_INBOX="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
 
 TARGET="${1:?usage: compose-claude.sh <target-dir> [pack]}"
 PACK="${2:-ios}"
@@ -71,7 +77,7 @@ done
 # --- Substitutions ----------------------------------------------------------
 # Inbox rule learns where the playbook lives so sessions know where to capture.
 if [[ -f "$TARGET/.claude/rules/playbook-inbox.md" ]]; then
-  sed -i '' "s|PLAYBOOK_PATH|$PLAYBOOK_DIR|g" "$TARGET/.claude/rules/playbook-inbox.md"
+  sed -i '' "s|PLAYBOOK_PATH|$PLAYBOOK_INBOX|g" "$TARGET/.claude/rules/playbook-inbox.md"
 fi
 # Per-project markers in command files: scalars with generic defaults, like __PRIMARY_SIM__.
 # Each app fills these from its .env.project; unset → the generic default above.

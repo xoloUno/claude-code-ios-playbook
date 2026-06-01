@@ -14,7 +14,7 @@ Steps:
       line). This is the canonical pointer — it survives the playbook repo moving.
    c. **Legacy fallback** — the `**Inbox location:**` line in
       `.claude/rules/playbook-inbox.md`, with the trailing `/inbox.md` stripped. Skip this
-      if the line still contains the literal `PLAYBOOK_PATH` token.
+      if the line still holds an unsubstituted token (`$PLAYBOOK_HOME` or legacy `PLAYBOOK_PATH`).
    d. If none of the above resolve, ask the user for the playbook directory.
 3. Read the playbook's `CHANGELOG.md`
 4. Identify all entries with dates **after** the project's `.playbook-version` date
@@ -28,7 +28,7 @@ Steps:
    - Make the changes described in the upgrade steps
    - For rule file updates: copy the latest version from the playbook's `core/rules/` or
      `packs/<pack>/rules/` directory (rules were reorganized into core + packs),
-     re-applying the `PLAYBOOK_PATH` substitution if needed
+     re-applying the `$PLAYBOOK_HOME` substitution if needed
    - For template/config changes: apply the specific changes described
 8. After all entries are processed, update `.playbook-version` with today's date:
    ```

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# compose-claude.sh — assemble a project's .claude/rules + .claude/commands from the
-# playbook's core/ + a platform pack, applying the same substitutions bootstrap.sh does.
+# compose-claude.sh — assemble a project's .claude/rules, .claude/commands, and the kind
+# command-profile.md from the playbook's core/ + a platform pack, applying the same
+# substitutions bootstrap.sh does.
 #
 # Two callers share this one compose path so they can't drift:
 #   • bootstrap.sh  — scaffolding a brand-new project
@@ -40,8 +41,9 @@ METADATA_LOCALES="${METADATA_LOCALES:-en-US}"
 mkdir -p "$TARGET/.claude/commands" "$TARGET/.claude/rules"
 
 # --- Commands ---------------------------------------------------------------
-# Pack commands (platform-specific) + universal/playbook commands (curate is
-# playbook-only) + downstream-only template variants (currently /status, /wrapup).
+# Pack commands (platform-specific) + universal commands (curate is playbook-only).
+# /status and /wrapup are universal skeletons living in .claude/commands/; they load the
+# kind layer (command-profile.md, copied below) and any project-owned profile at runtime.
 cmds_copied=0
 for cmd in "$PLAYBOOK_DIR/packs/$PACK/commands"/*.md; do
   [[ -e "$cmd" ]] || continue
@@ -55,11 +57,14 @@ if [[ -d "$PLAYBOOK_DIR/.claude/commands" ]]; then
     cp "$cmd" "$TARGET/.claude/commands/$cmd_name"
   done
 fi
-if [[ -d "$PLAYBOOK_DIR/.claude/templates/commands" ]]; then
-  for cmd in "$PLAYBOOK_DIR/.claude/templates/commands"/*.md; do
-    cmd_name=$(basename "$cmd")
-    cp "$cmd" "$TARGET/.claude/commands/$cmd_name"
-  done
+
+# --- Command profile (kind layer) -------------------------------------------
+# The pack's command-profile.md carries the type-level /status + /wrapup behavior the
+# universal skeletons fold in at runtime. Lives at .claude/ root (not a slash command,
+# not scanned by /conform Check F). A project's own command-profile.local.md is
+# project-owned and never composed.
+if [[ -f "$PLAYBOOK_DIR/packs/$PACK/command-profile.md" ]]; then
+  cp "$PLAYBOOK_DIR/packs/$PACK/command-profile.md" "$TARGET/.claude/command-profile.md"
 fi
 
 # --- Rules ------------------------------------------------------------------
@@ -75,9 +80,11 @@ for src in "$PLAYBOOK_DIR/core/rules" "$PLAYBOOK_DIR/packs/$PACK/rules"; do
 done
 
 # --- Substitutions ----------------------------------------------------------
-# Inbox rule learns where the playbook lives so sessions know where to capture.
+# Inbox rule learns where the playbook lives so sessions know where to capture. The rule
+# carries the literal token $PLAYBOOK_HOME (resolved live when read in a symlinked repo);
+# composed copies bake the real absolute path here so they stay self-contained.
 if [[ -f "$TARGET/.claude/rules/playbook-inbox.md" ]]; then
-  sed -i '' "s|PLAYBOOK_PATH|$PLAYBOOK_INBOX|g" "$TARGET/.claude/rules/playbook-inbox.md"
+  sed -i '' "s|[$]PLAYBOOK_HOME|$PLAYBOOK_INBOX|g" "$TARGET/.claude/rules/playbook-inbox.md"
 fi
 # Per-project markers in command files: scalars with generic defaults, like __PRIMARY_SIM__.
 # Each app fills these from its .env.project; unset → the generic default above.
@@ -96,4 +103,6 @@ if [[ "${PRIMARY_SIM}" != "iPhone 17 Pro" ]]; then
   done
 fi
 
-echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: core + $PACK)"
+profile_note=""
+[[ -f "$TARGET/.claude/command-profile.md" ]] && profile_note="; $PACK command-profile"
+echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: core + $PACK$profile_note)"

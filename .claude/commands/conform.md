@@ -7,19 +7,28 @@ been missed.
 
 Steps:
 
-1. **Locate the playbook directory** — read `.claude/rules/playbook-inbox.md` and extract the
-   path from the `**Inbox location:**` line (strip the trailing `/inbox.md`). If the rule file
-   doesn't exist or still contains `PLAYBOOK_PATH`, ask the user for the playbook directory
-   absolute path before proceeding.
+1. **Locate the playbook directory**, using the first option that resolves to an existing
+   directory containing `CHANGELOG.md`:
+   a. The `$PLAYBOOK_HOME` environment variable, if set.
+   b. The `PLAYBOOK_HOME` value in `~/.config/playbook/config` (`source` it, or grep the line).
+   c. Legacy fallback — the `**Inbox location:**` line in `.claude/rules/playbook-inbox.md`,
+      with the trailing `/inbox.md` stripped. Skip this if the line still holds an unsubstituted
+      token (`$PLAYBOOK_HOME` or legacy `PLAYBOOK_PATH`).
+   d. If none resolve, ask the user for the playbook directory absolute path before proceeding.
 
 2. **Audit silently — gather all drift items into memory before presenting anything.** Run the
    six checks below without asking the user yet. Collect a list of `{category, severity, item,
    action}` rows.
 
    **Check A — Stale playbook-copied rule files (severity: HIGH, auto-fixable)**
-   - For each file in `<playbook>/.claude/rules/*.md`:
+   - Playbook rules live in `<playbook>/core/rules/*.md` (universal — every project) plus
+     `<playbook>/packs/<pack>/rules/*.md` for the project's pack; compose flattens both into the
+     project's single `.claude/rules/`. Audit `core/rules/` always, and also `packs/ios/rules/`
+     when the project is iOS (heuristic: `.claude/rules/build-deploy.md` present). Other packs
+     extend this as they gain rules.
+   - For each source rule, compared against the project's `.claude/rules/<name>.md`:
      - If absent from `.claude/rules/`: drift = MISSING
-     - If present: `diff` against playbook source. Account for known substitutions:
+     - If present: `diff` against the playbook source. Account for known substitutions:
        - `playbook-inbox.md`: ignore differences in the `**Inbox location:**` line (always substituted)
        - `build-deploy.md`, `testing.md`: ignore `iPhone 17 Pro` vs `${PRIMARY_SIM}` value differences
      - If non-trivial diff: drift = STALE
@@ -29,13 +38,15 @@ Steps:
      - If absent from `.claude/commands/`: drift = MISSING
      - If present: `diff` against playbook source. If non-trivial diff: drift = STALE
 
-   **Check C — Missing bootstrap-emitted slash commands (severity: MEDIUM, manual)**
-   - Read `<playbook>/bootstrap.sh` and extract command names from heredoc patterns
-     (`cat > .claude/commands/<name>.md << '<MARKER>'`). Standard set as of writing:
-     `feature`, `test`, `review`, `deploy`, `release`, `preflight`.
-   - For each, if missing from `.claude/commands/`: drift = MISSING. Note the bootstrap.sh line
-     range so the user can copy the heredoc body manually (these can't be auto-applied because
-     the heredoc may have substitutions and the bootstrap context isn't reproducible here).
+   **Check C — Missing iOS-pack slash commands (severity: MEDIUM, manual)**
+   - **Pack-gated:** only run this check for iOS projects — heuristic: `.claude/rules/build-deploy.md`
+     is present. For non-iOS projects, skip Check C entirely; they carry no iOS-pack commands and
+     a "missing" report would be a false positive.
+   - The iOS pack ships six commands in `<playbook>/packs/ios/commands/`: `feature`, `test`,
+     `review`, `deploy`, `release`, `preflight`. For each, if missing from `.claude/commands/`:
+     drift = MISSING. These are normally emitted by `compose-claude.sh`; recomposing (or copying
+     `<playbook>/packs/ios/commands/<name>.md` and re-applying the `${PRIMARY_SIM}`/profile/locale
+     markers from `.env.project`) restores them.
 
    **Check D — CLAUDE.md template gaps (severity: LOW, advisory only)**
    - Read `<playbook>/CLAUDE-TEMPLATE.md` and extract H2 section titles (`## ...`).
@@ -52,9 +63,11 @@ Steps:
 
    **Check F — Stranded `.claude/` files (severity: LOW, advisory)**
    - List files in project's `.claude/rules/` and `.claude/commands/`.
-   - For each, check if it exists in the playbook source OR matches a bootstrap.sh heredoc
-     emission name. If neither: drift = STRANDED. Could be an intentional project-specific
-     custom file (keep) or a stale leftover (remove). Don't decide — flag for the user.
+   - For each, check whether it exists in the playbook source — a rule under `core/rules/` or
+     `packs/<pack>/rules/`, or a command under `.claude/commands/` (except `curate.md`) or
+     `packs/<pack>/commands/`. If it matches none: drift = STRANDED. Could be an intentional
+     project-specific custom file (keep) or a stale leftover (remove). Don't decide — flag for
+     the user.
 
 3. **Present the consolidated report** as a single markdown table:
 
@@ -65,7 +78,7 @@ Steps:
    |---|---|---|
    | Rule files | ⚠️ N stale, M missing | testing.md (stale), wwdc25-ios26.md (missing), ... |
    | Playbook commands | ⚠️ N stale, M missing | upgrade.md (stale), ... |
-   | Bootstrap commands | ❌ N missing | preflight.md (bootstrap.sh:1267-1332) |
+   | iOS-pack commands | ❌ N missing | preflight.md (packs/ios/commands/) |
    | CLAUDE.md sections | ⚠️ N gaps | "Distribution", ... |
    | Doc bloat | ⚠️ N found | MILESTONES.md (see Appendix C) |
    | Stranded files | ⚠️ N found | .claude/commands/custom.md |
@@ -83,16 +96,18 @@ Steps:
    - **Just report** — make no changes; the report is the deliverable.
 
 5. **Apply approved fixes:**
-   - **Stale or missing playbook rule files (Check A):** copy from `<playbook>/.claude/rules/`
-     overwriting the project version. Re-apply known substitutions:
-     - `playbook-inbox.md`: substitute `PLAYBOOK_PATH` with the playbook directory
+   - **Stale or missing playbook rule files (Check A):** copy from the file's playbook home —
+     `<playbook>/core/rules/<name>.md` or `<playbook>/packs/<pack>/rules/<name>.md` — overwriting
+     the project version. Re-apply known substitutions:
+     - `playbook-inbox.md`: substitute the `$PLAYBOOK_HOME` token with the playbook directory
      - `build-deploy.md`, `testing.md`: if `.env.project` exists and defines `PRIMARY_SIM`
        with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
    - **Stale or missing playbook commands (Check B):** copy from `<playbook>/.claude/commands/`
      overwriting the project version. NEVER copy `curate.md`.
-   - **Missing bootstrap commands (Check C):** do not auto-apply. Show the user the
-     `bootstrap.sh` line range and instruct them to either re-bootstrap a fresh project to
-     copy the file from, or open `bootstrap.sh` and copy the heredoc body manually.
+   - **Missing iOS-pack commands (Check C):** skipped entirely for non-iOS projects. For iOS
+     projects, do not auto-apply; point the user at `<playbook>/packs/ios/commands/<name>.md` to
+     copy (re-applying the `.env.project` markers), or have them re-run
+     `compose-claude.sh <project> ios`.
    - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F):** do
      not auto-apply. Surface again at the end as "manual follow-ups."
 

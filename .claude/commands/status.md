@@ -1,33 +1,51 @@
-Quick session orientation for the playbook — run at the start of every session.
+Quick session orientation — run at the start of every session.
 
-This is the playbook repo itself, not a downstream iOS project. There's no
-`CLAUDE.md`, no `WORKLOG.md`, no `MANUAL-TASKS.md`. The state of the world lives
-in git, `CHANGELOG.md`, `inbox.md`, and open PRs.
+This is the **universal** `/status`. It runs the same in any project — the playbook
+repo itself, an iOS app, a Python tool. Everything kind- or project-specific is
+layered on at runtime from a profile (see the load-first hook); this file holds only
+what is true everywhere.
 
-Steps:
-1. Run `git branch --show-current` and `git status --short` — current branch +
-   dirty state
-2. Run `git log --oneline -5` — recent commits on the current branch
-3. Run `git rev-list --left-right --count origin/main...HEAD 2>/dev/null` to
-   show ahead/behind state vs. `origin/main`
-4. Run `git fetch --dry-run --prune 2>&1` to detect local branches whose
-   remotes have been deleted (stale branches a previous session left behind).
-   Don't actually prune — just report.
-5. Check open PRs: `gh pr list --state open --limit 10` (if `gh` is available)
-6. Show the date and one-line title of the most recent CHANGELOG entry
-   (`grep -m1 '^## ' CHANGELOG.md`). This is the playbook's "current state"
-   for downstream `/upgrade` consumers.
-7. Count pending inbox entries: `grep -c '^### ' inbox.md` (each `### ` heading
-   is one un-curated lesson). If > 0, mention that `/curate` is available.
+## Load first — bind the project profile, then report
 
-Present as a concise briefing — not a wall of text:
+Before gathering anything, read these files **if present** and merge the steps under
+their `## /status` heading into the briefing below. `/status` mutates nothing, so a
+read-only briefing may fold the extra checks in anywhere:
+
+- `.claude/command-profile.md` — the kind layer (iOS, Python, …): type-level checks.
+- `.claude/command-profile.local.md` — this project's own escape-hatch checks.
+- `.claude/project.yml` — declarative facts (`kind`, `test_command`, `version_files`, …)
+  the checks above may reference.
+
+If none are present, the universal steps stand alone.
+
+## Universal steps
+
+1. `git branch --show-current` and `git status --short` — current branch + dirty state.
+2. `git log --oneline -5` — recent commits on the current branch.
+3. `git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null` — ahead/behind vs
+   the branch's upstream. Always `@{upstream}`, never a hardcoded `origin/main`: it
+   resolves to whatever this branch tracks and stays silent when there is no upstream.
+4. Open PRs: `gh pr list --state open --limit 10` (if `gh` is available).
+5. If `CLAUDE.md` is present **and** has a "Current State" / "current status" section,
+   summarize it (last-updated date, what's in flight, next up). If it has no such
+   section — e.g. a principles-only operating guide — skip it; don't invent one.
+6. If `WORKLOG.md` is present, read its latest entry — show the date and key points.
+7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them and ask
+   whether any are now done.
+
+Then fold in whatever `## /status` checks the profile files contributed.
+
+## Briefing format
+
+Present a concise briefing — not a wall of text. The header carries the universal
+fields; the profile contributes its own headline lines (build, version, CI, phase,
+inbox count, …):
 
 ```
-## Playbook Session Briefing
+## Session Briefing
 
-**Branch:** <branch> | **vs origin/main:** <N ahead, M behind>
-**Latest CHANGELOG entry:** <date> — <title>
-**Inbox:** <N pending entries> (run /curate to process)
+**Branch:** <branch> | **vs upstream:** <N ahead, M behind, or "no upstream">
+<profile headline lines, if any>
 
 ### Recent commits
 <git log --oneline -5 output>
@@ -36,16 +54,8 @@ Present as a concise briefing — not a wall of text:
 - #<N> <title> — <branch>
 
 ### Flags
-- ⚠️ <uncommitted changes, stale local branches, ahead-of-origin without push>
+- ⚠️ <uncommitted changes, stale branches, ahead-of-origin without push, profile flags>
 - ✓ Clean — no flags <if nothing to report>
 ```
 
 After presenting, ask: "What would you like to work on?"
-
-## Things this command intentionally does NOT do
-
-- It does not read `CLAUDE.md` / `WORKLOG.md` / `MANUAL-TASKS.md` / `.playbook-version`.
-  Those are downstream-project artifacts; the playbook itself doesn't carry them.
-- It does not check Dependabot. The playbook has no app dependencies to update —
-  it's a documentation and tooling repo.
-- It does not auto-curate the inbox. That's `/curate`'s job, run intentionally.

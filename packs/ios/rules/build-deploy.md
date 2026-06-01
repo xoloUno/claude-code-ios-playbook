@@ -43,23 +43,27 @@ Local deploy saves ~250 GitHub Actions credits per upload and is faster.
 # Via slash command (recommended — validates metadata, syncs, builds, uploads)
 /release
 
-# Individual lanes for granular control (the lanes bootstrap emits)
-bundle exec fastlane widget_screenshots  # Live Activity + widget via simctl — or prefer /capture-manual-surfaces
-bundle exec fastlane compose_screenshots # Shotsmith pipeline: stage → frame → compose (captioned + gradient)
+# Upload + ship — these lanes are common to every app
 bundle exec fastlane upload_metadata     # Sync metadata only
 bundle exec fastlane upload_screenshots  # Upload screenshots only
 bundle exec fastlane release             # Build + upload binary with metadata
 ```
 
-Metadata lives in `fastlane/metadata/en-US/`. Edit those files before running `/release`.
-Screenshots go in `fastlane/screenshots/en-US/` — see `ios-project-playbook.md` §4.5.
+Metadata lives in `fastlane/metadata/<locale>/`. Edit those files before running `/release`.
 
-**Screenshot tooling prerequisite:** `compose_screenshots` shells out to
-[shotsmith](https://github.com/xoloUno/shotsmith), which wraps frames-cli internally for
-device bezels. Install once per machine:
-`pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0`. The full directory
-contract and the human-in-the-loop manual-capture step are in
-[`screenshot-pipeline.md`](screenshot-pipeline.md) and the `/capture-manual-surfaces` command.
+**Screenshots — Shotsmith is the standard pipeline** (Flara's): it composes captioned + gradient
+ASC images and wraps frames-cli internally for bezels; bootstrap emits a `compose_screenshots`
+lane for it. A project's *capture* lanes depend on its surfaces, so read the exact names from
+`bundle exec fastlane --list` (or the Fastfile) rather than assuming:
+- **In-app screens** (every app): XCUITest capture → `compose_screenshots`.
+- **Manual-gesture surfaces** *only if the app has them*: Live Activity / widget / Control Center
+  via `/capture-manual-surfaces` (e.g. `widget_screenshots`, `control_center_screenshot`).
+
+See [`screenshot-pipeline.md`](screenshot-pipeline.md) for the raw → framed → composed contract.
+Install Shotsmith once per machine: `pipx install git+https://github.com/xoloUno/shotsmith.git@v0.2.0`.
+
+> Apps still on the older frames-cli `screenshots`/`frame_screenshots` lanes should migrate to
+> Shotsmith (the standard) — it's a superset (gradient + captions on top of device bezels).
 
 **Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 

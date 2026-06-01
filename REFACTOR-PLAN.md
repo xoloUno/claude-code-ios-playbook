@@ -14,7 +14,7 @@
 > added `_playbook/CLAUDE.md` operating guide. **Phase A COMPLETE (2026-06-01, branch
 > `feat/universal-status-wrapup`)** — universal `/status`+`/wrapup` skeletons +
 > `packs/{ios,python}/command-profile.md` + the playbook's `command-profile.local.md`; compose
-> copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME`; conform Check C pack-aware; templates
+> copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME`; conform Checks A/C/F pack-aware; templates
 > deleted; both gates green. Next: Phase B (non-iOS symlink bridge: c3d, shotsmith, devpulse).
 
 ---
@@ -118,7 +118,7 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         rewrote `{status,wrapup}.md` to the universal skeleton + load-first hook; authored
         `packs/{ios,python}/command-profile.md` + the playbook's `command-profile.local.md`; compose
         copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME` across inbox/conform/upgrade/playbook-inbox;
-        conform Check C pack-aware; `git rm`'d `templates/commands/{status,wrapup}.md`; CHANGELOG entry
+        conform Checks A/C/F pack-aware; `git rm`'d `templates/commands/{status,wrapup}.md`; CHANGELOG entry
         + 3 supersession banners. Both gates green: byte-identical iOS compose (only
         status/wrapup/conform/inbox/upgrade differ + new `command-profile.md`; composed inbox path
         stays absolute) and lossy-extraction coverage for all four variants. **Phase B (pending)** =
@@ -235,7 +235,7 @@ the workflow output (run `wf_e73fd29f-ed9`).
 - [x] **Stage 1a commands — Phase A DONE (2026-06-01)** — universal `/status`+`/wrapup`
   skeletons + load-first hook; `packs/{ios,python}/command-profile.md` + the playbook's own
   `command-profile.local.md`; compose copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME`;
-  conform Check C pack-aware; templates `git rm`'d. Branch `feat/universal-status-wrapup`,
+  conform Checks A/C/F pack-aware; templates `git rm`'d. Branch `feat/universal-status-wrapup`,
   both gates green.
 - [ ] **Next: Stage 1a Phase B** — symlink-bridge the non-iOS repos (c3d-bridge-modeler,
   shotsmith, devpulse) per `COMMANDS-ARCHITECTURE.md` Phase B: build `bridge-symlink.sh`

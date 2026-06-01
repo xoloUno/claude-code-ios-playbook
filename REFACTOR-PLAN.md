@@ -11,8 +11,11 @@
 > (`40c2ed5`); all 3 iOS apps bridged to the pinned `_playbook` submodule and **merged 2026-05-31**
 > (Flara #55, broadsheet #1, teewye #1). **Commands architecture DESIGNED (2026-06-01)** — universal
 > skeleton + per-kind `command-profile.md` + `project.yml` facts (see `COMMANDS-ARCHITECTURE.md`);
-> added `_playbook/CLAUDE.md` operating guide. Next: Phase A (universal `/status`+`/wrapup`), then
-> the non-iOS symlink bridge.
+> added `_playbook/CLAUDE.md` operating guide. **Phase A COMPLETE (2026-06-01, branch
+> `feat/universal-status-wrapup`)** — universal `/status`+`/wrapup` skeletons +
+> `packs/{ios,python}/command-profile.md` + the playbook's `command-profile.local.md`; compose
+> copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME`; conform Check C pack-aware; templates
+> deleted; both gates green. Next: Phase B (non-iOS symlink bridge: c3d, shotsmith, devpulse).
 
 ---
 
@@ -111,8 +114,15 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [x] reviewed + merged the three `chore/playbook-bridge` branches to app mains (2026-05-31)
   - [ ] **universal `/status`+`/wrapup` + non-iOS symlink bridge** — designed in
         `COMMANDS-ARCHITECTURE.md` (3-tier: skeleton + per-kind `command-profile.md` + `project.yml`
-        facts, runtime-bound). Phase A = playbook source; Phase B = symlink c3d-bridge-modeler,
-        shotsmith, devpulse (minimal content)
+        facts, runtime-bound). **Phase A DONE (2026-06-01, branch `feat/universal-status-wrapup`)** —
+        rewrote `{status,wrapup}.md` to the universal skeleton + load-first hook; authored
+        `packs/{ios,python}/command-profile.md` + the playbook's `command-profile.local.md`; compose
+        copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME` across inbox/conform/upgrade/playbook-inbox;
+        conform Check C pack-aware; `git rm`'d `templates/commands/{status,wrapup}.md`; CHANGELOG entry
+        + 3 supersession banners. Both gates green: byte-identical iOS compose (only
+        status/wrapup/conform/inbox/upgrade differ + new `command-profile.md`; composed inbox path
+        stays absolute) and lossy-extraction coverage for all four variants. **Phase B (pending)** =
+        symlink c3d-bridge-modeler, shotsmith, devpulse (minimal content)
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
   `autoUpdate:true` + semver `version`/tag; retire `.playbook-version`/`/upgrade` as primary,
   keep a `/conform` drift-check verb
@@ -222,10 +232,15 @@ the workflow output (run `wf_e73fd29f-ed9`).
 - [ ] (optional) `git push` `_playbook` `main` for off-machine backup.
 - [ ] shotsmith still has 1 uncommitted file (present in both copies) — commit/stash when convenient.
 - [x] **Stage 1a carve** — rules (`0113986`) + iOS commands (`e3ce3cc`) carved into `core/`+`packs/`; bootstrap output verified byte-identical.
-- [ ] **Next: Stage 1a commands work** — `COMMANDS-ARCHITECTURE.md` Phase A (universal
-  `/status`+`/wrapup` skeletons + per-kind `command-profile.md` in the playbook), then Phase B
-  (symlink-bridge the non-iOS repos: c3d-bridge-modeler, shotsmith, devpulse). iOS apps are
-  already submoduled + merged.
+- [x] **Stage 1a commands — Phase A DONE (2026-06-01)** — universal `/status`+`/wrapup`
+  skeletons + load-first hook; `packs/{ios,python}/command-profile.md` + the playbook's own
+  `command-profile.local.md`; compose copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME`;
+  conform Check C pack-aware; templates `git rm`'d. Branch `feat/universal-status-wrapup`,
+  both gates green.
+- [ ] **Next: Stage 1a Phase B** — symlink-bridge the non-iOS repos (c3d-bridge-modeler,
+  shotsmith, devpulse) per `COMMANDS-ARCHITECTURE.md` Phase B: build `bridge-symlink.sh`
+  (surgical — never `rm -rf .claude/`), `git rm` the bespoke commands, author each repo's
+  `command-profile.local.md` / `project.yml`. iOS apps already submoduled + merged.
 
 ## 10. References
 

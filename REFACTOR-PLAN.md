@@ -1,15 +1,18 @@
 # Playbook & Dev-Environment Refactor — Canonical Plan
 
 > **Purpose:** the single durable reference for this multi-session initiative. If context
-> is lost, start here. Last updated **2026-05-30**.
+> is lost, start here. Last updated **2026-06-01**.
 > **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
 > all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
 > `~/dev` is canonical; iCloud copies retained as rollback pending deletion approval.
 > **Stage 1a carve COMPLETE (2026-05-31)** — rules (`0113986`) + iOS commands (`e3ce3cc`)
 > carved into `core/` + `packs/`; bootstrap output verified byte-identical both times.
 > **Stage 1a iOS bridge done (2026-05-31)** — `compose-claude.sh` + genericized deploy markers
-> (`40c2ed5`); all 3 iOS apps bridged to the pinned `_playbook` submodule on `chore/playbook-bridge`
-> review branches (unmerged). Next: review/merge those + the non-iOS symlink bridge.
+> (`40c2ed5`); all 3 iOS apps bridged to the pinned `_playbook` submodule and **merged 2026-05-31**
+> (Flara #55, broadsheet #1, teewye #1). **Commands architecture DESIGNED (2026-06-01)** — universal
+> skeleton + per-kind `command-profile.md` + `project.yml` facts (see `COMMANDS-ARCHITECTURE.md`);
+> added `_playbook/CLAUDE.md` operating guide. Next: Phase A (universal `/status`+`/wrapup`), then
+> the non-iOS symlink bridge.
 
 ---
 
@@ -105,8 +108,11 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         — drift-free across all 3, byte-identical again.
   - [ ] migrate broadsheet's Fastfile frames-cli → Shotsmith (spun off as a broadsheet-session task;
         needs simulators + re-capture). Then all 3 Fastfiles match the shared standard.
-  - [ ] review + merge the three `chore/playbook-bridge` branches to app mains
-  - [ ] symlink bridge for the non-iOS repos (c3d-bridge-modeler, shotsmith, devpulse — minimal content)
+  - [x] reviewed + merged the three `chore/playbook-bridge` branches to app mains (2026-05-31)
+  - [ ] **universal `/status`+`/wrapup` + non-iOS symlink bridge** — designed in
+        `COMMANDS-ARCHITECTURE.md` (3-tier: skeleton + per-kind `command-profile.md` + `project.yml`
+        facts, runtime-bound). Phase A = playbook source; Phase B = symlink c3d-bridge-modeler,
+        shotsmith, devpulse (minimal content)
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
   `autoUpdate:true` + semver `version`/tag; retire `.playbook-version`/`/upgrade` as primary,
   keep a `/conform` drift-check verb
@@ -142,6 +148,8 @@ auto-updates silently across projects, so a staleness-check verb still earns its
 > Subtlety: `/status` and `/wrapup` each exist in two forms — a playbook-repo variant and a
 > downstream-iOS template that `bootstrap.sh` layers on top. c3d-bridge (non-iOS) runs renamed
 > copies of the iOS templates, which is why those downstream verbs are project-agnostic.
+> **Resolution → `COMMANDS-ARCHITECTURE.md`:** one universal skeleton + per-kind `command-profile.md`
+> + `project.yml` facts, bound at runtime; the four drifted variants collapse to one source.
 
 ## 6. Safe migration method (Stage 0 → clone)
 
@@ -214,12 +222,17 @@ the workflow output (run `wf_e73fd29f-ed9`).
 - [ ] (optional) `git push` `_playbook` `main` for off-machine backup.
 - [ ] shotsmith still has 1 uncommitted file (present in both copies) — commit/stash when convenient.
 - [x] **Stage 1a carve** — rules (`0113986`) + iOS commands (`e3ce3cc`) carved into `core/`+`packs/`; bootstrap output verified byte-identical.
-- [ ] **Next: Stage 1a bridge** — symlink Python utils, submodule iOS apps, de-bootstrap projects (first changes that touch the app repos).
+- [ ] **Next: Stage 1a commands work** — `COMMANDS-ARCHITECTURE.md` Phase A (universal
+  `/status`+`/wrapup` skeletons + per-kind `command-profile.md` in the playbook), then Phase B
+  (symlink-bridge the non-iOS repos: c3d-bridge-modeler, shotsmith, devpulse). iOS apps are
+  already submoduled + merged.
 
 ## 10. References
 
 - **Full review analysis:** workflow run `wf_e73fd29f-ed9` (10 agents; inventory + fact-check +
   4-lens critique + partition).
+- **Commands architecture:** `COMMANDS-ARCHITECTURE.md` — universal + extensible commands design
+  (supersedes the design portion of `~/.claude/plans/hazy-dreaming-ocean.md`; keeps its gotchas).
 - **Private recall:** `~/.claude/.../memory/playbook-dev-env-refactor.md` (auto-loads each session).
 - Paul Hudson skills: [twostraws/swift-agent-skills](https://github.com/twostraws/swift-agent-skills),
   [twostraws/swiftui-agent-skill](https://github.com/twostraws/swiftui-agent-skill) (MIT).

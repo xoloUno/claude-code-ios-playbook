@@ -251,8 +251,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
   +`command-profile.local.md`, no pack). Bespoke `/status`+`/wrapup` (+ shotsmith `/context-health`)
   `git rm`'d → mode-120000 symlinks; conform Check B made bridge-aware (non-iOS expects exactly the
   bridged five) in the same `_playbook` PR. iOS apps already submoduled + merged.
-- [ ] **Next — the rules pass (before/with Stage 1b)**, two follow-ups surfaced by Phase B (see
-  `COMMANDS-ARCHITECTURE.md` "Related cleanup"):
+- [ ] **Next — the rules pass (before/with Stage 1b)** — handoff: `RULES-PASS-HANDOFF.md`. Two
+  follow-ups surfaced by Phase B (see `COMMANDS-ARCHITECTURE.md` "Related cleanup"):
   - make `core/rules/git-workflow.md` **truly core** — it still carries iOS-isms (`[skip ci]`
     local/cloud, mandatory CLAUDE "Current State", `WORKLOG`/`release-notes-draft`, `ui` commit
     type, `globs: **/*.swift`) and the symlink bridge now distributes it into devpulse/shotsmith/c3d;
@@ -260,7 +260,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
   - add a **`packs/<pack>/rules` loop** to `bridge-symlink.sh` when a non-iOS pack first gains a
     `rules/` dir (today packs/python + packs/cli are command-profile-only; `compose-claude.sh`
     already composes core + pack rules for iOS).
-- [ ] **Then Phase C** — generalize `/context-health`, `/preflight`, `/test` on contact.
+- [ ] **Then Phase C** — generalize `/context-health`, `/preflight`, `/test` on contact (handoff:
+  `PHASE-C-HANDOFF.md`, gated on the rules pass).
 
 ## 10. References
 

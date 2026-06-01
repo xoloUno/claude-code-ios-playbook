@@ -28,6 +28,56 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — Universal `/status` + `/wrapup` skeleton + per-kind command profiles
+
+`/status` and `/wrapup` collapse from four hand-diverged variants — the playbook repo's
+own, the downstream iOS template, and the bespoke c3d and shotsmith copies — into **one
+universal skeleton** per command, the same file every project runs. Kind- and
+project-specific behavior is layered on at runtime from a profile the skeleton loads,
+not forked into the command file: `command-profile.md` (the kind layer, shipped per pack)
+plus an optional project-owned `command-profile.local.md` and `project.yml`. The skeleton
+is platform-agnostic — `@{upstream}` (never `origin/main`), `CLAUDE.md` / `WORKLOG.md` /
+`MANUAL-TASKS.md` reads guarded with "if present", nothing about `[skip ci]` — and
+`/wrapup` keeps a load-bearing order (branch route → record mutations → validation gates →
+stage → commit → push) so work never lands on `main` and no gate or changelog step ends up
+after the commit. The downstream `/status` + `/wrapup` **templates are deleted**; the
+skeleton plus its profile replaces them. Separately, the inbox/runtime path token is
+retargeted `PLAYBOOK_PATH` → `$PLAYBOOK_HOME` (resolved live in a symlinked repo, still
+baked to an absolute path in composed copies), and `/conform`'s Check C is now pack-aware
+(it expects the six iOS commands only when the project carries iOS-pack rules).
+
+**Files affected:**
+- `.claude/commands/status.md`, `.claude/commands/wrapup.md` — rewritten as universal
+  skeletons with a load-first profile hook
+- `packs/ios/command-profile.md`, `packs/python/command-profile.md` — new kind layers,
+  every step conditional (iOS: Dependabot / build / `.playbook-version`→`/upgrade` /
+  release-notes / prose-humanizer / `[skip ci]` / scope; Python: pytest gate /
+  CHANGELOG-unreleased / CI / version-file sync)
+- `.claude/command-profile.local.md` — the playbook's own escape hatch (CHANGELOG +
+  `Superseded by:` logic, downstream-visible decision, inbox count, stale-branch prune)
+- `.claude/templates/commands/{status,wrapup}.md` — **deleted** (superseded)
+- `compose-claude.sh` — copies `packs/<pack>/command-profile.md` →
+  `.claude/command-profile.md`; inbox `sed` retargeted to the `$PLAYBOOK_HOME` token
+- `.claude/commands/{inbox,conform,upgrade}.md`, `core/rules/playbook-inbox.md` —
+  `PLAYBOOK_PATH` → `$PLAYBOOK_HOME` with the env → config → legacy-line resolution order;
+  `/conform` Check C pack-gated on `.claude/rules/build-deploy.md`
+- `.gitignore`, `packs/README.md` — track the playbook's `command-profile.local.md`;
+  document the three-tier profile model
+
+**What to do in your project:**
+- **iOS apps (pinned submodule):** nothing now — you keep your current `/status` +
+  `/wrapup` until a deliberate re-pin (Stage 1b). On the next recompose you pick up the
+  universal skeleton + `packs/ios/command-profile.md` automatically; behavior is
+  equivalent (Dependabot, build, release-notes, prose-humanizer, `[skip ci]`, scope all
+  preserved in the iOS profile).
+- **Non-iOS repos:** the symlink bridge lands these as a separate per-repo PR (Phase B) —
+  no action yet.
+- If you hand-maintain `playbook-inbox.md`, note the token is now `$PLAYBOOK_HOME`;
+  composed copies still resolve to an absolute path, so `/inbox`, `/conform`, and
+  `/upgrade` keep working unchanged.
+
+---
+
 ## 2026-05-23 — PlaybookLauncher: SwiftUI macOS app for project creation
 
 New `PlaybookLauncher/` directory contains a SwiftUI macOS app that wraps
@@ -67,6 +117,11 @@ siblings of the playbook directory.
 
 ## 2026-05-13 — Metadata translation rule + `/wrapup` note on locale drift
 
+> **Partially superseded by:** 2026-06-01 — Universal `/status` + `/wrapup` skeleton +
+> per-kind command profiles. The `metadata-translation.md` rule is unchanged; only the
+> `/wrapup` locale-drift note moved — out of the deleted `.claude/templates/commands/wrapup.md`
+> and into the prose-humanizer step of `packs/ios/command-profile.md`.
+
 Codifies the multi-locale App Store metadata workflow into a new rule:
 **en-US is the source of truth, humanized continuously via `/wrapup`;
 non-English locales drift during dev cycles and get retranslated fresh at
@@ -95,6 +150,11 @@ intentional.
 ---
 
 ## 2026-05-13 — Wire prose-humanizer into `/wrapup` for release notes and App Store metadata
+
+> **Partially superseded by:** 2026-06-01 — Universal `/status` + `/wrapup` skeleton +
+> per-kind command profiles. The prose-humanizer step still runs unchanged, but it moved
+> out of the deleted `.claude/templates/commands/wrapup.md` into `packs/ios/command-profile.md`
+> (the iOS kind layer); the locale-skip rules are identical.
 
 The downstream `/wrapup` template now invokes the `prose-humanizer` subagent
 on `release-notes-draft.md` and `fastlane/metadata/en-US/description.txt`
@@ -168,6 +228,11 @@ v2.5 `extraArgs → launchArgs` breaking rename are now flagged.
 ---
 
 ## 2026-05-05 — `/status` and `/wrapup` tailored to the playbook repo itself
+
+> **Superseded by:** 2026-06-01 — Universal `/status` + `/wrapup` skeleton + per-kind
+> command profiles. The two-version model (downstream template + playbook-specific copy)
+> is retired: both commands are now one universal skeleton that loads a per-kind/per-project
+> profile at runtime, and `.claude/templates/commands/{status,wrapup}.md` are deleted.
 
 The playbook now ships **two** versions of the `/status` and `/wrapup` slash
 commands: one for downstream iOS projects (the existing CLAUDE.md / WORKLOG.md /

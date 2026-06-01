@@ -1,77 +1,68 @@
-End-of-session wrap-up for the playbook — commit cleanly, push, leave the repo in good shape.
+End-of-session wrap-up — commit cleanly, push, leave the repo in good shape.
 
-This is the playbook repo itself. Wrap-up looks different from a downstream iOS
-project: there's no `CLAUDE.md` Current State to update, no `WORKLOG.md` diary,
-no `release-notes-draft.md`. The session record is `CHANGELOG.md` (for
-downstream consumers) and the commit history.
+This is the **universal** `/wrapup`. The order below is load-bearing, not stylistic:
+a record mutation appended *after* the commit lands uncommitted; a validation gate
+appended after the commit can't block it; a branch decision appended after the commit
+has already hit `main`. Kind- and project-specific steps come from the profile, but
+each one must slot into its correct stage here — the hook says where.
 
-Steps:
+## Load first — bind the project profile, then order its steps
 
-1. Run `git status` — review staged, unstaged, untracked files.
-2. Show the user a concise summary of what changed this session.
-3. **Decide whether the change is downstream-visible.** A change is downstream-visible
-   if a project that bootstrapped from this playbook should care:
-   - `bootstrap.sh` changes
-   - Any file under `.claude/rules/` (these get copied into every bootstrapped project)
-   - Any file under `.claude/templates/` (these get copied into bootstrapped projects)
-   - Any file under `.claude/commands/` **other than** `curate.md` (the rest get copied)
-   - `ios-project-playbook.md` content changes
-   - `CLAUDE-TEMPLATE.md` changes
-   - New tools or skills the playbook ships
-   - `getting-started.md` workflow changes
-   Internal-only changes that need NO CHANGELOG entry: typo fixes in the playbook's
-   own `.claude/commands/curate.md` / `status.md` / `wrapup.md`, edits to `inbox.md`,
-   `README.md` polish, repo-level metadata.
-4. **If the change is downstream-visible, add a `CHANGELOG.md` entry.** New entries go
-   immediately under the `---` separator near the top, before any prior dated entries.
-   Follow the existing format strictly:
-   ```markdown
-   ## YYYY-MM-DD — <one-line title>
+Before doing anything that mutates, read these **if present** and merge the steps under
+their `## /wrapup` heading into the flow:
 
-   <2-4 sentence summary of what changed and why it matters to downstream projects.>
+- `.claude/command-profile.md` — the kind layer (iOS, Python, …).
+- `.claude/command-profile.local.md` — this project's own escape hatch.
+- `.claude/project.yml` — declarative facts the steps reference.
 
-   **Files affected:**
-   - `path/to/file.md` — <what changed>
+Place each profile step at its correct stage below. **Invariant:** record mutations
+whose output should be committed run *before* staging; validation gates run *after* all
+intended mutations and *before* the commit; the branch decision precedes the commit so
+work never lands on the protected default.
 
-   **What to do in your project:**
-   - <concrete steps the downstream session should take to adopt, or "nothing — this
-     only affects newly-bootstrapped projects">
-   ```
-   If the change retracts or replaces earlier guidance, add the `Superseded by:` /
-   `Partially superseded by:` banner under the older entry's `##` heading per the
-   convention documented at the top of `CHANGELOG.md`.
-5. **Stage selectively** — never `git add .` blindly. Group related changes into
-   logical commits when multiple concerns were touched.
-6. **Write conventional commit message(s):**
-   - Format: `type(scope): short description`
-   - Types: `feat`, `fix`, `docs`, `refactor`, `chore` (use `chore` for inbox curation
-     and other meta work that has no downstream effect)
-   - Scopes commonly used in this repo: `playbook`, `bootstrap`, `rules`, `commands`,
-     `inbox`, `changelog`
-   - Append `Co-Authored-By: Claude <noreply@anthropic.com>`
-   - Do NOT add `[skip ci]` — the playbook has no CI lanes that need skipping
-7. **Branch routing:**
-   - On `main`: do **NOT** push directly. Create a feature branch
-     (`feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>`) from HEAD, push it,
-     and open a PR with `gh pr create`. Report the PR URL.
-   - On a feature branch: push with `git push -u origin <branch>`. If no PR exists,
-     offer to create one.
-   - Exception: routine inbox curation when the user has explicitly approved direct
-     pushing for that session. Wait for explicit authorization — "wrap up" alone in
-     chat is not authorization to push to `main`.
-8. **Inbox housekeeping (only if relevant):** if this session adopted entries from
-   `inbox.md` into the playbook, the curate workflow already handled deletions —
-   but check that `inbox.md` no longer references work that's now landed.
-9. Confirm to the user: what was committed, what branch, PR URL (if applicable),
-   what's next.
+## Flow (in order)
 
-If there are no changes to commit, say so and skip to step 9.
+1. **Orient.** `git status` — review staged, unstaged, untracked. Show the user a
+   concise summary of what changed this session.
 
-## Notes
+2. **Decide the branch route — before any commit.** If on `main` (or the repo's
+   protected default), do **NOT** commit there: create a feature branch
+   (`feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>`) from HEAD so the commit
+   lands on the branch. If already on a feature branch, stay on it. Direct commit/push
+   to the default is only ever on explicit per-session authorization — "wrap up" alone
+   in chat is **not** authorization.
 
-- Don't `git push --force` without explicit user request.
-- For multi-file changes, prefer one commit per logical unit. Don't bundle a
-  CHANGELOG entry with an unrelated bug fix.
-- This file (`/wrapup` for the playbook) is intentionally separate from the iOS
-  project `/wrapup` template that lives at `.claude/templates/commands/wrapup.md`
-  and ships to bootstrapped projects via `bootstrap.sh`.
+3. **Apply record mutations** — profile-driven; each fires only when relevant. These
+   produce content that must be committed, so they run **before staging**. Common kinds:
+   - changelog / release-notes entry;
+   - version-file sync (keep declared `version_files` in lockstep on a bump);
+   - session-state / worklog update — e.g. `CLAUDE.md` "Current State", `WORKLOG.md`
+     (only if present);
+   - manual-tasks handoff — if the session produced human-only tasks, append them to
+     `MANUAL-TASKS.md` (the profile may specify the format);
+   - prose-humanizer on touched user-facing prose (this is a *mutation*, not a gate).
+
+4. **Run validation gates** — profile-driven; each fires only when declared (tests,
+   preflight, lint). A failing gate blocks the commit: fix it or get explicit
+   acknowledgement first. Gates run *after* the mutations (so they check the final tree)
+   and *before* the commit (so they can still block it).
+
+5. **Stage selectively** — never `git add .` blindly, and always with explicit
+   pathspecs. Group related changes into logical commits when several concerns were
+   touched.
+
+6. **Commit.** Conventional message: `type(scope): short description`
+   (`feat` / `fix` / `docs` / `refactor` / `chore` / `test` …), then
+   `Co-Authored-By: Claude <noreply@anthropic.com>`. Anything about `[skip ci]` is
+   kind-specific — it comes from the profile, not from here.
+
+7. **Push / PR.**
+   - On a branch created in step 2 off the default: `git push -u origin <branch>` and
+     open a PR with `gh pr create`. Report the URL.
+   - On a pre-existing feature branch: push; if no PR exists, offer to create one.
+   - Never `git push --force` without an explicit request.
+
+8. **Confirm** to the user: what was committed, which branch, the PR URL (if any), and
+   what the next session should pick up.
+
+If there is nothing to commit, say so and skip to step 8.

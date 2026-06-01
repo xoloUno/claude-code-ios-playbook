@@ -8,9 +8,16 @@ Steps:
    "What did you discover? (gotcha, pattern, suggestion, correction, tooling tip)"
 2. Read the project's CLAUDE.md to get the app name for the entry
 3. Classify the category: gotcha | suggestion | pattern | correction | tooling
-4. Write a new entry at the bottom of the inbox file (just above any trailing whitespace).
-   The inbox file path is defined in `.claude/rules/playbook-inbox.md` — look for the
-   line starting with `**Inbox location:**` to find the absolute path.
+4. Resolve the inbox file, using the first option that yields an existing playbook
+   directory (the inbox is `<playbook>/inbox.md`):
+   a. The `$PLAYBOOK_HOME` environment variable, if set.
+   b. The `PLAYBOOK_HOME` value in `~/.config/playbook/config` (`source` it, or grep the line).
+   c. Legacy fallback — the `**Inbox location:**` line in `.claude/rules/playbook-inbox.md`
+      (in a composed copy it holds the resolved absolute path). Skip this if the line still
+      holds an unsubstituted token — `$PLAYBOOK_HOME` (a live symlinked rule) or legacy
+      `PLAYBOOK_PATH`.
+   d. If none resolve, ask the user for the playbook directory.
+   Then write a new entry at the bottom of the inbox file (just above any trailing whitespace).
 
 Entry format:
 ```markdown
@@ -24,5 +31,5 @@ Entry format:
 
 5. Confirm to the user what was logged and where
 
-If the inbox file doesn't exist or the path in the rule is still `PLAYBOOK_PATH`
-(not substituted), tell the user the playbook path needs to be configured.
+If none of the options in step 4 yield an existing inbox file, tell the user the playbook
+path needs to be configured (`$PLAYBOOK_HOME` / `~/.config/playbook/config`).

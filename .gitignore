@@ -1,8 +1,9 @@
-# Claude Code (ignore everything except rules/, commands/, and templates/)
+# Claude Code (ignore everything except rules/, commands/, and the playbook's own
+# command-profile.local.md — its /status + /wrapup escape hatch, read at runtime).
 .claude/*
 !.claude/rules/
 !.claude/commands/
-!.claude/templates/
+!.claude/command-profile.local.md
 
 # Local credentials (never commit)
 .env.playbook

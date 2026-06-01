@@ -8,7 +8,7 @@ globs: **/*
 When you discover something during a session that would improve the playbook, templates,
 or rules for future projects, append an entry to the shared playbook inbox file:
 
-**Inbox location:** `PLAYBOOK_PATH/inbox.md`
+**Inbox location:** `$PLAYBOOK_HOME/inbox.md`
 
 ## What to capture
 

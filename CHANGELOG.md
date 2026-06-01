@@ -43,8 +43,10 @@ stage → commit → push) so work never lands on `main` and no gate or changelo
 after the commit. The downstream `/status` + `/wrapup` **templates are deleted**; the
 skeleton plus its profile replaces them. Separately, the inbox/runtime path token is
 retargeted `PLAYBOOK_PATH` → `$PLAYBOOK_HOME` (resolved live in a symlinked repo, still
-baked to an absolute path in composed copies), and `/conform`'s Check C is now pack-aware
-(it expects the six iOS commands only when the project carries iOS-pack rules).
+baked to an absolute path in composed copies), and `/conform` is brought in line with the
+carved `core/` + `packs/` layout: Check A now audits `core/rules` + the project's
+`packs/<pack>/rules` (not the defunct `.claude/rules`), Check C expects the six iOS commands
+only when iOS-pack rules are present, and Check F recognizes the carved source layout.
 
 **Files affected:**
 - `.claude/commands/status.md`, `.claude/commands/wrapup.md` — rewritten as universal
@@ -60,7 +62,8 @@ baked to an absolute path in composed copies), and `/conform`'s Check C is now p
   `.claude/command-profile.md`; inbox `sed` retargeted to the `$PLAYBOOK_HOME` token
 - `.claude/commands/{inbox,conform,upgrade}.md`, `core/rules/playbook-inbox.md` —
   `PLAYBOOK_PATH` → `$PLAYBOOK_HOME` with the env → config → legacy-line resolution order;
-  `/conform` Check C pack-gated on `.claude/rules/build-deploy.md`
+  `/conform` Checks A/C/F made pack-aware (Check A audits `core/rules` + `packs/*/rules`;
+  Check C gated on `.claude/rules/build-deploy.md`; Check F recognizes the carved layout)
 - `.gitignore`, `packs/README.md` — track the playbook's `command-profile.local.md`;
   document the three-tier profile model
 

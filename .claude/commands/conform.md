@@ -21,9 +21,14 @@ Steps:
    action}` rows.
 
    **Check A — Stale playbook-copied rule files (severity: HIGH, auto-fixable)**
-   - For each file in `<playbook>/.claude/rules/*.md`:
+   - Playbook rules live in `<playbook>/core/rules/*.md` (universal — every project) plus
+     `<playbook>/packs/<pack>/rules/*.md` for the project's pack; compose flattens both into the
+     project's single `.claude/rules/`. Audit `core/rules/` always, and also `packs/ios/rules/`
+     when the project is iOS (heuristic: `.claude/rules/build-deploy.md` present). Other packs
+     extend this as they gain rules.
+   - For each source rule, compared against the project's `.claude/rules/<name>.md`:
      - If absent from `.claude/rules/`: drift = MISSING
-     - If present: `diff` against playbook source. Account for known substitutions:
+     - If present: `diff` against the playbook source. Account for known substitutions:
        - `playbook-inbox.md`: ignore differences in the `**Inbox location:**` line (always substituted)
        - `build-deploy.md`, `testing.md`: ignore `iPhone 17 Pro` vs `${PRIMARY_SIM}` value differences
      - If non-trivial diff: drift = STALE
@@ -58,9 +63,11 @@ Steps:
 
    **Check F — Stranded `.claude/` files (severity: LOW, advisory)**
    - List files in project's `.claude/rules/` and `.claude/commands/`.
-   - For each, check if it exists in the playbook source OR matches a bootstrap.sh heredoc
-     emission name. If neither: drift = STRANDED. Could be an intentional project-specific
-     custom file (keep) or a stale leftover (remove). Don't decide — flag for the user.
+   - For each, check whether it exists in the playbook source — a rule under `core/rules/` or
+     `packs/<pack>/rules/`, or a command under `.claude/commands/` (except `curate.md`) or
+     `packs/<pack>/commands/`. If it matches none: drift = STRANDED. Could be an intentional
+     project-specific custom file (keep) or a stale leftover (remove). Don't decide — flag for
+     the user.
 
 3. **Present the consolidated report** as a single markdown table:
 
@@ -89,8 +96,9 @@ Steps:
    - **Just report** — make no changes; the report is the deliverable.
 
 5. **Apply approved fixes:**
-   - **Stale or missing playbook rule files (Check A):** copy from `<playbook>/.claude/rules/`
-     overwriting the project version. Re-apply known substitutions:
+   - **Stale or missing playbook rule files (Check A):** copy from the file's playbook home —
+     `<playbook>/core/rules/<name>.md` or `<playbook>/packs/<pack>/rules/<name>.md` — overwriting
+     the project version. Re-apply known substitutions:
      - `playbook-inbox.md`: substitute the `$PLAYBOOK_HOME` token with the playbook directory
      - `build-deploy.md`, `testing.md`: if `.env.project` exists and defines `PRIMARY_SIM`
        with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value

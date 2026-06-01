@@ -219,4 +219,9 @@ touch, convert each to skeleton + `## /<verb>` section. No big bang.
 `core/rules/git-workflow.md` still leaks iOS assumptions into a *core* rule — `[skip ci]`
 local/cloud, "update Current State in CLAUDE.md," `globs: **/*.swift`. Same disease (kind
 knowledge in a universal file); fold the iOS-specific lines into `packs/ios/` when this design
-reaches the rules.
+reaches the rules. **Phase B note (2026-06-01):** the non-iOS symlink bridge now distributes this
+core rule into devpulse / shotsmith / c3d, so the leak is live in non-iOS repos. **Tracked as a
+known follow-up for the next rules pass** (with Stage 1b) — deliberately *not* fixed in Phase B,
+which would have widened the bridge into a rules refactor. The bridge keeps linking the whole
+`core/rules/` (a new core rule should auto-distribute); the fix is to make this rule truly core,
+not to special-case the bridge.

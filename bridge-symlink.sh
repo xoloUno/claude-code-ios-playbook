@@ -65,7 +65,12 @@ relink() {
 
 mkdir -p "$TARGET/.claude/rules" "$TARGET/.claude/commands"
 
-# --- core rules (the universal rules; glob so a newly-added core rule is bridged too) -------
+# --- core rules (glob so a newly-added core rule is bridged automatically) ------------------
+# Links core/rules ONLY. Non-iOS packs ship no rules/ today (packs/python, packs/cli are
+# command-profile-only), so there is nothing else to link. When a non-iOS pack first gains a
+# packs/<pack>/rules/, add a second loop here that links it when [pack] is given — compose-claude.sh
+# already composes core + pack rules for iOS; without the matching loop, bridged repos would
+# silently miss the pack's rules.
 rules_linked=0
 for src in "$SCRIPT_DIR"/core/rules/*.md; do
   [[ -e "$src" ]] || continue

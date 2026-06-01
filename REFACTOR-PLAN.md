@@ -96,8 +96,8 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [x] submodule bridge for the 3 iOS apps — `_playbook` pinned to playbook `main` (`442f469`),
         `.claude/` recomposed via `compose-claude.sh`, inbox repointed to `~/dev/_playbook`,
         `_playbook` SwiftLint-excluded. Flara's profiles/12 locales in `.env.project`, its app-only
-        `media-handling.md` preserved. On `chore/playbook-bridge` per app, NOT merged — PRs open
-        (Flara #55→main, broadsheet #1→dev, teewye #1→main).
+        `media-handling.md` preserved. Bridged via `chore/playbook-bridge` per app and **merged
+        2026-05-31** (Flara #55→main, broadsheet #1→dev, teewye #1→main).
   - [x] `build-deploy.md` standardized on Flara's **Shotsmith** pipeline (Erik's call). 10-agent-style
         audit (`wf_dbe31b39`) verified per-app Fastfiles: Flara+teewye on shotsmith, broadsheet on
         frames-cli with no widget/LA/CC surfaces. Rule now names Shotsmith the standard composer, keeps

@@ -93,14 +93,18 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         `__METADATA_LOCALES__` (+ existing `__PRIMARY_SIM__`) — found Flara had woven its ASC
         profiles + es-ES/es-MX locales into `release.md`; markers let each app fill specifics at
         compose time so the bridge refreshes generic source without clobbering project config
-  - [x] submodule bridge for the 3 iOS apps — `_playbook` pinned to playbook `main` (`d7badf0`),
+  - [x] submodule bridge for the 3 iOS apps — `_playbook` pinned to playbook `main` (`442f469`),
         `.claude/` recomposed via `compose-claude.sh`, inbox repointed to `~/dev/_playbook`,
         `_playbook` SwiftLint-excluded. Flara's profiles/12 locales in `.env.project`, its app-only
-        `media-handling.md` preserved. Pushed to `chore/playbook-bridge` per app for review, NOT
-        merged (Flara `fc73d71`, broadsheet `297ab9f`, teewye `53f9851`).
-  - [x] fixed playbook `build-deploy.md` drift (documented frames-cli `screenshots`/`frame_screenshots`
-        lanes bootstrap doesn't emit → `compose_screenshots`/shotsmith, `d7badf0`) and propagated to all 3.
-        Verified: every shared rule + generic command is byte-identical across the 3 apps.
+        `media-handling.md` preserved. On `chore/playbook-bridge` per app, NOT merged — PRs open
+        (Flara #55→main, broadsheet #1→dev, teewye #1→main).
+  - [x] `build-deploy.md` standardized on Flara's **Shotsmith** pipeline (Erik's call). 10-agent-style
+        audit (`wf_dbe31b39`) verified per-app Fastfiles: Flara+teewye on shotsmith, broadsheet on
+        frames-cli with no widget/LA/CC surfaces. Rule now names Shotsmith the standard composer, keeps
+        only common lanes literal, defers surface-specific lane names to each Fastfile (`fastlane --list`)
+        — drift-free across all 3, byte-identical again.
+  - [ ] migrate broadsheet's Fastfile frames-cli → Shotsmith (spun off as a broadsheet-session task;
+        needs simulators + re-capture). Then all 3 Fastfiles match the shared standard.
   - [ ] review + merge the three `chore/playbook-bridge` branches to app mains
   - [ ] symlink bridge for the non-iOS repos (c3d-bridge-modeler, shotsmith, devpulse — minimal content)
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,

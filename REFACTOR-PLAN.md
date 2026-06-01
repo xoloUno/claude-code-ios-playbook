@@ -15,7 +15,12 @@
 > `feat/universal-status-wrapup`)** — universal `/status`+`/wrapup` skeletons +
 > `packs/{ios,python}/command-profile.md` + the playbook's `command-profile.local.md`; compose
 > copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME`; conform Checks A/C/F pack-aware; templates
-> deleted; both gates green. Next: Phase B (non-iOS symlink bridge: c3d, shotsmith, devpulse).
+> deleted; both gates green. **Phase B COMPLETE & MERGED (2026-06-01)** — `bridge-symlink.sh` +
+> the three non-iOS repos bridged via live symlinks, one PR each (`_playbook` #15→main `fabb66c`;
+> devpulse #1→main `b59e4bd`; shotsmith #2→main `9be2c57`; c3d #19→`docs/architecture-phase2`
+> `b5bccc5`); conform Check B made bridge-aware in the same `_playbook` PR. Next: the next rules
+> pass (make `git-workflow.md` truly core; add a `packs/<pack>/rules` loop to `bridge-symlink.sh`)
+> → Phase C (generalize `/context-health`, `/preflight`, `/test`).
 
 ---
 
@@ -112,7 +117,7 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [ ] migrate broadsheet's Fastfile frames-cli → Shotsmith (spun off as a broadsheet-session task;
         needs simulators + re-capture). Then all 3 Fastfiles match the shared standard.
   - [x] reviewed + merged the three `chore/playbook-bridge` branches to app mains (2026-05-31)
-  - [ ] **universal `/status`+`/wrapup` + non-iOS symlink bridge** — designed in
+  - [x] **universal `/status`+`/wrapup` + non-iOS symlink bridge** — designed in
         `COMMANDS-ARCHITECTURE.md` (3-tier: skeleton + per-kind `command-profile.md` + `project.yml`
         facts, runtime-bound). **Phase A DONE (2026-06-01, branch `feat/universal-status-wrapup`)** —
         rewrote `{status,wrapup}.md` to the universal skeleton + load-first hook; authored
@@ -121,8 +126,11 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         conform Checks A/C/F pack-aware; `git rm`'d `templates/commands/{status,wrapup}.md`; CHANGELOG entry
         + 3 supersession banners. Both gates green: byte-identical iOS compose (only
         status/wrapup/conform/inbox/upgrade differ + new `command-profile.md`; composed inbox path
-        stays absolute) and lossy-extraction coverage for all four variants. **Phase B (pending)** =
-        symlink c3d-bridge-modeler, shotsmith, devpulse (minimal content)
+        stays absolute) and lossy-extraction coverage for all four variants. **Phase B DONE &
+        MERGED (2026-06-01)** = built `bridge-symlink.sh` (surgical/idempotent live-symlink bridge)
+        + bridged all three non-iOS repos, one PR each (devpulse #1, shotsmith #2 +`project.yml`,
+        c3d #19 +`command-profile.local.md`/no pack; `_playbook` script #15); bespoke commands
+        `git rm`'d → mode-120000 symlinks; conform Check B made bridge-aware; all merged
 - [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
   `autoUpdate:true` + semver `version`/tag; retire `.playbook-version`/`/upgrade` as primary,
   keep a `/conform` drift-check verb
@@ -237,10 +245,22 @@ the workflow output (run `wf_e73fd29f-ed9`).
   `command-profile.local.md`; compose copies the profile; `PLAYBOOK_PATH`→`$PLAYBOOK_HOME`;
   conform Checks A/C/F pack-aware; templates `git rm`'d. Branch `feat/universal-status-wrapup`,
   both gates green.
-- [ ] **Next: Stage 1a Phase B** — symlink-bridge the non-iOS repos (c3d-bridge-modeler,
-  shotsmith, devpulse) per `COMMANDS-ARCHITECTURE.md` Phase B: build `bridge-symlink.sh`
-  (surgical — never `rm -rf .claude/`), `git rm` the bespoke commands, author each repo's
-  `command-profile.local.md` / `project.yml`. iOS apps already submoduled + merged.
+- [x] **Stage 1a Phase B DONE & MERGED (2026-06-01)** — `bridge-symlink.sh` + the three non-iOS
+  repos symlink-bridged, one PR each (`_playbook` #15→main `fabb66c`; devpulse #1→main `b59e4bd`;
+  shotsmith #2→main `9be2c57` +`project.yml`; c3d #19→`docs/architecture-phase2` `b5bccc5`
+  +`command-profile.local.md`, no pack). Bespoke `/status`+`/wrapup` (+ shotsmith `/context-health`)
+  `git rm`'d → mode-120000 symlinks; conform Check B made bridge-aware (non-iOS expects exactly the
+  bridged five) in the same `_playbook` PR. iOS apps already submoduled + merged.
+- [ ] **Next — the rules pass (before/with Stage 1b)**, two follow-ups surfaced by Phase B (see
+  `COMMANDS-ARCHITECTURE.md` "Related cleanup"):
+  - make `core/rules/git-workflow.md` **truly core** — it still carries iOS-isms (`[skip ci]`
+    local/cloud, mandatory CLAUDE "Current State", `WORKLOG`/`release-notes-draft`, `ui` commit
+    type, `globs: **/*.swift`) and the symlink bridge now distributes it into devpulse/shotsmith/c3d;
+    fold the iOS-specific lines into `packs/ios/`.
+  - add a **`packs/<pack>/rules` loop** to `bridge-symlink.sh` when a non-iOS pack first gains a
+    `rules/` dir (today packs/python + packs/cli are command-profile-only; `compose-claude.sh`
+    already composes core + pack rules for iOS).
+- [ ] **Then Phase C** — generalize `/context-health`, `/preflight`, `/test` on contact.
 
 ## 10. References
 

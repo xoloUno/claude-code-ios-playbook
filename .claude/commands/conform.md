@@ -33,10 +33,20 @@ Steps:
        - `build-deploy.md`, `testing.md`: ignore `iPhone 17 Pro` vs `${PRIMARY_SIM}` value differences
      - If non-trivial diff: drift = STALE
 
-   **Check B — Stale playbook-copied slash commands (severity: HIGH, auto-fixable)**
-   - For each file in `<playbook>/.claude/commands/*.md` EXCEPT `curate.md`:
+   **Check B — Stale/missing playbook-copied slash commands (severity: HIGH, auto-fixable)**
+   - **The expected shared-command set depends on the bridge type** — same iOS heuristic as
+     Checks A and C (`.claude/rules/build-deploy.md` present ⇒ iOS):
+     - **iOS (composed copies via `compose-claude.sh`):** every shared command it emits — all of
+       `<playbook>/.claude/commands/*.md` EXCEPT `curate.md` (`status`, `wrapup`, `conform`,
+       `context-health`, `inbox`, `upgrade`, `capture-manual-surfaces`).
+     - **non-iOS (live symlinks via `bridge-symlink.sh`):** exactly `status`, `wrapup`, `conform`,
+       `context-health`, `inbox`. `upgrade` (moot when the symlinked source is always current) and
+       `capture-manual-surfaces` (iOS-only) are **intentional exclusions, not drift** — never
+       report them MISSING here.
+   - For each command in the project's expected set:
      - If absent from `.claude/commands/`: drift = MISSING
-     - If present: `diff` against playbook source. If non-trivial diff: drift = STALE
+     - If present: `diff` against `<playbook>/.claude/commands/<name>.md`. If non-trivial diff:
+       drift = STALE. (A symlinked command *is* the source, so a bridged repo never shows STALE.)
 
    **Check C — Missing iOS-pack slash commands (severity: MEDIUM, manual)**
    - **Pack-gated:** only run this check for iOS projects — heuristic: `.claude/rules/build-deploy.md`
@@ -102,8 +112,11 @@ Steps:
      - `playbook-inbox.md`: substitute the `$PLAYBOOK_HOME` token with the playbook directory
      - `build-deploy.md`, `testing.md`: if `.env.project` exists and defines `PRIMARY_SIM`
        with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
-   - **Stale or missing playbook commands (Check B):** copy from `<playbook>/.claude/commands/`
-     overwriting the project version. NEVER copy `curate.md`.
+   - **Stale or missing playbook commands (Check B):** for a **composed (iOS)** project, copy from
+     `<playbook>/.claude/commands/` overwriting the project version (NEVER copy `curate.md`). For a
+     **symlink-bridged (non-iOS)** project a STALE result can't occur (the command *is* the
+     source); if one is genuinely MISSING, re-link with `<playbook>/bridge-symlink.sh <project>`
+     rather than copying a file in.
    - **Missing iOS-pack commands (Check C):** skipped entirely for non-iOS projects. For iOS
      projects, do not auto-apply; point the user at `<playbook>/packs/ios/commands/<name>.md` to
      copy (re-applying the `.env.project` markers), or have them re-run

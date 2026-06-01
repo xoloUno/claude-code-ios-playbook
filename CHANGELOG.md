@@ -42,10 +42,15 @@ re-running just re-points the links; it never `rm -rf`s `.claude/`, never overwr
 (a bespoke command must be `git rm`'d first), and never touches a project-owned
 `settings.local.json`, `project.yml`, or `command-profile.local.md`. Excluded from the bridge:
 `capture-manual-surfaces` (iOS-only), `upgrade` (moot when the source is always current), and
-`curate` (playbook-only).
+`curate` (playbook-only). `/conform` Check B is made bridge-aware to match: on a symlink-bridged
+non-iOS repo it now expects exactly those five shared commands and no longer reports the two
+intentional exclusions (`upgrade`, `capture-manual-surfaces`) as missing — composed-iOS behavior
+is unchanged (it still expects the full set, gated on the `build-deploy.md` iOS heuristic).
 
 **Files affected:**
 - `bridge-symlink.sh` — new; the non-iOS symlink bridge (counterpart to `compose-claude.sh`)
+- `.claude/commands/conform.md` — Check B made bridge-aware (the bridged five on non-iOS symlink
+  repos; `upgrade` / `capture-manual-surfaces` are intentional exclusions there, not drift)
 - `CLAUDE.md` — Map section notes the script (this root guide is not distributed downstream)
 
 **What to do in your project:**

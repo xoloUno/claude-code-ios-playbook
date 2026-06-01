@@ -28,6 +28,36 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — `bridge-symlink.sh`: live-symlink bridge for non-iOS repos
+
+The non-iOS repos under `~/dev` (devpulse, shotsmith, c3d-bridge-modeler) join the shared
+source the way the iOS apps already did — except by **live symlink** rather than a pinned
+submodule + composed copies, since they're local interim utilities, not distributed products.
+`bridge-symlink.sh <target> [pack]` points a repo's `.claude/` back into this tree: the core
+rules, the five universal commands (`status`, `wrapup`, `conform`, `context-health`, `inbox`),
+and — only when a `[pack]` is named and ships one — that pack's `command-profile.md`. The links
+are relative, so the `~/dev` tree can move and still resolve, and there is no compose step or
+version pin: the repo always runs the current shared source. It is surgical and idempotent —
+re-running just re-points the links; it never `rm -rf`s `.claude/`, never overwrites a real file
+(a bespoke command must be `git rm`'d first), and never touches a project-owned
+`settings.local.json`, `project.yml`, or `command-profile.local.md`. Excluded from the bridge:
+`capture-manual-surfaces` (iOS-only), `upgrade` (moot when the source is always current), and
+`curate` (playbook-only). `/conform` Check B is made bridge-aware to match: on a symlink-bridged
+non-iOS repo it now expects exactly those five shared commands and no longer reports the two
+intentional exclusions (`upgrade`, `capture-manual-surfaces`) as missing — composed-iOS behavior
+is unchanged (it still expects the full set, gated on the `build-deploy.md` iOS heuristic).
+
+**Files affected:**
+- `bridge-symlink.sh` — new; the non-iOS symlink bridge (counterpart to `compose-claude.sh`)
+- `.claude/commands/conform.md` — Check B made bridge-aware (the bridged five on non-iOS symlink
+  repos; `upgrade` / `capture-manual-surfaces` are intentional exclusions there, not drift)
+- `CLAUDE.md` — Map section notes the script (this root guide is not distributed downstream)
+
+**What to do in your project:**
+- iOS apps: nothing — they stay on the pinned-submodule + `compose-claude.sh` path.
+- A non-iOS repo under `~/dev`: bridge or relink its `.claude/` with
+  `_playbook/bridge-symlink.sh . [pack]` (e.g. `. python`); pass no pack for a kind-of-one.
+
 ## 2026-06-01 — Universal `/status` + `/wrapup` skeleton + per-kind command profiles
 
 `/status` and `/wrapup` collapse from four hand-diverged variants — the playbook repo's

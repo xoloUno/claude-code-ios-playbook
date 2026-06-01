@@ -30,10 +30,15 @@ apart.
 - `compose-claude.sh` — assembles a project's `.claude/` from `core/` + a pack. Shared by
   `bootstrap.sh` (new projects) **and** the submodule bridge (existing iOS apps) so the two
   paths can't drift.
+- `bridge-symlink.sh` — the symlink counterpart: links a non-iOS repo's `.claude/` (core
+  rules + the universal commands + an optional pack `command-profile.md`) back into this tree
+  with relative symlinks. No compose step, no pin — always the current shared source. Surgical
+  and idempotent; never overwrites a real file or a project-owned `settings.local.json` /
+  `project.yml` / `command-profile.local.md`.
 - `bootstrap.sh` — scaffolds a brand-new iOS project. `CLAUDE-TEMPLATE.md` → the downstream
   project's `CLAUDE.md` (not this file).
-- **Bridges:** iOS apps = pinned submodule + composed copies; non-iOS repos = live symlinks
-  into this tree.
+- **Bridges:** iOS apps = pinned submodule + composed copies (`compose-claude.sh`); non-iOS
+  repos = live symlinks into this tree (`bridge-symlink.sh`).
 - `$PLAYBOOK_HOME` (`~/.config/playbook/config`) is the runtime pointer; `/inbox`, `/conform`,
   `/upgrade` resolve through it. `inbox.md` aggregates captured lessons centrally; `CHANGELOG.md`
   is the contract downstream `/upgrade` reads.

@@ -28,6 +28,31 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — `/conform` Check G: catch silently-untracked rule files
+
+`/conform` gained a check for a failure its content-diff (Check A) is blind to: a buggy project
+`.gitignore` can silently keep a `.claude/rules/<name>.md` file from being tracked. When that
+happens Check A still reports the file OK (its on-disk content matches the playbook) and `git
+status` stays clean, so the rule is present in the current checkout but absent from version
+control — it vanishes on a fresh clone. The new **Check G** lists each on-disk rule with `git
+ls-files --error-unmatch`, then uses `git check-ignore -v` to tell the dangerous gitignored case
+(status clean, an ignore pattern matches) apart from a merely untracked-new file, and reports the
+offending `.gitignore` path:line:pattern. It is **advisory** — `/conform` surfaces the bad pattern
+but never rewrites your project-owned `.gitignore`. This complements `bootstrap.sh`'s earlier
+gitignore-anchor fix, which only protected *newly* bootstrapped projects; Check G catches existing
+repos that carry the bug invisibly.
+
+**Files affected:**
+- `.claude/commands/conform.md` — new **Check G** (untracked rule files); a "Untracked rules" row
+  in the report table; step 4/5 mark it HIGH-severity but advisory (excluded from auto-fix because
+  the remediation edits the project's `.gitignore`); a closing note that it is detection-only.
+
+**What to do in your project:**
+- Nothing to install. **Non-iOS symlink-bridged repos** already serve the updated `/conform` through
+  their live symlink; **iOS apps** pick it up on the next `compose-claude.sh <project> ios`. Run
+  `/conform` and, if Check G flags a rule, repair the reported `.gitignore` pattern and `git add` the
+  file yourself.
+
 ## 2026-06-01 — `/test` is now a universal run-the-suite verb; iOS test *generation* → `/gen-tests`
 
 Phase C of the commands refactor generalizes `/test` with the same skeleton-plus-profile pattern

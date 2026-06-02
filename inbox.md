@@ -131,18 +131,3 @@ verified by three sequential build attempts: (1) with
 `CODE_SIGNING_ALLOWED=NO` — crashed; (2) with `CODE_SIGN_IDENTITY="-"`
 — still crashed; (3) with no signing flag — succeeded and ran.
 
-### 2026-06-01 — Playbook (curate residual)
-
-**Category:** suggestion
-**Context:** Curating the two Broadsheet `.gitignore` lessons (inline-comment
-no-op + unanchored scratchpads). The `bootstrap.sh` / `screenshot-pipeline.md`
-fixes were adopted (CHANGELOG 2026-06-01); one sub-suggestion was deferred.
-**Lesson:** The `bootstrap.sh` anchor fix only helps *newly* bootstrapped
-projects. Existing repos keep the buggy `.gitignore` invisibly: `/conform`
-Check A reports "OK" (on-disk content matches the playbook) and `git status`
-is clean (git thinks the untracked rule file doesn't exist).
-**Suggested action:** Add a `/conform` check that runs `git ls-files` for each
-`.claude/rules/*.md` and flags any present on disk but untracked — catches the
-silent-untrack in existing projects. Defer to the rules pass / Phase C when
-`/conform` is next touched.
-

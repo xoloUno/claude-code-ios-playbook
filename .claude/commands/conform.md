@@ -79,6 +79,29 @@ Steps:
      project-specific custom file (keep) or a stale leftover (remove). Don't decide — flag for
      the user.
 
+   **Check G — Untracked playbook rule files (gitignore silent-untrack) (severity: HIGH, advisory)**
+   - Catches a failure Check A is blind to: a buggy project `.gitignore` (an inline-comment
+     no-op like `*.log # logs`, or an unanchored pattern such as `scratch` or `*.md`) silently
+     keeps a `.claude/rules/<name>.md` file from being tracked. Check A still reports the file
+     OK (its on-disk content matches the playbook) and `git status` stays clean (git ignores
+     it), so the rule is present in *this* checkout but absent from version control — it
+     vanishes on a fresh clone. `bootstrap.sh`'s anchor fix only protects newly bootstrapped
+     projects; existing repos carry the bug invisibly.
+   - For each `.claude/rules/*.md` present on disk, test tracking with
+     `git ls-files --error-unmatch <file>` (run from the project root). Non-zero exit ⇒ the
+     file is not tracked → drift = UNTRACKED.
+   - For each UNTRACKED file, run `git check-ignore -v <file>`:
+     - **matches** ⇒ the file is gitignored — the dangerous silent case. Capture the offending
+       `<gitignore-path>:<line>:<pattern>` so the user can repair the exact rule.
+     - **no match** ⇒ merely untracked-new (it already shows in `git status`; lower urgency —
+       usually just needs `git add`). Note which case each item is.
+   - Applies uniformly to symlink-bridged repos: their `.claude/rules/*.md` are tracked
+     mode-120000 symlinks, so a symlink swallowed by a bad ignore pattern is just as silently
+     absent.
+   - **Advisory — never auto-fix.** The remediation edits the project-owned `.gitignore`
+     (anchor or repair the offending pattern), then `git add`s the rule file; surface the
+     offending pattern and leave both edits to the user.
+
 3. **Present the consolidated report** as a single markdown table:
 
    ```
@@ -87,6 +110,7 @@ Steps:
    | Category | Status | Items |
    |---|---|---|
    | Rule files | ⚠️ N stale, M missing | testing.md (stale), wwdc25-ios26.md (missing), ... |
+   | Untracked rules | ❌ N untracked | playbook-inbox.md (gitignored by .gitignore:12 `*.md`), ... |
    | Playbook commands | ⚠️ N stale, M missing | upgrade.md (stale), ... |
    | iOS-pack commands | ❌ N missing | preflight.md (packs/ios/commands/) |
    | CLAUDE.md sections | ⚠️ N gaps | "Distribution", ... |
@@ -99,8 +123,10 @@ Steps:
    If everything is aligned, present a single line: `✓ Project conforms to the playbook — no drift detected.` and stop.
 
 4. **Ask the user how to proceed.** Use `AskUserQuestion` with three options:
-   - **Apply all auto-fixable** — apply HIGH-severity items (stale/missing rule files and
-     playbook commands) without per-item confirmation. Skip MEDIUM/LOW items.
+   - **Apply all auto-fixable** — apply the HIGH-severity *auto-fixable* items (stale/missing
+     rule files and playbook commands — Checks A and B) without per-item confirmation. Skip
+     MEDIUM/LOW items, and skip Check G (HIGH but advisory — its fix touches the project-owned
+     `.gitignore`, which `/conform` never rewrites).
    - **Walk one by one** — present each drift item individually and let the user
      accept/skip/defer per item.
    - **Just report** — make no changes; the report is the deliverable.
@@ -121,8 +147,11 @@ Steps:
      projects, do not auto-apply; point the user at `<playbook>/packs/ios/commands/<name>.md` to
      copy (re-applying the `.env.project` markers), or have them re-run
      `compose-claude.sh <project> ios`.
-   - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F):** do
-     not auto-apply. Surface again at the end as "manual follow-ups."
+   - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F),
+     untracked rule files (Check G):** do not auto-apply. Surface again at the end as "manual
+     follow-ups." Check G is HIGH-severity but still manual — its fix repairs the project-owned
+     `.gitignore` and then `git add`s the rule file; report the offending pattern and the
+     `git add` needed, and let the user make both edits.
 
 6. **Show a final summary:**
 
@@ -147,5 +176,8 @@ Important:
   rather than guessing.
 - For diff comparisons in Check A and Check B, use `diff -q` (quiet) to detect any
   difference, then re-diff verbosely only for items the user wants to inspect.
+- Check G is detection-only (`git ls-files` / `git check-ignore`); it never edits `.gitignore`
+  or stages files. It complements Check A: A compares rule *content*, G confirms the rule is
+  actually under version control.
 - The project may legitimately have stranded files (custom slash commands, project-specific
   rules). Stranded ≠ wrong. The user decides.

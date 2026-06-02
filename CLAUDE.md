@@ -9,6 +9,18 @@ per project, that's a *layer*, not a copy — never fork a shared file to make a
 This repo exists because the old bootstrap-and-copy model let four `/status` variants drift
 apart.
 
+## Dream state
+
+This is a low-maintenance agentic coding harness for `~/dev`: Erik can create a project on a
+whim — a one-off repo like shotsmith/devpulse/c3d, or a bootstrapped iOS app — and it should
+inherit the shared workflow surface without re-deriving commands, rules, or lessons. Universal
+verbs live once; kind behavior extends through packs/profiles; project facts stay tiny.
+Battle scars flow `/inbox` → `/curate` → `_playbook` once, then propagate automatically where
+the bridge allows it: live symlinks for non-iOS repos, controlled compose/marketplace rollout
+for iOS. Judge new work by whether it reduces tool/wisdom drift, shrinks per-project upkeep,
+and keeps project-owned files outside auto-clobber boundaries unless they have an explicit
+managed-block contract.
+
 ## Invariants (do not violate)
 
 - **Correctness-critical rules live flat in the always-on stub** (`CLAUDE.md` / `AGENTS.md`),

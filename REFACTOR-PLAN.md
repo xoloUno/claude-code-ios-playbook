@@ -23,12 +23,14 @@
 > (iOS-isms — `[skip ci]`, "Current State", `WORKLOG`, release-notes, Swift globs, `dev`-only,
 > `ui` — deferred to `/wrapup` + the iOS `command-profile`, mostly deletion); both gates green,
 > the `packs/<pack>/rules` bridge loop stays latent (no non-iOS pack ships rules yet).
-> **Phase C `/test` DONE (2026-06-01, branch `feat/universal-test-verb`)** — split the overloaded
+> **Phase C `/test` DONE & MERGED (2026-06-01, PR #20)** — split the overloaded
 > verb: `/test` is now a universal *run-the-declared-suite* skeleton (`project.yml` `test_command`
 > → kind default `pytest -q` / `xcodebuild test` → clean no-op), and the old iOS test-*generation*
 > command moved to `packs/ios/commands/gen-tests.md`. Bridge now links six universal verbs (`test`
-> added); `/conform` Check B/C updated in lockstep; CHANGELOG entry added. Remaining Phase C verbs
-> (`/context-health`, `/preflight`) stay deferred-on-contact — neither has forcing contact yet.
+> added); `/conform` Check B/C updated in lockstep; CHANGELOG entry added. **shotsmith re-bridged +
+> `test_command` fixed (shotsmith#3) — its `/test` is live; devpulse/c3d can re-bridge when next
+> touched (both no-op).** Remaining Phase C verbs (`/context-health`, `/preflight`) stay
+> deferred-on-contact — neither has forcing contact yet.
 
 ---
 
@@ -273,16 +275,21 @@ the workflow output (run `wf_e73fd29f-ed9`).
   `rules/` dir yet (packs/python + packs/cli are command-profile-only), so there was nothing to
   link; the script already carries the comment marking where to add it.
 - [~] **Phase C — generalize on contact** (handoff: `PHASE-C-HANDOFF.md`):
-  - [x] **`/test` DONE (2026-06-01, branch `feat/universal-test-verb`)** — universal
+  - [x] **`/test` DONE & MERGED (2026-06-01, PR #20)** — universal
     run-the-declared-suite skeleton (`.claude/commands/test.md`) + `## /test` in
     `packs/{ios,python}/command-profile.md`; iOS test-*generation* renamed to
     `packs/ios/commands/gen-tests.md` (content unchanged). Coupled surfaces updated in the same PR:
     `bridge-symlink.sh` `COMMANDS` (+`test`, six verbs), `/conform` Check B (+`test`, both sides)
     and Check C (`test`→`gen-tests`), `packs/README.md`, CHANGELOG. Decision (run vs generate split)
     recorded in `COMMANDS-ARCHITECTURE.md`. Gates: byte-identical iOS compose except the intended
-    `test.md`/`gen-tests.md`/`command-profile.md`; the three non-iOS repos re-bridge to gain `test`
-    (shotsmith suite green via its declared command — `pytest -q` on PATH or `python3 -m pytest -q`;
-    c3d/devpulse no-op).
+    `test.md`/`gen-tests.md`/`command-profile.md`.
+    - **Re-bridge to gain the `test` symlink is per-repo and one-time** (a *new* universal command
+      needs it; existing ones propagate through their symlinks). Sequence is ordered — the `_playbook`
+      PR must reach `main` first, else the committed symlink dangles. **shotsmith DONE & MERGED
+      (shotsmith#3):** re-bridged + corrected its `project.yml` `test_command` to `python3 -m pytest -q`
+      (bare `pytest` wasn't on PATH); `/test` is live and verified green (101 passed). **devpulse + c3d:
+      not yet re-bridged — they can re-bridge when next touched** (both no-op cleanly: devpulse has no
+      tests, c3d declares no runner), so neither has `/test` until then.
   - [ ] **`/context-health`** — already universal+bridged; convert to skeleton+profile only when a
     kind-specific signal is wanted. No forcing contact yet.
   - [ ] **`/preflight`** — iOS-pack, deploy-coupled; leave iOS-pack unless a real non-iOS need

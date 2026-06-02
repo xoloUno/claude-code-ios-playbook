@@ -28,6 +28,35 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — `.gitignore`: comments on their own lines + anchored scratchpads
+
+The canonical screenshot `.gitignore` block — emitted by `bootstrap.sh` and
+documented in `packs/ios/rules/screenshot-pipeline.md` — used **inline trailing
+comments** (`fastlane/screenshots/   # raw + framed`). `.gitignore` has no
+inline-comment support, so git reads the spaces and `#` text as part of the
+pattern and the line matches nothing — a silent no-op that never ignored the
+regenerable screenshot dirs. Comments now sit on their own lines, and the
+regenerable `fastlane/shotsmith/upload-staging/` dir is ignored alongside
+`screenshots/` and `composed/`. Separately, `bootstrap.sh` emitted **unanchored**
+`MANUAL-TASKS.md` / `WORKLOG.md`; on case-insensitive macOS (`core.ignorecase=true`)
+the first also matched `.claude/rules/manual-tasks.md` (verified with
+`git check-ignore`), silently leaving that rule file untracked. Both scratchpad
+patterns are now anchored to the project root (`/MANUAL-TASKS.md`, `/WORKLOG.md`).
+
+**Files affected:**
+- `bootstrap.sh` — emitted `.gitignore`: anchored scratchpad patterns; screenshot
+  comments moved onto their own lines; added `fastlane/shotsmith/upload-staging/`
+- `packs/ios/rules/screenshot-pipeline.md` — same comment fix + `upload-staging/`;
+  added a caution that `.gitignore` has no inline-comment support
+
+**What to do in your project:**
+- Newly-bootstrapped projects get the fix automatically.
+- Existing projects: `/upgrade` won't rewrite an existing `.gitignore`, so fix it by
+  hand — move any `pattern   # comment` onto its own line, anchor `/MANUAL-TASKS.md`
+  and `/WORKLOG.md`, and add `fastlane/shotsmith/upload-staging/`. Then run
+  `git check-ignore -v .claude/rules/manual-tasks.md`: a reported match means the
+  file was silently untracked — `git add` it once the anchor is in place.
+
 ## 2026-06-01 — `bridge-symlink.sh`: live-symlink bridge for non-iOS repos
 
 The non-iOS repos under `~/dev` (devpulse, shotsmith, c3d-bridge-modeler) join the shared

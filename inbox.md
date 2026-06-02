@@ -102,71 +102,6 @@ edits. The HVACApp implementation is at
 `/Users/erikj/Documents/JJ AIR/99-WIP/erik/App/HVACApp/.claude/{rules,commands}/parallel-*`
 — copy verbatim or refine.
 
-### 2026-05-03 — Playbook (`/wrapup` skill improvements)
-
-**Category:** suggestion
-**Context:** End-of-session `/wrapup` ran in the playbook repo itself
-(not a typical iOS project). Two friction points surfaced that the
-current `/wrapup` skill at `.claude/skills/wrapup.md` (or wherever the
-template lives) doesn't handle gracefully.
-
-**Lesson:**
-
-1. **`/wrapup` step 10 says "Push to `dev` or feature branch (not
-   `main` unless the user explicitly asks)" — but the safer default
-   when the user is ON `main` should be "create a feature branch
-   automatically and open a PR", not "ask the user."** When the user
-   typed `push` in response to a "want me to push?" question, the
-   model interpreted that as "push to main" and the action got blocked
-   by the playbook's own `git-workflow` rule (which is enforced via
-   the `.claude/settings*.json` permission system). The system's
-   denial reason was specific and useful: *"'push' is not specific
-   authorization for the default branch."* The fix saved a bad push
-   but it surfaced that `/wrapup` should have routed to the PR flow
-   from the start. Auto mode was active, which sharpens this — the
-   skill should "prefer action over planning" by automatically
-   creating a feature branch + PR when on `main`, not asking.
-
-2. **`/wrapup` steps 5–9 (CLAUDE.md "Current State", `WORKLOG.md`,
-   `release-notes-draft.md`, scope items, `MANUAL-TASKS.md`) don't
-   apply to the playbook repo itself.** Those files are project
-   conventions, not playbook conventions — the playbook's CHANGELOG
-   is the equivalent of "Current State" + release notes for downstream
-   consumers. The skill currently reads as if it's always running in a
-   bootstrapped project. Running `/wrapup` in `_playbook/` requires
-   the model to silently skip those steps, which is fine when it
-   notices but easy to miss.
-
-**Suggested action:**
-
-Update `.claude/skills/wrapup.md` (or the playbook's `wrapup` skill
-source — confirm location) with two narrow changes:
-
-1. **Add a "Branch detection" note before step 10:** *"If the current
-   branch is `main`, do not ask whether to push. Create a feature
-   branch from HEAD (`feat/<short-slug>` derived from the commit
-   subject), push the branch, open a PR, and report the PR URL in
-   the final summary. The playbook's own `git-workflow` rule
-   forbids direct pushes to `main`; honoring it via PR flow is
-   the safer default for any branch-protected repo."* This also
-   matches the iOS project rule's spirit even when the user is in a
-   different repo with its own protections.
-
-2. **Add a "Repo type detection" guard before steps 5–9:** *"Steps
-   5–9 (CLAUDE.md / WORKLOG.md / release-notes-draft.md / scope
-   items / MANUAL-TASKS.md) apply to bootstrapped iOS projects. If
-   running in the playbook repo itself (heuristic: presence of
-   `bootstrap.sh` + `CHANGELOG.md` + absence of `CLAUDE.md`), skip
-   those steps and instead ensure the relevant `CHANGELOG.md`
-   entry exists for the session's user-facing changes."* The
-   playbook is one of likely-many tool repos that don't fit the
-   iOS-project mold; a generic skip-when-not-applicable rule is
-   probably better than a hard playbook check.
-
-Both changes are scoped for a focused `/wrapup` session — one skill
-file edit, no behavior change for the common case (running `/wrapup`
-in a bootstrapped iOS project on a feature branch).
-
 ### 2026-05-14 — Flara
 
 **Category:** gotcha
@@ -196,44 +131,18 @@ verified by three sequential build attempts: (1) with
 `CODE_SIGNING_ALLOWED=NO` — crashed; (2) with `CODE_SIGN_IDENTITY="-"`
 — still crashed; (3) with no signing flag — succeeded and ran.
 
-### 2026-05-20 — Broadsheet
+### 2026-06-01 — Playbook (curate residual)
 
-**Category:** gotcha
-**Context:** Running `/upgrade` to sync rule files from the playbook. After
-copying refreshed `.claude/rules/*.md` files from playbook into the project,
-`git add .claude/rules/manual-tasks.md` failed with "paths are ignored by
-.gitignore". Same issue affected `.claude/rules/work-log.md`. Discovered both
-files had been **untracked since project bootstrap (Apr 10)** — no prior
-session noticed because previous `/upgrade` runs didn't try to stage these
-files (they were diff-identical to playbook so never appeared in a changeset).
-**Lesson:** The bootstrap-emitted `.gitignore` includes unanchored entries for
-the Claude Code scratchpads:
-```
-# Claude Code local scratchpads
-MANUAL-TASKS.md
-WORKLOG.md
-```
-On macOS, Git defaults `core.ignorecase=true` (APFS is case-insensitive), so
-`MANUAL-TASKS.md` also matches `.claude/rules/manual-tasks.md` and `WORKLOG.md`
-matches `.claude/rules/work-log.md`. Result: every macOS-bootstrapped project
-silently fails to track those two rule files. The drift is invisible because
-the on-disk content matches the playbook source — `/conform` Check A reports
-"OK" (diff is identical), and `git status` shows nothing because git thinks
-the files don't exist. The bug only surfaces when something tries to `git add`
-them explicitly.
-**Suggested action:** Update `bootstrap.sh` to emit the scratchpad patterns
-anchored to project root:
-```
-# Anchored to project root so case-insensitive macOS gitignore doesn't also
-# catch .claude/rules/manual-tasks.md and .claude/rules/work-log.md.
-/MANUAL-TASKS.md
-/WORKLOG.md
-```
-Also worth adding a check to `/conform` Check F (or a new check) that runs
-`git ls-files <rule-file>` for each `.claude/rules/*.md` and flags any that
-exist on disk but aren't tracked by git — this would surface the same drift
-in existing projects that won't be re-bootstrapped. The fix in Broadsheet
-was a 2-line `.gitignore` edit (`MANUAL-TASKS.md` → `/MANUAL-TASKS.md`,
-`WORKLOG.md` → `/WORKLOG.md`); both rule files immediately became trackable.
-
+**Category:** suggestion
+**Context:** Curating the two Broadsheet `.gitignore` lessons (inline-comment
+no-op + unanchored scratchpads). The `bootstrap.sh` / `screenshot-pipeline.md`
+fixes were adopted (CHANGELOG 2026-06-01); one sub-suggestion was deferred.
+**Lesson:** The `bootstrap.sh` anchor fix only helps *newly* bootstrapped
+projects. Existing repos keep the buggy `.gitignore` invisibly: `/conform`
+Check A reports "OK" (on-disk content matches the playbook) and `git status`
+is clean (git thinks the untracked rule file doesn't exist).
+**Suggested action:** Add a `/conform` check that runs `git ls-files` for each
+`.claude/rules/*.md` and flags any present on disk but untracked — catches the
+silent-untrack in existing projects. Defer to the rules pass / Phase C when
+`/conform` is next touched.
 

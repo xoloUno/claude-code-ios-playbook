@@ -35,10 +35,11 @@
 > plugin (`.claude-plugin/{marketplace,plugin}.json` + a single namespaced `/playbook:upgrade`
 > recompose verb under `plugin/commands/`); `compose-claude.sh` verified self-locating and
 > byte-identical when run from a plugin cache; local-directory dry-run confirmed the plugin exposes
-> exactly one component (~22 always-on tok) with no stray repo leakage. Release target: tag
-> `playbook--v1.0.0` once this reaches `main` (not yet created). iOS app cutover (Flara canary →
-> broadsheet/teewye, Phase 2+) is **gated on
-> this PR reaching `main` + the tag being pushed**.
+> exactly one component (~22 always-on tok) with no stray repo leakage. **Phase 1 landed on `main`
+> (`ef631ed`) and shipped as `playbook@playbook` v1.0.1, tag `playbook--v1.0.1`.** **Phase 2 — Flara
+> canary DONE (2026-06-02):** cold-start install + idempotent no-diff `/playbook:upgrade` verified on
+> Flara `main` (#56, `aebc758`); legacy submodule + `.playbook-version` removed. **Next: Phase 3 —
+> broadsheet + teewye** (same recipe, one PR each).
 
 ---
 
@@ -162,10 +163,15 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         `/conform` stays the drift detector; marker substitution kept (no `project.yml` migration this
         round). `claude plugin validate` passes; compose byte-identical from a plugin-cache path;
         release target is the first contract tag `playbook--v1.0.0` (created on `main` after merge).
-  - [ ] **Phase 2 — Flara canary** (gated on Phase 1 → `main` + tag): commit `.claude/settings.json`
-        (github marketplace + `playbook@playbook` + `autoUpdate:true`), `/playbook:upgrade` to catch up
-        off the stale `442f469` pin, remove the `_playbook` submodule + `.playbook-version`, verify.
-  - [ ] **Phase 3 — broadsheet-app + teewye-app** (same recipe, one PR each).
+  - [x] **Phase 2 — Flara canary (DONE 2026-06-02)** — Flara #56 merged at `aebc758` commits the
+        marketplace `.claude/settings.json` (github `playbook` marketplace + `playbook@playbook` +
+        `autoUpdate:true`). Cold-start from a wiped global plugin cache verified: trust accepted
+        (`hasTrustDialogAccepted`), `playbook` marketplace registered, `playbook@playbook` **v1.0.1**
+        installed project-scoped to Flara from `ef631ed` / tag `playbook--v1.0.1`. `/playbook:upgrade`
+        recompose from the installed plugin was **idempotent — byte-identical, 0-byte diff, clean
+        tree**. Legacy gone: no `_playbook` submodule, no `.gitmodules`, no `.playbook-version` (the
+        stale `442f469` pin is retired).
+  - [ ] **Phase 3 — broadsheet-app + teewye-app (NEXT)** — same recipe as Flara, one PR each.
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
 - [ ] **Stage 2 — Vendor Hudson (SHA-pinned fork):** thin the ~4 overlapping Swift rules
@@ -328,11 +334,13 @@ the workflow output (run `wf_e73fd29f-ed9`).
   inline-comment / anchored-scratchpad *write* fix landed earlier (PR #18). Downstream-visible →
   CHANGELOG entry; byte-identical iOS compose except `conform.md`. Inbox entry retired.
 - [ ] **Recommended near-term order:**
-  1. **Stage 1b — IN PROGRESS (timing decided 2026-06-01).** Phase 1 (marketplace plugin
-     scaffolding + `/playbook:upgrade`) is built on `feat/stage1b-marketplace-plugin`. **Next:**
-     land that PR to `main`, push the `playbook--v1.0.0` tag, then run the **Flara canary** (Phase 2)
-     before broadsheet/teewye. `/upgrade` is retired-as-primary in favor of `/playbook:upgrade`;
-     `/conform` stays the drift-check verb.
+  1. **Stage 1b — IN PROGRESS.** Phase 1 (marketplace plugin scaffolding + `/playbook:upgrade`)
+     landed on `main` (`ef631ed`, tag `playbook--v1.0.1`). Phase 2 (**Flara canary**) is **DONE
+     (2026-06-02)** — cold-start install + idempotent no-diff `/playbook:upgrade` verified on Flara
+     `main` (#56, `aebc758`). **Next:** Phase 3 — broadsheet + teewye (same recipe, one PR each),
+     then Phase 4 (retire composed `/upgrade`; teach `bootstrap.sh`; wire tag into `/wrapup`).
+     `/upgrade` is retired-as-primary in favor of `/playbook:upgrade`; `/conform` stays the
+     drift-check verb.
   2. **Stage 2:** vendor Hudson's Swift skills at a pinned SHA; thin overlapping Swift/iOS guidance
      only after the command/rule surface has settled.
   3. **Stage 3:** Codex + MCP + bake-off harness when cross-agent tooling is the next priority.

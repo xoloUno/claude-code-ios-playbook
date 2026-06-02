@@ -19,6 +19,24 @@ Fold these into the briefing after the universal git steps:
   newest dated entry in the playbook's `CHANGELOG.md`. If the playbook has newer entries,
   add a flag suggesting `/upgrade`. Skip if `.playbook-version` is absent.
 
+## /test
+
+The universal `/test` resolves which command to run; this kind layer supplies the Xcode
+default. (To *write* tests, use `/gen-tests` — a separate iOS-pack command, not this verb.)
+
+- **Simulator first.** Before launching a run, confirm the build/test simulator exists:
+  `xcrun simctl list devices available` should include the simulator named in
+  `.claude/rules/testing.md` ("Running tests" — this project's primary sim). If it's
+  missing, FAIL with the `xcrun simctl create` / Xcode > Settings > Platforms hint rather
+  than letting `xcodebuild` fail late.
+- **Command.** Run the suite with the `xcodebuild test …` invocation in
+  `.claude/rules/testing.md` — that line already carries this project's scheme and
+  simulator (composed in), so it's the single source of truth, not duplicated here. The
+  same rule documents the Swift Testing conventions and the SwiftData `TEST_HOST` gotcha;
+  read it if a run fails oddly.
+- **Scope.** With `$ARGUMENTS`, narrow the run via `-only-testing:<Target>/<Suite>[/<test>]`.
+- **Report.** ✅ / ❌ with the failing test identifiers and the first failure message each.
+
 ## /wrapup
 
 Slot these into the universal flow at the stage named — not in list order.

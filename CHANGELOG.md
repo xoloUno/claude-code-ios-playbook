@@ -28,7 +28,45 @@ signal during multi-version skips.
 
 ---
 
-## 2026-06-01 — `core/rules/git-workflow.md`: de-iOS'd into a truly universal core rule
+## 2026-06-01 — `/test` is now a universal run-the-suite verb; iOS test *generation* → `/gen-tests`
+
+Phase C of the commands refactor generalizes `/test` with the same skeleton-plus-profile pattern
+Phase A used for `/status` and `/wrapup`. The old `/test` *generated* Swift Testing tests; it never
+ran anything. A universal *run-the-declared-suite* verb is a genuinely different command, so the two
+were split rather than overloaded: `/test` now means "run my tests" (the way `npm test` / `cargo
+test` / `pytest` mean it), and the iOS test-generation command moved to `/gen-tests`. The universal
+`/test` resolves its command in priority order — `project.yml` `test_command`, else the kind
+profile's default (`pytest -q` for Python, the `xcodebuild test` line in `testing.md` for iOS) —
+and **no-ops cleanly** in a repo with no runner (it reports "no test runner configured" and stops,
+the correct outcome for a docs or Dynamo project). This gives every symlink-bridged Python repo a
+real `/test` for free (shotsmith runs its declared command) and keeps the iOS generation
+behavior intact, just under a clearer name. The bridge now links six universal verbs (added `test`)
+and `/conform` Check B/C were updated in lockstep.
+
+**Files affected:**
+- `.claude/commands/test.md` — **new** universal skeleton: load-first hook → resolve command →
+  scope by `$ARGUMENTS` → run → report PASS/FAIL/SKIPPED. A read-only gate; mutates nothing.
+- `packs/ios/commands/test.md` → `packs/ios/commands/gen-tests.md` — the Swift Testing *generation*
+  command, renamed, content unchanged.
+- `packs/python/command-profile.md`, `packs/ios/command-profile.md` — new `## /test` sections (the
+  per-kind run command and how to scope/report it). iOS references the `xcodebuild test` line in
+  `.claude/rules/testing.md` so the simulator stays single-sourced.
+- `bridge-symlink.sh` — `COMMANDS` now includes `test` (six universal verbs bridged to non-iOS).
+- `.claude/commands/conform.md` — Check B expected sets add `test` (iOS + non-iOS); Check C's
+  iOS-pack list renames `test` → `gen-tests`.
+- `packs/README.md` — command tables + counts (13 → 14 composed commands).
+
+**What to do in your project:**
+- **iOS apps:** on the next recompose you gain a universal `/test` (runs `xcodebuild test` per
+  `testing.md`) and your old `/test` generation command is now `/gen-tests` — same behavior, new
+  name. Nothing breaks; recompose with `compose-claude.sh <project> ios` when convenient.
+- **Non-iOS symlink-bridged repos (devpulse, shotsmith, c3d):** re-run
+  `<playbook>/bridge-symlink.sh <project> [pack]` once to add the new `test` symlink. A repo that
+  declares `test_command` (or has a `tests/` dir) gets a working `/test`; one without (c3d) no-ops
+  cleanly. The other five symlinks are unchanged. **`/test` runs `test_command` verbatim, so the
+  declared fact must actually run in your environment** — prefer `python3 -m pytest -q` over a bare
+  `pytest -q` if the console script isn't guaranteed on PATH (this bit shotsmith on a machine where
+  `pytest` wasn't installed as a standalone entry point).
 
 The shared git rule is composed into every iOS app and, since the Phase B symlink bridge,
 linked live into every non-iOS repo (devpulse, shotsmith, c3d-bridge-modeler) — yet it still

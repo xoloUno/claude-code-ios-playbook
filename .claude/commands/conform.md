@@ -38,11 +38,11 @@ Steps:
      Checks A and C (`.claude/rules/build-deploy.md` present ⇒ iOS):
      - **iOS (composed copies via `compose-claude.sh`):** every shared command it emits — all of
        `<playbook>/.claude/commands/*.md` EXCEPT `curate.md` (`status`, `wrapup`, `conform`,
-       `context-health`, `inbox`, `upgrade`, `capture-manual-surfaces`).
+       `context-health`, `inbox`, `test`, `upgrade`, `capture-manual-surfaces`).
      - **non-iOS (live symlinks via `bridge-symlink.sh`):** exactly `status`, `wrapup`, `conform`,
-       `context-health`, `inbox`. `upgrade` (moot when the symlinked source is always current) and
-       `capture-manual-surfaces` (iOS-only) are **intentional exclusions, not drift** — never
-       report them MISSING here.
+       `context-health`, `inbox`, `test` — the same set as `bridge-symlink.sh` `COMMANDS`. `upgrade`
+       (moot when the symlinked source is always current) and `capture-manual-surfaces` (iOS-only)
+       are **intentional exclusions, not drift** — never report them MISSING here.
    - For each command in the project's expected set:
      - If absent from `.claude/commands/`: drift = MISSING
      - If present: `diff` against `<playbook>/.claude/commands/<name>.md`. If non-trivial diff:
@@ -52,7 +52,7 @@ Steps:
    - **Pack-gated:** only run this check for iOS projects — heuristic: `.claude/rules/build-deploy.md`
      is present. For non-iOS projects, skip Check C entirely; they carry no iOS-pack commands and
      a "missing" report would be a false positive.
-   - The iOS pack ships six commands in `<playbook>/packs/ios/commands/`: `feature`, `test`,
+   - The iOS pack ships six commands in `<playbook>/packs/ios/commands/`: `feature`, `gen-tests`,
      `review`, `deploy`, `release`, `preflight`. For each, if missing from `.claude/commands/`:
      drift = MISSING. These are normally emitted by `compose-claude.sh`; recomposing (or copying
      `<playbook>/packs/ios/commands/<name>.md` and re-applying the `${PRIMARY_SIM}`/profile/locale

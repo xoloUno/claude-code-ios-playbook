@@ -10,10 +10,10 @@ one flat iOS-only set:
 `bootstrap.sh` assembles a project's `.claude/rules/` from `core/` **+** the relevant
 pack(s), its `.claude/commands/` from the pack(s) **+** the universal commands in
 `.claude/commands/`, and the pack's `command-profile.md` into `.claude/`. Today bootstrap
-targets iOS, so it composes `core` + `ios`: all 16 rules and 13 commands land in the project,
+targets iOS, so it composes `core` + `ios`: all 16 rules and 14 commands land in the project,
 plus the iOS `command-profile.md`, with the `playbook-inbox` path substitution and
-`__PRIMARY_SIM__` marker intact. (`/status` + `/wrapup` are now universal skeletons that load
-the profile at runtime — see "Command profiles" below.)
+`__PRIMARY_SIM__` marker intact. (`/status`, `/wrapup`, and `/test` are now universal skeletons
+that load the profile at runtime — see "Command profiles" below.)
 
 ## Rules carved (Stage 1a, 2026-05-30)
 
@@ -29,8 +29,8 @@ them like rules. The universal commands live in `.claude/commands/`.
 
 | Layer | Commands |
 |---|---|
-| `packs/ios/commands/` | feature, test, review, deploy, release, preflight |
-| `.claude/commands/` (universal) | capture-manual-surfaces, conform, context-health, inbox, status, upgrade, wrapup (+ `curate`, playbook-only) |
+| `packs/ios/commands/` | feature, gen-tests, review, deploy, release, preflight |
+| `.claude/commands/` (universal) | capture-manual-surfaces, conform, context-health, inbox, status, test, upgrade, wrapup (+ `curate`, playbook-only) |
 
 ## Command profiles — universal `/status` + `/wrapup` (Phase A, 2026-06-01)
 
@@ -41,7 +41,7 @@ profile the skeleton loads; the command file is never forked. Three tiers + an e
 
 | Tier | File | Owner | Carries |
 |---|---|---|---|
-| Universal skeleton | `.claude/commands/{status,wrapup}.md` | playbook | the invariant verb, platform-agnostic |
+| Universal skeleton | `.claude/commands/{status,wrapup,test}.md` | playbook | the invariant verb, platform-agnostic |
 | Kind layer | `packs/<kind>/command-profile.md` | playbook | everything common to a project *type*; every step conditional |
 | Instance facts | `.claude/project.yml` (optional) | project | declarative facts a command can't detect |
 | Escape hatch | `.claude/command-profile.local.md` (optional) | project | prose judgment for a kind-of-one |
@@ -52,10 +52,13 @@ profile the skeleton loads; the command file is never forked. Three tiers + an e
 `/status` + `/wrapup` template variants (`.claude/templates/commands/`) are gone — the
 skeleton plus the profile replaces them.
 
-Still to carve (next increments): the project-side **bridge** (symlink for Python utils,
-submodule for iOS apps) and **de-bootstrap** of existing projects. (`capture-manual-surfaces`
-is iOS-specific per §5 but still lives in `.claude/commands/`; it can move to the ios pack
-in a later tidy-up.)
+**`/test` joined them in Phase C (2026-06-01)** as a universal *run-the-declared-suite* verb:
+it runs `project.yml` `test_command` or the kind profile's default (`pytest -q` for Python,
+`xcodebuild test` for iOS) and no-ops cleanly where there's no runner. The old iOS `/test`
+*generated* Swift Testing tests — a different verb — so it was renamed to the iOS-pack
+`/gen-tests`, leaving the `/test` name for the runner the way `npm test` / `cargo test` mean it.
+(`capture-manual-surfaces` is iOS-specific per §5 but still lives in `.claude/commands/`; it can
+move to the ios pack in a later tidy-up.)
 
 The full classification — every rule and command mapped to core-skill / ios-skill /
 always-on-stub / mcp-tool / reference-Hudson / delegate-Kickstart — is in

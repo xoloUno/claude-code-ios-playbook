@@ -99,7 +99,9 @@ Local sessions have access to: **XcodeBuildMCP** (builds, tests, simulators),
 **Apple Docs MCP** (API verification), **GitHub MCP** (CI status, PRs), and
 **Context7** (third-party library docs).
 
-See `_playbook/claude-code-plugins-setup.md` for setup instructions.
+See the playbook's `claude-code-plugins-setup.md` for setup instructions — bundled
+with the playbook plugin, or read it at
+https://github.com/xoloUno/claude-code-ios-playbook/blob/main/claude-code-plugins-setup.md.
 
 Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 build verification (push to branch → Build Check workflow). For API

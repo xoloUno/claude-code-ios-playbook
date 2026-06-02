@@ -28,6 +28,29 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — Fix dangling `_playbook/` doc pointer in the iOS build-deploy rule
+
+The iOS `build-deploy.md` rule pointed at `` `_playbook/claude-code-plugins-setup.md` `` for MCP/plugin
+setup. That relative path only resolved when a consuming app had the playbook as a `_playbook` git
+submodule. As of Stage 1b Phase 2 (Flara canary, flara-app#56) iOS apps consume the playbook as a
+marketplace plugin and have no `_playbook` directory, so the pointer dangled in every composed copy
+(and would dangle for broadsheet + teewye on cutover). The setup guide *does* ship with the plugin
+(`claude-code-plugins-setup.md` is at the repo root; marketplace `source` is `./`), so the fix points
+at it by bare name plus the canonical GitHub URL — transport-invariant across the legacy submodule,
+the symlink bridge, the marketplace plugin, and cloud sessions with no local playbook at all. No
+submodule-relative path is reintroduced. Verified with the byte-identical iOS compose-diff gate: only
+`.claude/rules/build-deploy.md` differs.
+
+**Files affected:**
+- `packs/ios/rules/build-deploy.md` — "Available Plugins & MCP Servers" pointer rewritten; the lone
+  `_playbook/`-relative pointer in the entire marketplace-transported set (core/rules, packs/*/rules,
+  packs/*/commands, command-profile, universal commands) — confirmed by grep.
+
+**What to do in your project:**
+- **iOS apps on the marketplace plugin:** run `/playbook:upgrade` to recompose `.claude/`; the only
+  change is the corrected pointer in `.claude/rules/build-deploy.md`.
+- **iOS submodule / symlink repos:** no action required — the new pointer resolves the same way.
+
 ## 2026-06-01 — Stage 1b: playbook now ships as a Claude marketplace plugin (iOS transport)
 
 The shared playbook can now be consumed as a **versioned Claude marketplace plugin** instead of a

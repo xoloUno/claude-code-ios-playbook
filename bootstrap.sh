@@ -92,12 +92,15 @@ Secrets.swift
 .env.*
 # OS junk
 .DS_Store
-# Claude Code local scratchpads
-MANUAL-TASKS.md
-WORKLOG.md
+# Claude Code local scratchpads — anchored to project root so the
+# case-insensitive macOS gitignore doesn't also catch .claude/rules/manual-tasks.md.
+/MANUAL-TASKS.md
+/WORKLOG.md
 # Screenshot pipeline — see .claude/rules/screenshot-pipeline.md
-fastlane/screenshots/                # raw + framed (regenerable from sims)
-fastlane/shotsmith/composed/         # composed (regenerable from raw + config)
+# All regenerable: raw + framed captures, composed ASC images, upload staging.
+fastlane/screenshots/
+fastlane/shotsmith/composed/
+fastlane/shotsmith/upload-staging/
 # Intentionally NOT ignored: fastlane/manual-captures/
 # These are tracked manual-gesture inputs (Live Activity stack, Home Screen
 # widget, Control Center) — recaptured once per release. Do not gitignore.

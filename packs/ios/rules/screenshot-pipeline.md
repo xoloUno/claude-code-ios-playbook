@@ -92,8 +92,10 @@ Add this block verbatim to the project `.gitignore`:
 
 ```
 # Screenshot pipeline — see .claude/rules/screenshot-pipeline.md
-fastlane/screenshots/                # raw + framed (regenerable)
-fastlane/shotsmith/composed/         # composed (regenerable)
+# All regenerable: raw + framed captures, composed ASC images, upload staging.
+fastlane/screenshots/
+fastlane/shotsmith/composed/
+fastlane/shotsmith/upload-staging/
 
 # Intentionally NOT ignored: fastlane/manual-captures/
 # These are tracked manual-gesture inputs (Live Activity stack, Home Screen
@@ -104,6 +106,9 @@ The trailing comment block is load-bearing. Make the tracking policy legible
 inside `.gitignore` itself, not just in this rule. The next contributor to
 audit the gitignore should not have to cross-reference a separate doc to
 understand why one fastlane subdir is ignored and an adjacent one isn't.
+Keep every comment on its own line: `.gitignore` has no inline-comment
+support, so `fastlane/screenshots/   # note` is read as a literal pattern
+(spaces and all) that silently matches nothing.
 
 ## The agent-driven capture loop
 

@@ -1,6 +1,6 @@
 {
   "name": "playbook",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared Claude Code playbook delivered as source + compose engine. /playbook:upgrade composes a project's .claude/ (core rules + per-kind pack + universal commands) from this installed plugin. The composed verbs stay un-namespaced and the rules stay always-on, which a native plugin can't provide.",
   "author": {
     "name": "Erik Jimenez",

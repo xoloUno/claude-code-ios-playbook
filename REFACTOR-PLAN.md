@@ -294,6 +294,24 @@ the workflow output (run `wf_e73fd29f-ed9`).
     kind-specific signal is wanted. No forcing contact yet.
   - [ ] **`/preflight`** — iOS-pack, deploy-coupled; leave iOS-pack unless a real non-iOS need
     appears (don't bridge for symmetry). No forcing contact yet.
+- [x] **`/conform` Check G — silent-untrack detection DONE (2026-06-01, branch
+  `feat/conform-untracked-rules-check`)** — adopted the `inbox.md` "curate residual" lesson:
+  `/conform` now lists each on-disk `.claude/rules/*.md` via `git ls-files --error-unmatch` and
+  uses `git check-ignore -v` to separate the silent gitignored case (Check A passes + `git status`
+  clean, yet the rule is absent from version control and dies on a fresh clone) from a merely
+  untracked-new file, reporting the offending `.gitignore` path:line:pattern. **Advisory — never
+  rewrites the project-owned `.gitignore`.** This is the *detection* half; the `.gitignore`
+  inline-comment / anchored-scratchpad *write* fix landed earlier (PR #18). Downstream-visible →
+  CHANGELOG entry; byte-identical iOS compose except `conform.md`. Inbox entry retired.
+- [ ] **Recommended near-term order:**
+  1. **Decide Stage 1b timing** (next up): iOS apps → Claude marketplace / controlled rollout,
+     retire `/upgrade` as primary, keep `/conform` as the drift-check verb. Opt-in — don't start
+     unprompted.
+  2. **Stage 2:** vendor Hudson's Swift skills at a pinned SHA; thin overlapping Swift/iOS guidance
+     only after the command/rule surface has settled.
+  3. **Stage 3:** Codex + MCP + bake-off harness when cross-agent tooling is the next priority.
+  4. **Stage 4:** spin out PlaybookLauncher + Keychain migration as its own mini-project, not
+     cleanup drift work.
 
 ## 10. References
 

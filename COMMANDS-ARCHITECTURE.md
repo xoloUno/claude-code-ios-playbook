@@ -140,6 +140,17 @@ MANUAL-TASKS format (c3d).
 - **Other verbs.** The same skeleton-plus-hook applies to `/context-health`, `/preflight`,
   `/test`. Convert each on contact — when it next needs a touch — not in a big bang. A new verb
   is a new `## /<verb>` section in the kind `command-profile.md`, nothing more.
+  - **`/test` DONE (Phase C, 2026-06-01).** This one wasn't a mechanical lift — it was a
+    naming/semantics decision. The old `/test` *generated* Swift Testing tests; it never ran a
+    suite. "Run the declared suite" and "scaffold new tests" are two different verbs, so they were
+    **split, not overloaded**: `/test` became the universal *runner* (the conventional meaning —
+    `npm test`, `cargo test`, `pytest`), resolving `project.yml` `test_command` → the kind
+    profile's default (`pytest -q` / `xcodebuild test`) → a clean no-op where there's no runner;
+    the generation command moved to the iOS-pack `/gen-tests`. Lesson for the remaining verbs:
+    **when a verb name already means something, decide the semantics before lifting** — don't
+    assume the universal version inherits the old one's behavior. The runner maps cleanly onto the
+    `project.yml` `test_command` seam Tier 3 already introduced, which is why it generalized well;
+    a verb without such a fact (`/preflight`'s deploy coupling) may legitimately stay pack-local.
 - **Stage 3 (MCP tools).** The dynamic verbs (`status`, `wrapup`, `context-health`, `conform`,
   `inbox`, `upgrade`) become MCP *tools*. They read the same `.claude/project.yml` this design
   already introduces, and can fold in the same `command-profile.md` prose. The universal logic
@@ -199,7 +210,9 @@ Build `bridge-symlink.sh <target>` (surgical: never `rm -rf .claude/`, never tou
   author `.claude/command-profile.local.md` (fix the stale `docs/scope.md` → root `scope.md`).
 
 **Phase C — generalize on contact.** As `/context-health`, `/preflight`, `/test` next need a
-touch, convert each to skeleton + `## /<verb>` section. No big bang.
+touch, convert each to skeleton + `## /<verb>` section. No big bang. **`/test` done (2026-06-01)** —
+split into a universal runner + the iOS-pack `/gen-tests` generator (see "Generalization and the MCP
+seam" above for the decision); `/context-health` and `/preflight` remain deferred-on-contact.
 
 **Later — Stage 3.** Port the dynamic verbs to MCP tools reading `project.yml`; keep
 `command-profile.md` as the per-kind prose the tools fold in.

@@ -20,6 +20,23 @@ Fold these into the briefing after the universal git steps:
 - **Unreleased changelog.** If `CHANGELOG.md` exists and has an unreleased section
   (content above the first `## vN.N.N` / `## [N.N.N]` heading), summarize what's queued.
 
+## /test
+
+The universal `/test` resolves which command to run; this kind layer supplies the Python
+default and how to scope it.
+
+- **Command.** Use `project.yml` `test_command` if declared (shotsmith: `pytest -q`);
+  otherwise default to `pytest -q` when a `tests/` directory or any `test_*.py` /
+  `*_test.py` file exists. If the project has no tests at all, no-op — report that and stop.
+- **Scope.** With `$ARGUMENTS`, pass it through as a pytest selector — a path
+  (`tests/test_foo.py`), a node id (`tests/test_foo.py::test_bar`), or a `-k <expr>`
+  keyword filter.
+- **Report.** pytest's own summary line is the verdict; on failure, show the failing node
+  ids and the first assertion/error for each.
+
+This is the same runner the `/wrapup` pre-commit gate invokes — `/test` just surfaces it
+on demand.
+
 ## /wrapup
 
 Slot these into the universal flow at the stage named — not in list order.

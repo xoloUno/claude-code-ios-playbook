@@ -22,8 +22,13 @@
 > branch `refactor/git-workflow-truly-core`)** — `core/rules/git-workflow.md` is now truly core
 > (iOS-isms — `[skip ci]`, "Current State", `WORKLOG`, release-notes, Swift globs, `dev`-only,
 > `ui` — deferred to `/wrapup` + the iOS `command-profile`, mostly deletion); both gates green,
-> the `packs/<pack>/rules` bridge loop stays latent (no non-iOS pack ships rules yet). Next:
-> Phase C (generalize `/context-health`, `/preflight`, `/test`).
+> the `packs/<pack>/rules` bridge loop stays latent (no non-iOS pack ships rules yet).
+> **Phase C `/test` DONE (2026-06-01, branch `feat/universal-test-verb`)** — split the overloaded
+> verb: `/test` is now a universal *run-the-declared-suite* skeleton (`project.yml` `test_command`
+> → kind default `pytest -q` / `xcodebuild test` → clean no-op), and the old iOS test-*generation*
+> command moved to `packs/ios/commands/gen-tests.md`. Bridge now links six universal verbs (`test`
+> added); `/conform` Check B/C updated in lockstep; CHANGELOG entry added. Remaining Phase C verbs
+> (`/context-health`, `/preflight`) stay deferred-on-contact — neither has forcing contact yet.
 
 ---
 
@@ -267,8 +272,20 @@ the workflow output (run `wf_e73fd29f-ed9`).
   **`packs/<pack>/rules` loop** in `bridge-symlink.sh` — stays **latent**: no non-iOS pack has a
   `rules/` dir yet (packs/python + packs/cli are command-profile-only), so there was nothing to
   link; the script already carries the comment marking where to add it.
-- [ ] **Then Phase C** — generalize `/context-health`, `/preflight`, `/test` on contact (handoff:
-  `PHASE-C-HANDOFF.md`). **Now unblocked** — the rules pass that gated it is done.
+- [~] **Phase C — generalize on contact** (handoff: `PHASE-C-HANDOFF.md`):
+  - [x] **`/test` DONE (2026-06-01, branch `feat/universal-test-verb`)** — universal
+    run-the-declared-suite skeleton (`.claude/commands/test.md`) + `## /test` in
+    `packs/{ios,python}/command-profile.md`; iOS test-*generation* renamed to
+    `packs/ios/commands/gen-tests.md` (content unchanged). Coupled surfaces updated in the same PR:
+    `bridge-symlink.sh` `COMMANDS` (+`test`, six verbs), `/conform` Check B (+`test`, both sides)
+    and Check C (`test`→`gen-tests`), `packs/README.md`, CHANGELOG. Decision (run vs generate split)
+    recorded in `COMMANDS-ARCHITECTURE.md`. Gates: byte-identical iOS compose except the intended
+    `test.md`/`gen-tests.md`/`command-profile.md`; the three non-iOS repos re-bridge to gain `test`
+    (shotsmith runs `pytest -q`, c3d/devpulse no-op).
+  - [ ] **`/context-health`** — already universal+bridged; convert to skeleton+profile only when a
+    kind-specific signal is wanted. No forcing contact yet.
+  - [ ] **`/preflight`** — iOS-pack, deploy-coupled; leave iOS-pack unless a real non-iOS need
+    appears (don't bridge for symmetry). No forcing contact yet.
 
 ## 10. References
 

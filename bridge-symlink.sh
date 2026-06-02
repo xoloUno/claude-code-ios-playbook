@@ -36,11 +36,13 @@ PLAYBOOK_NAME="$(basename "$SCRIPT_DIR")"
 TARGET="${1:?usage: bridge-symlink.sh <target-dir> [pack]}"
 PACK="${2:-}"
 
-# The universal commands bridged to every non-iOS repo — exactly these five verbs.
+# The universal commands bridged to every non-iOS repo — exactly these six verbs.
 # Deliberately excluded: capture-manual-surfaces (iOS-only), upgrade (moot for always-current
 # live symlinks), curate (playbook-only). playbook-inbox is a *rule* (linked below as-is) so
 # its live $PLAYBOOK_HOME token resolves at read time — no compose-time substitution here.
-COMMANDS=(status wrapup conform context-health inbox)
+# `test` is the universal run-the-declared-suite verb; it no-ops cleanly in a repo with no
+# test_command and no tests (e.g. c3d), so bridging it everywhere is safe.
+COMMANDS=(status wrapup conform context-health inbox test)
 
 # relink <link-path> <relative-target>
 #   returns 0 = linked, 1 = skipped (a real file is there); a dangling result aborts the script.

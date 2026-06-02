@@ -102,8 +102,12 @@ blocked waiting for a pack to exist.
 The command *reads* `command-profile.md` + `command-profile.local.md` + `project.yml` when it
 runs. That single choice is what lets one mechanism serve both bridge types:
 
-- **iOS (composed copies via pinned submodule):** `compose-claude.sh` copies the skeleton and
-  the pack's `command-profile.md` into `.claude/`. Self-contained, byte-identical-verifiable.
+- **iOS (composed copies via pinned submodule → marketplace plugin):** `compose-claude.sh` copies
+  the skeleton and the pack's `command-profile.md` into `.claude/`. Self-contained,
+  byte-identical-verifiable. *Stage 1b graduates the transport:* the submodule is replaced by a
+  versioned Claude marketplace plugin that ships the same `compose-claude.sh` + `core/` + `packs/`;
+  refresh is on-demand via the plugin's one namespaced verb `/playbook:upgrade`. The composed output
+  is unchanged — only how the source arrives and when compose runs.
 - **non-iOS (live symlinks):** `.claude/commands/status.md` and `.claude/command-profile.md` are
   symlinks into this tree; they're always current, no compose step.
 
@@ -111,6 +115,27 @@ Either way the *runtime* behavior is identical, because the command just reads w
 `.claude/`. Compile-time `sed` substitution (today's `__PRIMARY_SIM__` model) cannot do this — a
 symlinked repo has nothing to substitute into. So markers stay only for the handful of scalars
 iOS already bakes at compose time; everything structural moves to runtime read.
+
+### Why the marketplace can't deliver commands/rules natively (Stage 1b)
+
+A Claude *plugin* is the wrong shape for the playbook's two most important properties, which is why
+Stage 1b ships **compose-as-plugin** rather than native plugin components:
+
+- **Plugin commands are force-namespaced** (`/playbook:status`, never `/status`). The high-frequency
+  universal verbs must stay un-namespaced, so they are *written into the project by compose*, not
+  registered by the plugin. Only `/playbook:upgrade` — run rarely, and the one verb that genuinely
+  needs `${CLAUDE_PLUGIN_ROOT}` to reach the installed source — is a native (namespaced) plugin
+  command.
+- **Plugins can't ship always-on `.claude/rules/`.** Plugin *skills* are progressive-disclosure,
+  which the correctness-critical-rules invariant forbids; a SessionStart hook that injects rule text
+  is not prompt-cached and doesn't transfer to Codex. Compose writes real `.claude/rules/*.md`
+  files, which are always-on **and** cached — so rules keep coming from compose, now delivered by the
+  plugin.
+
+The plugin is therefore "source + compose engine": it carries the tree and the script, and
+`/playbook:upgrade` runs compose into the consumer on demand. Composed `.claude/**` stays committed,
+so the plugin disappearing degrades to a no-op (the last-composed files remain) — satisfying the
+vendored-dependency invariant.
 
 ### How the three circles close
 

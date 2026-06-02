@@ -1,0 +1,15 @@
+{
+  "name": "playbook",
+  "owner": {
+    "name": "Erik Jimenez",
+    "url": "https://github.com/xoloUno"
+  },
+  "description": "Private marketplace for the shared Claude Code playbook — core rules, per-kind packs, and the compose engine that assembles a project's .claude/ from them.",
+  "plugins": [
+    {
+      "name": "playbook",
+      "source": "./",
+      "description": "Source + compose engine for the shared playbook. Bundles compose-claude.sh, core/ rules, and the per-kind packs, and provides /playbook:upgrade to (re)compose a project's .claude/ from the installed plugin. The per-session verbs (/status, /wrapup, /test, /conform, …) stay un-namespaced — they are written into the project by compose, not registered by this plugin."
+    }
+  ]
+}

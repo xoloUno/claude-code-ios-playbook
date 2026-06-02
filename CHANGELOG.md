@@ -28,6 +28,46 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — Stage 1b: playbook now ships as a Claude marketplace plugin (iOS transport)
+
+The shared playbook can now be consumed as a **versioned Claude marketplace plugin** instead of a
+pinned `_playbook` git submodule. The plugin bundles `compose-claude.sh` plus the `core/` rules and
+per-kind `packs/`, and exposes a single namespaced command, **`/playbook:upgrade`**, that
+(re)composes a project's `.claude/` from the *installed plugin*. This is the Stage 1b "graduate iOS
+apps to a marketplace" step. Two plugin limits shaped the design: plugin commands are
+force-namespaced (so `/status` and friends must **not** ship as plugin commands — they stay
+un-namespaced, written by compose), and plugins can't ship always-on `.claude/rules/` (plugin skills
+are progressive-disclosure, which the playbook forbids for correctness-critical rules). Keeping
+`compose-claude.sh` as the engine — now delivered *by* the plugin — preserves un-namespaced verbs,
+always-on **cached** rules, and the existing `__PRIMARY_SIM__` marker substitution, so no
+marker→`project.yml` migration is forced. Refresh is **on-demand** (`/playbook:upgrade`), never
+automatic on session start; the plugin *source* may auto-update silently (`autoUpdate: true`) but
+composed files change only when you run the verb and commit. `/conform` remains the drift detector.
+**Release target: plugin `v1.0.0`**, tagged `playbook--v1.0.0` once this lands on `main` — the
+first marketplace **contract** tag. From that tag onward, the `/playbook:upgrade` interface, plugin
+layout, and compose behavior become a compatibility surface consumers pin to.
+
+**Files affected:**
+- `.claude-plugin/marketplace.json` (new) — marketplace `playbook` listing the single plugin
+  (`source: "./"`, the repo root).
+- `.claude-plugin/plugin.json` (new) — plugin `playbook` v1.0.0; declares only `commands:
+  ["./plugin/commands"]`, so nothing else in the repo auto-registers (verified: 1 component,
+  ~22 always-on tokens).
+- `plugin/commands/upgrade.md` (new) — the `/playbook:upgrade` recompose-from-plugin command;
+  resolves the source via `${CLAUDE_PLUGIN_ROOT}` (fallback `$PLAYBOOK_HOME`), reviews the diff,
+  never auto-commits, never touches project-owned files.
+- `compose-claude.sh` — unchanged; verified self-locating and path-independent (byte-identical
+  output whether run from the repo or a simulated plugin cache).
+
+**What to do in your project:**
+- **Nothing yet for already-bridged repos.** This ships the marketplace; app cutover is staged.
+- **iOS apps (when cut over):** add a committed `.claude/settings.json` registering the `playbook`
+  marketplace (`{source: github, repo: xoloUno/claude-code-ios-playbook}`, `autoUpdate: true`) and
+  enabling `playbook@playbook`; install the plugin; run `/playbook:upgrade` to recompose; then
+  remove the `_playbook` submodule and `.playbook-version`. Flara is the canary; broadsheet +
+  teewye follow.
+- **Non-iOS symlink repos:** unaffected — they stay on live symlinks.
+
 ## 2026-06-01 — `/conform` Check G: catch silently-untracked rule files
 
 `/conform` gained a check for a failure its content-diff (Check A) is blind to: a buggy project

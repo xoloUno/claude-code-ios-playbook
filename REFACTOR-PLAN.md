@@ -30,7 +30,15 @@
 > added); `/conform` Check B/C updated in lockstep; CHANGELOG entry added. **shotsmith re-bridged +
 > `test_command` fixed (shotsmith#3) — its `/test` is live; devpulse/c3d can re-bridge when next
 > touched (both no-op).** Remaining Phase C verbs (`/context-health`, `/preflight`) stay
-> deferred-on-contact — neither has forcing contact yet.
+> deferred-on-contact — neither has forcing contact yet. **Stage 1b STARTED (2026-06-01, branch
+> `feat/stage1b-marketplace-plugin`)** — Phase 1: the playbook now ships as a Claude marketplace
+> plugin (`.claude-plugin/{marketplace,plugin}.json` + a single namespaced `/playbook:upgrade`
+> recompose verb under `plugin/commands/`); `compose-claude.sh` verified self-locating and
+> byte-identical when run from a plugin cache; local-directory dry-run confirmed the plugin exposes
+> exactly one component (~22 always-on tok) with no stray repo leakage. Release target: tag
+> `playbook--v1.0.0` once this reaches `main` (not yet created). iOS app cutover (Flara canary →
+> broadsheet/teewye, Phase 2+) is **gated on
+> this PR reaching `main` + the tag being pushed**.
 
 ---
 
@@ -141,9 +149,25 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         + bridged all three non-iOS repos, one PR each (devpulse #1, shotsmith #2 +`project.yml`,
         c3d #19 +`command-profile.local.md`/no pack; `_playbook` script #15); bespoke commands
         `git rm`'d → mode-120000 symlinks; conform Check B made bridge-aware; all merged
-- [ ] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
+- [~] **Stage 1b — Graduate (controlled rollout):** iOS apps → your Claude marketplace,
   `autoUpdate:true` + semver `version`/tag; retire `.playbook-version`/`/upgrade` as primary,
   keep a `/conform` drift-check verb
+  - [x] **Phase 1 — marketplace scaffolding (2026-06-01, branch `feat/stage1b-marketplace-plugin`)** —
+        design is **compose-as-plugin**: the marketplace plugin bundles `compose-claude.sh` + `core/`
+        + `packs/` (plugin source `"./"` = repo root) and exposes ONE namespaced verb
+        `/playbook:upgrade` that recomposes a consumer's `.claude/` from `${CLAUDE_PLUGIN_ROOT}`. This
+        sidesteps the two plugin limits (commands are force-namespaced → universal verbs stay
+        un-namespaced, written by compose; plugins can't ship always-on `.claude/rules/` → rules stay
+        real cached files via compose). On-demand refresh, `autoUpdate:true` for source only;
+        `/conform` stays the drift detector; marker substitution kept (no `project.yml` migration this
+        round). `claude plugin validate` passes; compose byte-identical from a plugin-cache path;
+        release target is the first contract tag `playbook--v1.0.0` (created on `main` after merge).
+  - [ ] **Phase 2 — Flara canary** (gated on Phase 1 → `main` + tag): commit `.claude/settings.json`
+        (github marketplace + `playbook@playbook` + `autoUpdate:true`), `/playbook:upgrade` to catch up
+        off the stale `442f469` pin, remove the `_playbook` submodule + `.playbook-version`, verify.
+  - [ ] **Phase 3 — broadsheet-app + teewye-app** (same recipe, one PR each).
+  - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
+        the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
 - [ ] **Stage 2 — Vendor Hudson (SHA-pinned fork):** thin the ~4 overlapping Swift rules
 - [ ] **Stage 3 — Codex + MCP + bake-offs:** `AGENTS.md` from the same stub; verbs as MCP
   tools; written bake-off harness before any comparison
@@ -304,9 +328,11 @@ the workflow output (run `wf_e73fd29f-ed9`).
   inline-comment / anchored-scratchpad *write* fix landed earlier (PR #18). Downstream-visible →
   CHANGELOG entry; byte-identical iOS compose except `conform.md`. Inbox entry retired.
 - [ ] **Recommended near-term order:**
-  1. **Decide Stage 1b timing** (next up): iOS apps → Claude marketplace / controlled rollout,
-     retire `/upgrade` as primary, keep `/conform` as the drift-check verb. Opt-in — don't start
-     unprompted.
+  1. **Stage 1b — IN PROGRESS (timing decided 2026-06-01).** Phase 1 (marketplace plugin
+     scaffolding + `/playbook:upgrade`) is built on `feat/stage1b-marketplace-plugin`. **Next:**
+     land that PR to `main`, push the `playbook--v1.0.0` tag, then run the **Flara canary** (Phase 2)
+     before broadsheet/teewye. `/upgrade` is retired-as-primary in favor of `/playbook:upgrade`;
+     `/conform` stays the drift-check verb.
   2. **Stage 2:** vendor Hudson's Swift skills at a pinned SHA; thin overlapping Swift/iOS guidance
      only after the command/rule surface has settled.
   3. **Stage 3:** Codex + MCP + bake-off harness when cross-agent tooling is the next priority.

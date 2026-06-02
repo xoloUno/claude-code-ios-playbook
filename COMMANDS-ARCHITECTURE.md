@@ -214,14 +214,18 @@ touch, convert each to skeleton + `## /<verb>` section. No big bang.
   `project.yml` is the forward path, adopted lazily, not a forced migration.
 - **Don't re-touch the merged iOS apps' pinned submodules** this round — they re-pin in Stage 1b.
 
-## Related cleanup (noted, not in scope)
+## Related cleanup (DONE — rules pass, 2026-06-01)
 
-`core/rules/git-workflow.md` still leaks iOS assumptions into a *core* rule — `[skip ci]`
-local/cloud, "update Current State in CLAUDE.md," `globs: **/*.swift`. Same disease (kind
-knowledge in a universal file); fold the iOS-specific lines into `packs/ios/` when this design
-reaches the rules. **Phase B note (2026-06-01):** the non-iOS symlink bridge now distributes this
-core rule into devpulse / shotsmith / c3d, so the leak is live in non-iOS repos. **Tracked as a
-known follow-up for the next rules pass** (with Stage 1b) — deliberately *not* fixed in Phase B,
-which would have widened the bridge into a rules refactor. The bridge keeps linking the whole
-`core/rules/` (a new core rule should auto-distribute); the fix is to make this rule truly core,
-not to special-case the bridge.
+`core/rules/git-workflow.md` used to leak iOS assumptions into a *core* rule — `[skip ci]`
+local/cloud, "update Current State in CLAUDE.md," `globs: **/*.swift`, a `dev`-centric branch
+model, a `ui` commit type, mandatory `WORKLOG` / `release-notes-draft`. Same disease (kind
+knowledge in a universal file), and Phase B's non-iOS symlink bridge made the leak live in
+devpulse / shotsmith / c3d. **Fixed in the rules pass (2026-06-01):** the rule is now universal
+(`globs: **/*`, `main` + `feature/*`/`fix/*` with `dev` optional, generic commit types) and its
+session-end record steps were deferred to `/wrapup` + each project's `command-profile` — the iOS
+profile already owned `[skip ci]` and release notes, so this was mostly deletion, no new
+`packs/ios/` rule needed. Gates: iOS compose still carries every git behavior (relocated to the
+profile); the live symlink in all three non-iOS repos now serves the cleaned rule. The bridge keeps
+linking the whole `core/rules/` unchanged — making the rule truly core was the right fix, not
+special-casing the bridge. The latent **`packs/<pack>/rules` loop** in `bridge-symlink.sh` stays
+deferred: no non-iOS pack has a `rules/` dir yet, so there was nothing for the loop to link.

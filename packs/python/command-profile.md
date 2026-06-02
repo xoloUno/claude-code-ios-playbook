@@ -25,9 +25,12 @@ Fold these into the briefing after the universal git steps:
 The universal `/test` resolves which command to run; this kind layer supplies the Python
 default and how to scope it.
 
-- **Command.** Use `project.yml` `test_command` if declared (shotsmith: `pytest -q`);
-  otherwise default to `pytest -q` when a `tests/` directory or any `test_*.py` /
-  `*_test.py` file exists. If the project has no tests at all, no-op — report that and stop.
+- **Command.** Use `project.yml` `test_command` if declared (the runner is invoked
+  **verbatim**, so the declared command must actually run in this environment — prefer
+  `python3 -m pytest -q` over a bare `pytest -q` when the `pytest` console script isn't
+  guaranteed on PATH). Otherwise default to `python3 -m pytest -q` when a `tests/` directory
+  or any `test_*.py` / `*_test.py` file exists. If the project has no tests at all, no-op —
+  report that and stop.
 - **Scope.** With `$ARGUMENTS`, pass it through as a pytest selector — a path
   (`tests/test_foo.py`), a node id (`tests/test_foo.py::test_bar`), or a `-k <expr>`
   keyword filter.
@@ -53,7 +56,8 @@ Slot these into the universal flow at the stage named — not in list order.
 **Validation gate (stage 4 — after mutations, before commit):**
 
 - **Tests.** If `project.yml` declares a `test_command` (or a `tests/` directory exists),
-  run it — `pytest -q` by default, or the declared command — when Python source changed.
-  Failures must be fixed or explicitly acknowledged before the commit. This is a *gate*:
+  run it — the declared command, or `python3 -m pytest -q` by default — when Python source
+  changed. (Same runner `/test` invokes; `python3 -m` form survives a missing `pytest`
+  console script.) Failures must be fixed or explicitly acknowledged before the commit. This is a *gate*:
   it runs after the record mutations above and before staging/commit, so a red test can
   still stop the commit.

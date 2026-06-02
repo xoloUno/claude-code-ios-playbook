@@ -39,7 +39,7 @@ test` / `pytest` mean it), and the iOS test-generation command moved to `/gen-te
 profile's default (`pytest -q` for Python, the `xcodebuild test` line in `testing.md` for iOS) —
 and **no-ops cleanly** in a repo with no runner (it reports "no test runner configured" and stops,
 the correct outcome for a docs or Dynamo project). This gives every symlink-bridged Python repo a
-real `/test` for free (shotsmith runs its declared `pytest -q`) and keeps the iOS generation
+real `/test` for free (shotsmith runs its declared command) and keeps the iOS generation
 behavior intact, just under a clearer name. The bridge now links six universal verbs (added `test`)
 and `/conform` Check B/C were updated in lockstep.
 
@@ -63,7 +63,10 @@ and `/conform` Check B/C were updated in lockstep.
 - **Non-iOS symlink-bridged repos (devpulse, shotsmith, c3d):** re-run
   `<playbook>/bridge-symlink.sh <project> [pack]` once to add the new `test` symlink. A repo that
   declares `test_command` (or has a `tests/` dir) gets a working `/test`; one without (c3d) no-ops
-  cleanly. The other five symlinks are unchanged.
+  cleanly. The other five symlinks are unchanged. **`/test` runs `test_command` verbatim, so the
+  declared fact must actually run in your environment** — prefer `python3 -m pytest -q` over a bare
+  `pytest -q` if the console script isn't guaranteed on PATH (this bit shotsmith on a machine where
+  `pytest` wasn't installed as a standalone entry point).
 
 The shared git rule is composed into every iOS app and, since the Phase B symlink bridge,
 linked live into every non-iOS repo (devpulse, shotsmith, c3d-bridge-modeler) — yet it still

@@ -281,7 +281,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
     and Check C (`test`→`gen-tests`), `packs/README.md`, CHANGELOG. Decision (run vs generate split)
     recorded in `COMMANDS-ARCHITECTURE.md`. Gates: byte-identical iOS compose except the intended
     `test.md`/`gen-tests.md`/`command-profile.md`; the three non-iOS repos re-bridge to gain `test`
-    (shotsmith runs `pytest -q`, c3d/devpulse no-op).
+    (shotsmith suite green via its declared command — `pytest -q` on PATH or `python3 -m pytest -q`;
+    c3d/devpulse no-op).
   - [ ] **`/context-health`** — already universal+bridged; convert to skeleton+profile only when a
     kind-specific signal is wanted. No forcing contact yet.
   - [ ] **`/preflight`** — iOS-pack, deploy-coupled; leave iOS-pack unless a real non-iOS need

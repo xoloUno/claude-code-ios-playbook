@@ -28,6 +28,23 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — Plugin `v1.0.1` — contract patch tag
+
+Bumps `.claude-plugin/plugin.json` from `1.0.0` to `1.0.1` and tags `playbook--v1.0.1`, the second
+marketplace **contract** tag (after `playbook--v1.0.0`). This is a patch release: no change to the
+`/playbook:upgrade` interface, plugin layout, or compose behavior — it just rolls up the iOS
+`build-deploy.md` pointer fix below into a pinnable version so consumers on `autoUpdate: true` pick it
+up and pinned consumers can move deliberately. The tag version matches the manifest version, per the
+v1.0.0 convention.
+
+**Files affected:**
+- `.claude-plugin/plugin.json` — `version` `1.0.0` → `1.0.1`.
+
+**What to do in your project:**
+- **iOS apps on the marketplace plugin:** nothing required; `autoUpdate` pulls the new source. Run
+  `/playbook:upgrade` when you want the recomposed `.claude/` (only the corrected build-deploy pointer
+  changes).
+
 ## 2026-06-01 — Fix dangling `_playbook/` doc pointer in the iOS build-deploy rule
 
 The iOS `build-deploy.md` rule pointed at `` `_playbook/claude-code-plugins-setup.md` `` for MCP/plugin

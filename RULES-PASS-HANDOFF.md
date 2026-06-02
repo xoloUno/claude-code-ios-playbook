@@ -1,5 +1,13 @@
 # Rules pass — make `core/rules/git-workflow.md` truly core
 
+> **✅ DONE — 2026-06-01 (branch `refactor/git-workflow-truly-core`).** The rule is now universal;
+> the iOS session-end record steps (`[skip ci]`, "Current State", `WORKLOG`, release-notes) were
+> deferred to `/wrapup` + the iOS `command-profile` — mostly deletion, no new `packs/ios/` rule.
+> Both gates green (iOS compose still carries every git behavior via the profile; the live symlink
+> in devpulse / shotsmith / c3d-bridge-modeler serves the cleaned rule). The `packs/<pack>/rules`
+> bridge loop stayed latent (no non-iOS pack ships a `rules/` dir). Kept for the record; Phase C
+> (`PHASE-C-HANDOFF.md`) is now unblocked. Original brief follows.
+
 > **This is the immediate next session** (per `REFACTOR-PLAN.md` §9), *before* the Phase C
 > command-generalization in `PHASE-C-HANDOFF.md`. Narrow, concrete, and already-painful: Phase B's
 > symlink bridge now distributes an iOS-tainted **core** rule into the non-iOS repos, so non-iOS

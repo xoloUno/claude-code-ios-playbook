@@ -28,6 +28,34 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-01 — `core/rules/git-workflow.md`: de-iOS'd into a truly universal core rule
+
+The shared git rule is composed into every iOS app and, since the Phase B symlink bridge,
+linked live into every non-iOS repo (devpulse, shotsmith, c3d-bridge-modeler) — yet it still
+welded iOS/App-Store specifics into a *core* file: a Swift-only `globs`, a `dev`-centric branch
+model, a `ui` commit type, and a session-end block mandating `[skip ci]` local-vs-cloud, a
+`CLAUDE.md` "Current State" update, `WORKLOG.md`, and `release-notes-draft.md`. Those session-end
+record steps already have a home — the iOS `command-profile.md` `## /wrapup` owns `[skip ci]` and
+release notes, and the universal `/wrapup` handles "Current State" / `WORKLOG` *only-if-present* —
+so the rule carried a redundant, kind-specific second copy that non-iOS sessions were reading as if
+it applied to them. The rule is now universal: broad `globs: **/*`, `main` + `feature/*` / `fix/*`
+with `dev` noted as an optional integration branch, the generic commit types (`ui` marked
+pack-added), and a one-line pointer that session-end record mutations are driven by `/wrapup` + the
+project's `command-profile`. The dead `Remote: github.com/YourOrg/[REPO_NAME]` placeholder — never
+substituted in composed or symlinked copies — is dropped.
+
+**Files affected:**
+- `core/rules/git-workflow.md` — removed the iOS-isms (Swift globs, `dev`-only strategy, `ui` type,
+  the `[skip ci]` / Current-State / `WORKLOG` / release-notes session-end bullets, App-Store tag
+  example, dead remote placeholder); deferred session-end record steps to `/wrapup` + the profile
+
+**What to do in your project:**
+- **iOS apps:** nothing — `[skip ci]`, release notes, prose-humanizer, and scope already live in
+  `packs/ios/command-profile.md`; on the next recompose the rule simply loses its redundant copy.
+  Behavior is unchanged.
+- **Non-iOS symlink-bridged repos:** nothing to do — the live symlink already serves the cleaned
+  rule, so your git guidance no longer carries Swift or App-Store assumptions.
+
 ## 2026-06-01 — `.gitignore`: comments on their own lines + anchored scratchpads
 
 The canonical screenshot `.gitignore` block — emitted by `bootstrap.sh` and

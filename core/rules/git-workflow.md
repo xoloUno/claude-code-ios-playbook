@@ -1,22 +1,24 @@
 ---
 description: Git branch strategy, commit conventions, and session commit behavior
-globs: **/*.swift, **/*.yml, **/project.yml
+globs: **/*
 ---
 
 # Git & Version History
 
-**Remote:** GitHub — `https://github.com/YourOrg/[REPO_NAME]`
-
 ## Branch Strategy
 
 ```
-main          ← always shippable; tagged on every submission
-dev           ← active development
+main          ← always shippable; protected (never commit directly)
 feature/*     ← one branch per feature
 fix/*         ← one branch per bug fix
 ```
 
-Never commit directly to `main`. Merge from `dev` or feature branches only.
+Never commit directly to `main`. Land work through a feature or fix branch and a PR.
+
+Some projects also run an integration branch (commonly `dev`) that features merge into
+before `main` — that's an *optional* per-project convention, not assumed here. The
+`/wrapup` flow routes the branch generically: on the protected default it cuts a branch;
+on an existing feature branch it stays put.
 
 **Concurrent Claude Code sessions:** Use **worktrees** (`/worktree`) when running
 multiple sessions against the same repo. A branch only isolates commit history —
@@ -26,22 +28,24 @@ files on disk are shared. Without worktrees, sessions overwrite each other's wor
 
 Format: `type(scope): short description`
 
-Types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `ui`
+Types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`. Packs may add kind-specific
+types (e.g. the iOS pack adds `ui`).
 
 Rules: ≤72 char subject, present tense, no trailing period.
 
 ## Claude Code Commit Behavior
 
-At session end:
+At session end (the universal mechanics; the full sequence is driven by `/wrapup`):
 1. `git status` — review changes
-2. Stage selectively (never `git add .` blindly)
+2. Stage selectively with explicit pathspecs (never `git add .` blindly)
 3. Conventional commit + `Co-Authored-By: Claude <noreply@anthropic.com>`
-4. **Local sessions:** Include `[skip ci]` in message — local sessions handle build + deploy
-   **Cloud sessions:** Do NOT include `[skip ci]` — CI must verify the build
-5. Push to `dev` or feature branch (not `main`)
-6. **Update "Current State" section** in CLAUDE.md (mandatory)
-7. **Update `WORKLOG.md`** with detailed session diary entry (see work-log rule)
-8. **Update `release-notes-draft.md`** with user-facing changes
+4. Push to a feature/fix branch, not `main`
+
+**Session-end record mutations** — updating a changelog or release notes, a `WORKLOG.md`,
+a `CLAUDE.md` "Current State", manual-tasks handoff, `[skip ci]` policy — are **not
+universal**. They are driven by `/wrapup` and the project's `command-profile` (each fires
+only when that kind/project declares it), so they live there rather than being welded into
+this core rule.
 
 ## Git Timing Guidance
 
@@ -54,6 +58,6 @@ probably be multiple commits.
 ## Tagging Releases
 
 ```bash
-git tag -a v1.0.0 -m "App Store v1 submission"
+git tag -a v1.0.0 -m "Release v1.0.0"
 git push origin --tags
 ```

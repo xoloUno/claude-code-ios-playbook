@@ -31,7 +31,7 @@ Steps:
 6. **Build and upload binary:**
    `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane release`
 7. Ask user if screenshots need uploading. If yes and `fastlane/screenshots/` has content:
-   `bundle exec fastlane upload_screenshots`
+   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane upload_screenshots`
    Otherwise remind them to upload manually in App Store Connect.
 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 9. Push main with `[skip ci]` to sync remote without triggering any workflows

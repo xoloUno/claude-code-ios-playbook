@@ -7,13 +7,36 @@ globs: **/Fastfile, **/fastlane/**, **/*.yml, **/project.yml
 
 See `ios-project-playbook.md` for full CI/CD reference.
 
+## Ruby & bundler environment
+
+Every `fastlane` lane runs under **bundler**, which needs **Homebrew Ruby** — the
+`Gemfile.lock` pins bundler 4.0.3, and macOS's built-in system Ruby (2.6, at `/usr/bin`)
+doesn't ship it. Two gotchas make this bite, and a bare `bundle exec` is how they surface:
+
+- **`bundle` resolves to the wrong Ruby.** macOS `path_helper` (run by `/etc/zprofile` in
+  every *login* shell, including the agent's non-interactive one) front-loads `/usr/bin`
+  ahead of `/opt/homebrew/opt/ruby/bin` — so `bundle` finds system Ruby 2.6 and fails with a
+  bundler-version error, **even when `~/.zshenv` prepends Homebrew Ruby** (path_helper runs
+  *after* `.zshenv`). The durable fix is one line in **`~/.zprofile`** (which runs after
+  path_helper): `export PATH="/opt/homebrew/opt/ruby/bin:$PATH"`. Then every shell resolves
+  Ruby 4.x and no per-command prefix is needed.
+- **Until a machine is fixed that way, prefix every bundler invocation** with the Homebrew
+  Ruby path. `/deploy` and `/release` already do; for any ad-hoc lane, use the same prefix:
+
+  ```bash
+  export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane <lane>
+  ```
+
+Sanity check before a long lane: `bundle -v` should print `4.0.3` (not `1.17.2`, the version
+system Ruby 2.6 bundles) — if it prints the wrong one, your PATH is resolving the wrong Ruby.
+
 ## Quick Commands (local)
 
 ```bash
 # Compile check
 xcodebuild build -scheme [APP_NAME] -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
 
-# TestFlight upload
+# TestFlight upload  (needs Homebrew Ruby on PATH — see "Ruby & bundler environment")
 bundle exec fastlane beta
 
 # App Store upload
@@ -26,8 +49,8 @@ bundle exec fastlane release
 # Via slash command (recommended)
 /deploy
 
-# Manual alternative
-set -a && source .env.fastlane && set +a && bundle exec fastlane beta
+# Manual alternative (Homebrew Ruby prefixed — see "Ruby & bundler environment")
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && set -a && source .env.fastlane && set +a && bundle exec fastlane beta
 ```
 
 Local deploy saves ~250 GitHub Actions credits per upload and is faster.

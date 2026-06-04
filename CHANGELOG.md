@@ -28,6 +28,38 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-04 — Promote four iOS scar-tissue lessons into pack rules
+
+Four hard-won lessons that had accrued as one app's Claude Code project memory are iOS-general,
+so they move into the iOS pack where every app inherits them instead of each re-deriving the same
+bug. Two new rules and two rule additions:
+
+- **New `packs/ios/rules/app-intents.md`** — `AppShortcutsProvider` is hard-capped at 10 entries
+  (enforced by `appintentsmetadataprocessor` at build time, invisible to SourceKit), and AppShortcut
+  *dispatch* can fail on the simulator even for a shipping config — verify on a real device.
+- **New `packs/ios/rules/simulator.md`** — install over a booted sim, never uninstall (uninstall
+  cascades and wipes pinned widgets / Control Center / container state); and never strip entitlements
+  with `CODE_SIGNING_ALLOWED=NO` or `CODE_SIGN_IDENTITY="-"` on entitlement-gated apps (CloudKit/MapKit/
+  WeatherKit/App Attest trap at init).
+- **`screenshot-pipeline.md`** — new "Sim state hygiene before XCUITest captures": reset persisted
+  global `AppleLanguages`/`AppleLocale` + the app's appearance default before a capture run, or launch
+  args lose and shots come out wrong theme/locale.
+- **`testing.md`** — test the error paths with a throwing test double, not just the happy path
+  (silent `catch` blocks have shipped and only surfaced on-device).
+
+Verified with the byte-identical iOS compose-diff gate: only the two new rule files plus
+`screenshot-pipeline.md` and `testing.md` differ.
+
+**Files affected:**
+- `packs/ios/rules/app-intents.md` — new.
+- `packs/ios/rules/simulator.md` — new.
+- `packs/ios/rules/screenshot-pipeline.md` — added the sim-state-hygiene section.
+- `packs/ios/rules/testing.md` — added the error-path testing section.
+
+**What to do in your project:**
+- **iOS apps:** recompose (`/playbook:upgrade`, or your bridge's compose) to pick up the two new
+  always-on rules and the two additions. No code change required — these are guidance/defense.
+
 ## 2026-06-03 — Document the Ruby/bundler PATH requirement in the iOS build-deploy rule
 
 `/deploy` and `/release` ran fine, but **ad-hoc `bundle exec fastlane` calls** (outside those

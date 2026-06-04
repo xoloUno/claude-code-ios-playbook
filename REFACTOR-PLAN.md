@@ -111,6 +111,18 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         (`.env.playbook` / `.env.project` / `.env.fastlane` / `WORKLOG` / `MANUAL-TASKS`)
   - [x] config repointed → `~/dev/_playbook`; `getting-started.md` paths fixed (downstream
         `playbook-inbox.md` left fallback-only → Stage 1; gitignored `settings.local.json` regenerable)
+  - [ ] **Memory-migration gap (found 2026-06-03):** Claude Code keys per-project memory by absolute
+        path under `~/.claude/projects/<path-key>/memory/` — *outside* the repos — so the `rsync -a`
+        repo copy never carried it. Each migrated repo's accrued agent memory is stranded under its
+        dead iCloud key and does **not** load in `~/dev/<repo>` sessions: Flara 14 files, c3d 9,
+        teewye/broadsheet 3 each (+ the `Code` root and `_playbook` keys); the `~/dev/...` keys start
+        empty (only devpulse, born under `~/dev`, has its own). **Independent of the HELD iCloud-repo
+        delete below** — memory isn't in the iCloud *copies*, so that delete neither fixes nor
+        endangers it. **Decision pending:** (a) leave it — memory re-accrues per repo, past lessons
+        lost; (b) one-time copy `<iCloud-key>/memory/` → `<~/dev-key>/memory/` per repo to recover
+        history, auditing for post-migration staleness first (e.g. Flara's Ruby/`.zshenv` memory was
+        wrong on root cause — macOS `path_helper`, not a missing `.zshenv` source — and was corrected
+        2026-06-03); (c) cherry-pick only the still-valid memories forward.
   - [ ] **HELD (irreversible, awaits Erik):** delete iCloud copies once `~/dev` is confirmed in daily use
   - [ ] (optional) push `_playbook` `main` to origin for off-machine backup
 - [ ] **Stage 1a — Bridge (drift stops fast):** carve `core/` + `packs/`; symlink into Python

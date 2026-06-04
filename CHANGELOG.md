@@ -28,7 +28,34 @@ signal during multi-version skips.
 
 ---
 
-## 2026-06-01 — Plugin `v1.0.1` — contract patch tag
+## 2026-06-03 — Document the Ruby/bundler PATH requirement in the iOS build-deploy rule
+
+`/deploy` and `/release` ran fine, but **ad-hoc `bundle exec fastlane` calls** (outside those
+commands) failed with a bundler-version error — they resolved to macOS system Ruby 2.6, which lacks
+the bundler 4.0.3 that `Gemfile.lock` pins. Root cause: macOS `path_helper` (run by `/etc/zprofile`
+in every login shell, including the agent's) front-loads `/usr/bin` ahead of
+`/opt/homebrew/opt/ruby/bin`, so it defeats a Homebrew-Ruby prepend that lives only in `~/.zshenv`
+(which runs *before* path_helper). The iOS pack was internally inconsistent and hid this: `deploy.md`
+and `release.md` already prefixed their lanes with `export PATH="/opt/homebrew/opt/ruby/bin:$PATH"`,
+but `build-deploy.md` — the always-loaded rule Claude consults to compose a bundler command ad hoc —
+showed bare `bundle exec`. `build-deploy.md` now carries a **Ruby & bundler environment** section
+naming the durable fix (one line in `~/.zprofile`, which runs *after* path_helper) and the ad-hoc
+prefix; the one bare lane in `release.md` (step 7, `upload_screenshots`) was reconciled to match
+steps 3/6. Verified with the byte-identical iOS compose-diff gate: only `.claude/rules/build-deploy.md`
+and `.claude/commands/release.md` differ.
+
+**Files affected:**
+- `packs/ios/rules/build-deploy.md` — new "Ruby & bundler environment" section; the "Manual
+  alternative" snippet now carries the Homebrew Ruby prefix.
+- `packs/ios/commands/release.md` — step 7 (`upload_screenshots`) prefixed to match steps 3/6.
+
+**What to do in your project:**
+- **The durable fix is per dev machine, not a repo file:** add `export PATH="/opt/homebrew/opt/ruby/bin:$PATH"`
+  to `~/.zprofile` (after the `brew shellenv` line, so it runs after path_helper). One line fixes Ruby
+  for **every** repo in both your terminal and the agent's shell — no per-command prefix needed.
+  Confirm with `zsh -l -c 'bundle -v'` → should print `4.0.3`.
+- **iOS apps:** recompose (`/playbook:upgrade`, or your bridge's compose) to pick up the rule note. It's
+  documentation/defense — the machine fix above is what actually resolves the failure.
 
 Bumps `.claude-plugin/plugin.json` from `1.0.0` to `1.0.1` and tags `playbook--v1.0.1`, the second
 marketplace **contract** tag (after `playbook--v1.0.0`). This is a patch release: no change to the

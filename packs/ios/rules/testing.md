@@ -39,6 +39,21 @@ Solo dev with limited hours — be strategic, not exhaustive.
 - **No mocking persistence** — use real UserDefaults (with a test suite name) or
   in-memory SwiftData containers. Mock boundaries (network), not internals.
 
+## Test the error paths, not just the happy path
+
+For any service behind a protocol-based test double (sync, networking, persistence-that-can-fail),
+a happy-path-only double hides silently-swallowed errors. Empty `catch` blocks in sync code have
+shipped and only surfaced in on-device TestFlight testing, because the unit tests exercised only
+the recording/success double.
+
+Add a **throwing** test double (`Throwing<Service>` alongside `Recording<Service>`) and verify:
+
+1. Errors propagate to observable state (e.g. a `lastSyncError` is set).
+2. Idempotency flags stay **unset** after a failure, so retries actually retry.
+3. The app keeps functioning in degraded mode.
+
+Mock the boundary, then prove the failure behavior — not just the success behavior.
+
 ## SwiftData test target setup
 
 When the test target has `TEST_HOST` set (test bundle loaded INTO the host app

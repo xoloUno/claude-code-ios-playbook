@@ -86,6 +86,40 @@ ASC requires. **Gitignored.** Multiple `<style>` subdirs may exist if the
 project keeps several composition presets in flight (mauve, royal-purple,
 apple-music, etc.). Only the chosen style gets uploaded.
 
+## Sim state hygiene before XCUITest captures
+
+XCUITest captures drive theme + locale per shot via launch args (`-FASTLANE_SNAPSHOT`,
+`-AppleLanguages`, `-AppleLocale`, plus any app-specific appearance arg). On iOS 26 simulators
+those launch args **lose** to two persisted state sources, so captures come out in the wrong
+theme/locale — the classic "all my shots are dark and in Spanish":
+
+1. The sim's **global** `AppleLanguages` / `AppleLocale` defaults — set by the manual-capture
+   lanes via `simctl spawn defaults write -g` + reboot, and **sticky across boots and re-runs**.
+2. The app's **sandbox** `UserDefaults` appearance key — persisted whenever the user toggles
+   theme, or whenever the app's appearance manager writes a value on launch.
+
+When persisted state disagrees with the launch arg's intent, the persisted value wins. The app
+code path is usually fine; the regression is at the simulator-state layer, so patching code
+won't fix it.
+
+**Reset persisted state before each capture run** — at the top of the per-device capture
+function, after the UDID lookup and before `xcodebuild test`:
+
+```bash
+xcrun simctl spawn "$udid" defaults delete -g AppleLanguages 2>/dev/null || true
+xcrun simctl spawn "$udid" defaults delete -g AppleLocale  2>/dev/null || true
+# Pin the app's appearance default so even a failed launch-arg path lands on the captured theme:
+xcrun simctl spawn "$udid" defaults write <bundle-id> <appearanceKey> "<value>" 2>/dev/null || true
+```
+
+When you spot wrong-theme/locale captures, check which side won before touching code:
+
+- `xcrun simctl spawn <UDID> defaults read -g AppleLanguages`
+- `plutil -p <sim>/data/Containers/Data/Application/<app-uuid>/Library/Preferences/<bundle-id>.plist`
+
+If either disagrees with what was requested, the launch args lost the race — reset state, don't
+patch code.
+
 ## Gitignore policy
 
 Add this block verbatim to the project `.gitignore`:

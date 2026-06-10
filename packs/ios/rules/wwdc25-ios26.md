@@ -5,7 +5,8 @@ globs: **/*.swift
 
 # WWDC25 & iOS 26 Awareness
 
-**Current date context: April 2026. The current shipping OS is iOS 26 (released fall 2025).**
+**Current platform context lives in `wwdc26-ios27.md`** — this rule keeps the WWDC25 /
+iOS 26 verification rules and scar tissue. (iOS 26 shipped fall 2025.)
 
 Claude Code's training data predates WWDC25 (June 9–13, 2025). Before writing any code
 that touches new frameworks, use the **apple-docs MCP tool** to verify the current API.

@@ -650,6 +650,37 @@ Add this to your iOS Project Playbook or personal task list:
 
 ---
 
+## Notable Tool Updates (June 2026)
+
+All verified hands-on against Xcode 27 beta build 27A5194q (announced at
+WWDC26, 2026-06-08). Beta — re-verify at GM.
+
+- **Xcode 27 `mcpbridge` grows a `run-agent` subcommand.** Xcode now launches
+  external agents itself: `xcrun mcpbridge run-agent claude` execs an
+  Apple-signed Claude binary from
+  `~/Library/Developer/Xcode/CodingAssistant/Agents/XcodeVersions/<build>/`
+  with `CLAUDE_CONFIG_DIR` pointed at Xcode's own config and an injected
+  `--mcp-config` containing exactly one server: `xcode-tools` (the same
+  `mcpbridge` binary). Use `--dry-run` to inspect the resolved command.
+- **First-party agent skills, exportable.** `xcrun mcpbridge run-agent skills
+  export --output-dir <dir> --replace-existing` (requires Xcode running)
+  exports seven Apple skills: `swiftui-specialist`, `swiftui-whats-new-27`,
+  `test-modernizer`, `device-interaction`, `audit-xcode-security-settings`,
+  `uikit-app-modernization`, `c-bounds-safety`. **Claude Code does not read
+  `~/.agents/skills`** — link exported skills into `~/.claude/skills/` (or a
+  project's `.claude/skills/`). Knowledge-only skills work anywhere;
+  `device-interaction` and the security audit call `xcode-tools` MCP tools
+  and degrade outside Xcode.
+- **New `xcode-tools` tool families in 27.** Beyond the 26.3 surface:
+  device interaction (`DeviceInteractionStartSession`,
+  `DeviceInteractionInstallAndRun`, `DeviceEventSynthesize`,
+  `DeviceInteractionEndSession` — backs the new Device Hub) and localization
+  (`LocalizationPlanner`, `StringCatalogRead`/`StringCatalogContext`/
+  `StringCatalogEdit` — backs agent-driven String Catalog translation).
+  Note the bridge's tools are **session-scoped to a workspace tab**:
+  `tools/list` returns nothing without one, so enumerate from inside an
+  Xcode-attached session.
+
 ## Notable Tool Updates (May 2026)
 
 - **GitHub MCP server deprecation** — the legacy `@modelcontextprotocol/server-github`

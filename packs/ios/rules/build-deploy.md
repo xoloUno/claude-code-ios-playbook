@@ -118,7 +118,9 @@ new TestFlight builds will be rejected until the version is incremented. See
 ## Available Plugins & MCP Servers
 
 Local sessions have access to: **XcodeBuildMCP** (builds, tests, simulators),
-**Xcode MCP Bridge** (previews, docs search, diagnostics — requires Xcode running),
+**Xcode MCP Bridge** (`xcrun mcpbridge` — previews, docs search, diagnostics; requires
+Xcode running; Xcode 27 adds device-interaction and String Catalog localization tools
+plus exportable first-party agent skills — see `wwdc26-ios27.md`),
 **Apple Docs MCP** (API verification), **GitHub MCP** (CI status, PRs), and
 **Context7** (third-party library docs).
 

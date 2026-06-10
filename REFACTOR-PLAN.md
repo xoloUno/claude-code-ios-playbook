@@ -1,7 +1,7 @@
 # Playbook & Dev-Environment Refactor — Canonical Plan
 
 > **Purpose:** the single durable reference for this multi-session initiative. If context
-> is lost, start here. Last updated **2026-06-01**.
+> is lost, start here. Last updated **2026-06-10**.
 > **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
 > all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
 > `~/dev` is canonical; iCloud copies retained as rollback pending deletion approval.
@@ -38,7 +38,11 @@
 > exactly one component (~22 always-on tok) with no stray repo leakage. **Phase 1 landed on `main`
 > (`ef631ed`) and shipped as `playbook@playbook` v1.0.1, tag `playbook--v1.0.1`.** **Phase 2 — Flara
 > canary DONE (2026-06-02):** cold-start install + idempotent no-diff `/playbook:upgrade` verified on
-> Flara `main` (#56, `aebc758`); legacy submodule + `.playbook-version` removed. **Next: Phase 3 —
+> Flara `main` (#56, `aebc758`); legacy submodule + `.playbook-version` removed. **WWDC26 wave
+> folded in (2026-06-10):** Xcode 27 beta (27A5194q) verified hands-on — new
+> `packs/ios/rules/wwdc26-ios27.md`, two-surface localization split in `metadata-translation.md`
+> (+ `TRANSLATION.md` glossary contract), Decision A amended (Apple first-party skills > Hudson
+> for the overlap; Hudson → SwiftData/Concurrency only), Xcode 27 facts in §7. **Next: Phase 3 —
 > broadsheet + teewye** (same recipe, one PR each).
 
 ---
@@ -61,7 +65,7 @@
 
 | # | Decision | Choice |
 |---|---|---|
-| **A** | Overlap with Paul Hudson's MIT Swift skills (code-style, testing, review/test cmds) | **Keep voice + vendor-reference Hudson.** Strip generic mechanics; keep scar-tissue. |
+| **A** | Overlap with Paul Hudson's MIT Swift skills (code-style, testing, review/test cmds) | **Keep voice + vendor-reference Hudson.** Strip generic mechanics; keep scar-tissue. **Amended 2026-06-10:** Xcode 27 ships seven first-party skills (verified, exported from 27A5194q) — prefer Apple for the overlapping ground (SwiftUI best practices + SDK-27 changes, XCTest→Swift Testing migration, security audit, UIKit modernization, device interaction); Hudson narrows to the confirmed gaps (**SwiftData, Concurrency** — no Apple skill covers them). Voice + scar-tissue still never outsourced. |
 | **B** | Kickstart's role | **Free/optional only.** Its paid tier duplicates first-party tooling (shotsmith); only free Overdrive (≈ open-source ControlRoom) is additive. |
 | **Dist** | How elaborate to go | **Staged hybrid.** Symlink/submodule is an *interim bridge*; iOS apps graduate to a Claude marketplace. "MCP/skills only when earned." |
 | **Codex** | Sequencing | **Phase 2.** Design the shared source Codex-aware from day one; build/​debug the Codex adapter + MCP + bake-off harness later, after the Claude path works end-to-end. |
@@ -186,9 +190,17 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [ ] **Phase 3 — broadsheet-app + teewye-app (NEXT)** — same recipe as Flara, one PR each.
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
-- [ ] **Stage 2 — Vendor Hudson (SHA-pinned fork):** thin the ~4 overlapping Swift rules
+- [ ] **Stage 2 — Apple skills first, Hudson for gaps (re-scoped 2026-06-10, Decision A
+  amendment):** adopt Apple's exported Xcode 27 skills for the overlapping ground
+  (refresh = re-run the export per Xcode release; link into `~/.claude/skills` for Claude);
+  vendor Hudson SHA-pinned only for SwiftData + Concurrency; thin overlapping Swift rules
+  against the *Apple* skills, not Hudson's
 - [ ] **Stage 3 — Codex + MCP + bake-offs:** `AGENTS.md` from the same stub; verbs as MCP
-  tools; written bake-off harness before any comparison
+  tools; written bake-off harness before any comparison. **Note (2026-06-10):** Xcode 27's
+  agents are a *third* `AGENTS.md`/`CLAUDE.md` consumer (verified — its localization agents
+  auto-read both), strengthening the one-source stub invariant; and Apple's own localization
+  flow (coordinator + sub-agents over MCP *tools*, never prompts) is first-party precedent
+  for exactly the MCP-tool verb design locked here
 - [ ] **Stage 4 — Spin out PlaybookLauncher:** iOS factory + Keychain (close BOTH secret
   stores: `.env.playbook` AND the `UserDefaults` copy)
 
@@ -271,10 +283,44 @@ the workflow output (run `wf_e73fd29f-ed9`).
   crown jewel — audit git history, rotate if ever committed.
 - Anthropic doc URLs moved: `docs.anthropic.com/en/docs/claude-code/*` → `code.claude.com/docs/en/*`.
 
+**Xcode 27 / WWDC26 facts (verified hands-on on beta 27A5194q, 2026-06-10; re-verify at GM):**
+
+- **Skills export syntax is `xcrun mcpbridge run-agent skills export --output-dir <dir>
+  --replace-existing`** — `xcrun agent` is an alias of `mcpbridge`; blog posts citing
+  `xcrun agent skills export <dir>` are paraphrasing. Requires Xcode running. Seven skills:
+  swiftui-specialist, swiftui-whats-new-27, test-modernizer, device-interaction,
+  audit-xcode-security-settings, uikit-app-modernization, c-bounds-safety.
+- **Claude Code does NOT read `~/.agents/skills`** (verified empirically — skills there
+  don't appear in sessions); only `~/.claude/skills` / project `.claude/skills`. Codex/
+  Gemini/Cursor read `~/.agents/skills`.
+- **`mcpbridge` tools are session-scoped to a workspace tab** — headless `tools/list`
+  never returns (initialize succeeds, server `xcode-tools`). Enumerate from an
+  Xcode-attached session. New 27 tool families: `DeviceInteraction*`/`DeviceEventSynthesize`
+  and `LocalizationPlanner`/`StringCatalog{Read,Context,Edit}`.
+- **Xcode 27 launches agents itself**: `run-agent claude` execs an Apple-signed Claude
+  binary under `~/Library/Developer/Xcode/CodingAssistant/Agents/XcodeVersions/<build>/`
+  with its own `CLAUDE_CONFIG_DIR` and a one-server (`xcode-tools`) `--mcp-config`.
+- **Localization agents**: coordinator + sub-agents (batches ≤15 strings, ≤3 concurrent)
+  over String Catalog MCP tools; output marked "Machine Translated"; they auto-read
+  `AGENTS.md`/`CLAUDE.md`/referenced files (e.g. `TRANSLATION.md`). 16 bundled locale
+  style guides — **no Spanish, no Portuguese** (the project glossary carries es/pt).
+- **`@State` is a macro in SDK 27** (source-breaking; reorder-the-init is the wrong fix) —
+  Apple's `swiftui-whats-new-27` skill is the authority.
+- Announced, not independently verified: Xcode 27 Apple-silicon-only; MCP + Agent Client
+  Protocol plugin extensibility; Swift 6.4; Foundation Models additions (image input,
+  server models, third-party model protocol); new Core AI framework. `DeviceHub.app`
+  exists inside the Xcode-beta bundle (verified present, not exercised).
+
 ## 8. Build-vs-buy policy
 
-- **CONSUME (vendored + SHA-pinned):** Hudson's MIT Swift code-quality skills (SwiftUI,
-  SwiftData, Concurrency, Testing). Fork, record the SHA, refresh on your cadence with a diff
+- **CONSUME (first-party, version = the Xcode release):** Apple's seven Xcode 27 agent
+  skills — refresh by re-running the skills export after each Xcode update; link into
+  `~/.claude/skills` for Claude Code (it ignores `~/.agents/skills`). Exit test: Apple
+  skills vanish → playbook rules still stand alone. *(Added 2026-06-10, Decision A
+  amendment.)*
+- **CONSUME (vendored + SHA-pinned):** Hudson's MIT Swift code-quality skills — narrowed
+  2026-06-10 to **SwiftData + Concurrency only** (Apple's skills now own SwiftUI +
+  Testing). Fork, record the SHA, refresh on your cadence with a diff
   review. Never auto-pull his HEAD.
 - **REFERENCE (borrow, keep your voice):** all shipping-style/policy rules and scar-tissue.
 - **NEVER outsource:** the factory (scaffold + xcodegen/fastlane + ASC/Keychain + lifecycle),
@@ -353,8 +399,9 @@ the workflow output (run `wf_e73fd29f-ed9`).
      then Phase 4 (retire composed `/upgrade`; teach `bootstrap.sh`; wire tag into `/wrapup`).
      `/upgrade` is retired-as-primary in favor of `/playbook:upgrade`; `/conform` stays the
      drift-check verb.
-  2. **Stage 2:** vendor Hudson's Swift skills at a pinned SHA; thin overlapping Swift/iOS guidance
-     only after the command/rule surface has settled.
+  2. **Stage 2 (re-scoped 2026-06-10):** adopt Apple's exported Xcode 27 skills for the
+     overlapping ground; vendor Hudson SHA-pinned for SwiftData + Concurrency only; thin
+     overlapping Swift/iOS guidance only after the command/rule surface has settled.
   3. **Stage 3:** Codex + MCP + bake-off harness when cross-agent tooling is the next priority.
   4. **Stage 4:** spin out PlaybookLauncher + Keychain migration as its own mini-project, not
      cleanup drift work.

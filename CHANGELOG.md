@@ -28,6 +28,57 @@ signal during multi-version skips.
 
 ---
 
+## 2026-06-10 — Xcode 27 / WWDC26 agent-tooling wave: new awareness rule, localization split, first-party skills
+
+Apple announced Xcode 27 + the iOS 27 betas at WWDC26 (2026-06-08): seven first-party
+agent skills (exportable for any agent), agent-driven String Catalog localization,
+Device Hub, and new frameworks (Foundation Models additions, Core AI). All claims below
+were verified hands-on against beta build 27A5194q — re-verify at GM.
+
+- **New `packs/ios/rules/wwdc26-ios27.md`** — platform awareness (iOS 27 / Xcode 27 /
+  Swift 6.4 exist; Xcode 27 is Apple-silicon-only), the SDK-27 `@State`-is-now-a-macro
+  source break (the obvious reorder fix is wrong — Apple's `swiftui-whats-new-27` skill
+  is the authority), the verified skills-export command
+  (`xcrun mcpbridge run-agent skills export` — blogs citing `xcrun agent skills export`
+  are paraphrasing), where each agent discovers exported skills (**Claude Code does not
+  read `~/.agents/skills`** — link into `~/.claude/skills`), and the new `xcode-tools`
+  MCP tool families (device interaction, String Catalog localization; session-scoped to
+  a workspace tab).
+- **`wwdc25-ios26.md`** — "current date context" header now defers to the new rule (one
+  home for "what's current"); its iOS-26 scar tissue is unchanged.
+- **`metadata-translation.md`** — new "Two translation surfaces" section: in-app
+  `.xcstrings` translation now has a first-party owner (Xcode 27's localization agents);
+  this rule keeps owning ASC metadata. Adds the **`TRANSLATION.md` glossary contract** —
+  one project-level glossary (chosen terms, do-not-translate list, regional variants
+  like es-ES vs es-419, Apple's per-locale product names) consumed by *both* surfaces:
+  Xcode's agents auto-read it via `CLAUDE.md`, and the `/release` metadata pass reads it
+  too. Apple bundles locale style guides for 16 locales but none for Spanish/Portuguese,
+  so for es/pt apps the glossary is the only style authority.
+- **`build-deploy.md`** — the Xcode MCP Bridge entry now names `xcrun mcpbridge` and the
+  Xcode 27 additions.
+- **`claude-code-plugins-setup.md`** — new "Notable Tool Updates (June 2026)" section:
+  `run-agent` (Xcode launches an Apple-signed Claude binary with an injected
+  `xcode-tools` MCP config), the skills export, and the new tool families.
+
+Verified with the byte-identical iOS compose-diff gate: only the new rule plus
+`wwdc25-ios26.md`, `metadata-translation.md`, and `build-deploy.md` differ.
+
+**Files affected:**
+- `packs/ios/rules/wwdc26-ios27.md` — new.
+- `packs/ios/rules/wwdc25-ios26.md` — date-context header defers to the new rule.
+- `packs/ios/rules/metadata-translation.md` — two-surface split + `TRANSLATION.md` glossary contract.
+- `packs/ios/rules/build-deploy.md` — MCP list names `xcrun mcpbridge` + Xcode 27 additions.
+- `claude-code-plugins-setup.md` — June 2026 tool updates section.
+
+**What to do in your project:**
+- Run `/playbook:upgrade` (marketplace-bridged apps) to pick up the rules.
+- Once you install Xcode 27: export the skills once per machine
+  (`xcrun mcpbridge run-agent skills export --output-dir ~/.agents/skills --replace-existing`
+  with Xcode running) and link the ones you want Claude Code to see into `~/.claude/skills/`.
+- Multi-locale apps: create a `TRANSLATION.md` glossary and reference it from the
+  project `CLAUDE.md` — both Xcode's localization agents and `/release` metadata
+  translation will honor it. Especially valuable for es/pt locales.
+
 ## 2026-06-04 — Promote four iOS scar-tissue lessons into pack rules
 
 Four hard-won lessons that had accrued as one app's Claude Code project memory are iOS-general,

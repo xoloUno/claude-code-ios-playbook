@@ -4,5 +4,6 @@ Review the current changes (staged or unstaged) for:
 3. Accessibility — VoiceOver labels, Dynamic Type support, color contrast
 4. Privacy manifest — any new API usage that needs NSPrivacyAccessedAPITypes
 5. Force unwraps or unhandled optionals
-6. Any deviation from CLAUDE.md conventions
+6. Any deviation from the project instructions' conventions (`AGENTS.md` / `CLAUDE.md`,
+   `.claude/rules/`)
 Be specific about file names and line numbers. Suggest fixes, not just problems.

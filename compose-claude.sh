@@ -38,6 +38,21 @@ PRIMARY_SIM="${PRIMARY_SIM:-iPhone 17 Pro}"
 PROVISIONING_PROFILES="${PROVISIONING_PROFILES:-see the Fastfile}"
 METADATA_LOCALES="${METADATA_LOCALES:-en-US}"
 
+# --- AGENTS.md opt-in (validated before anything is written) -----------------
+# A project opts in by putting the playbook core markers in its AGENTS.md. Opted-in
+# projects get the core block rendered into AGENTS.md instead of core/rules copies.
+# Validation runs first, so an invalid layout leaves the whole target tree unchanged.
+# Unmarked projects never invoke python3 and compose exactly as before.
+AGENTS_MODE=legacy
+if [[ -f "$TARGET/AGENTS.md" ]] && grep -q 'playbook:core:' "$TARGET/AGENTS.md"; then
+  if ! command -v python3 >/dev/null; then
+    echo "✗ python3 is required for an opted-in AGENTS.md. Nothing was written." >&2
+    exit 2
+  fi
+  python3 "$SCRIPT_DIR/compose-agents-md.py" check "$TARGET" "$PLAYBOOK_DIR" >/dev/null
+  AGENTS_MODE=opted-in
+fi
+
 mkdir -p "$TARGET/.claude/commands" "$TARGET/.claude/rules"
 
 # --- Commands ---------------------------------------------------------------
@@ -68,9 +83,11 @@ if [[ -f "$PLAYBOOK_DIR/packs/$PACK/command-profile.md" ]]; then
 fi
 
 # --- Rules ------------------------------------------------------------------
-# core/ (universal) + packs/<pack>/ (platform).
+# core/ (universal) + packs/<pack>/ (platform). Opted-in projects carry core in AGENTS.md.
 rules_copied=0
-for src in "$PLAYBOOK_DIR/core/rules" "$PLAYBOOK_DIR/packs/$PACK/rules"; do
+rule_srcs=("$PLAYBOOK_DIR/core/rules" "$PLAYBOOK_DIR/packs/$PACK/rules")
+[[ "$AGENTS_MODE" == opted-in ]] && rule_srcs=("$PLAYBOOK_DIR/packs/$PACK/rules")
+for src in "${rule_srcs[@]}"; do
   [[ -d "$src" ]] || continue
   for rule in "$src"/*.md; do
     [[ -e "$rule" ]] || continue
@@ -105,4 +122,9 @@ fi
 
 profile_note=""
 [[ -f "$TARGET/.claude/command-profile.md" ]] && profile_note="; $PACK command-profile"
-echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: core + $PACK$profile_note)"
+if [[ "$AGENTS_MODE" == opted-in ]]; then
+  python3 "$SCRIPT_DIR/compose-agents-md.py" write "$TARGET" "$PLAYBOOK_DIR"
+  echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: $PACK only, core in AGENTS.md$profile_note)"
+else
+  echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: core + $PACK$profile_note)"
+fi

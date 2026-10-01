@@ -4,6 +4,10 @@ ASC's API and fastlane's wrappers around it have reliability quirks. When a
 fastlane lane appears to hang or fail, check these first before assuming your work is
 broken.
 
+Before asserting what fastlane or ASC will do (timeouts, retries, metadata sync, accepted
+dimensions or alpha, version-state transitions), read the installed `fastlane/<tool>/lib/...`
+source or query the ASC API with the JWT helper below. Don't recall it from memory.
+
 ## Fastlane screenshot verify hang
 
 **Symptom:** `bundle exec fastlane upload_screenshots` (or `release` with screenshots)

@@ -28,6 +28,53 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-01 — AGENTS.md opt-in: a generated core block (canary)
+
+Projects can now keep their instructions in `AGENTS.md`, with `CLAUDE.md` reduced to one
+line, `@AGENTS.md`. That layout is the only one that loads the same in Claude Code, Codex
+and Xcode's built-in Claude (2.1.154, which predates Claude Code's own AGENTS.md support).
+`AGENTS.md` carries a compact, generated "Shared workflow" block between fixed markers that
+replaces the six `core/rules/` files. Background and evidence: `MODERNIZATION-REVIEW-2026-10.md`.
+
+- **`core/agents-core.md`** (new) is the source of the block: 59 lines, about 3.6 KB,
+  replacing about 12 KB of core rules. It applies the review's behavior fixes: no automatic
+  commit and push when a session degrades, attribution from host settings instead of a
+  hardcoded co-author line, commits split by logical change instead of "~3 files", and
+  provider-neutral wording.
+- **`compose-agents-md.py`** (new) plus **`compose-claude.sh`**: a project opts in when its
+  `AGENTS.md` contains `<!-- playbook:core:begin -->` and `<!-- playbook:core:end -->`.
+  - Compose validates the whole layout before writing anything: exactly one of each marker,
+    in order; `CLAUDE.md` is exactly `@AGENTS.md`; no symlinked instruction files; no
+    `.claude/CLAUDE.md`.
+  - It then replaces only the bytes between the markers and copies only pack rules.
+  - Any invalid layout stops with no file changed.
+  - Unmarked projects compose exactly as before and never invoke Python.
+- **Commands** (`/wrapup`, `/status`, `/inbox`, `/conform`, `/upgrade`,
+  `/playbook:upgrade`, the iOS `command-profile`, `/deploy`, `/release`, `/feature`,
+  `/review`) now read and write "the instructions file". That's `AGENTS.md` when it carries
+  the markers, otherwise `CLAUDE.md`, so legacy projects behave as before.
+  - `/wrapup` never edits the block or the wrapper. It also drops the hardcoded
+    `Co-Authored-By` line in every project, and gains the worklog entry format.
+  - `/conform` audits the block (STALE_CORE_BLOCK) and flags leftover core rules
+    (DUPLICATE_CORE) without re-creating or auto-deleting them.
+  - `/upgrade` never restores `core/rules/` into an opted-in project.
+- **`packs/ios/rules/asc-troubleshooting.md`** gains one sentence: verify fastlane/ASC
+  behavior against the installed source or the API. This keeps that instruction for
+  opted-in projects, which no longer load `assertion-discipline.md`.
+- **`tests/test_compose_agents_md.py`** (new): 19 acceptance tests covering legacy parity,
+  block rendering, idempotence, CRLF and final-newline preservation, and twelve rejected
+  layouts that must leave the tree unchanged.
+
+**Files affected:** `core/agents-core.md`, `compose-agents-md.py`, `compose-claude.sh`,
+`tests/test_compose_agents_md.py`, `.claude/commands/{wrapup,status,inbox,conform,upgrade}.md`,
+`plugin/commands/upgrade.md`, `packs/ios/command-profile.md`,
+`packs/ios/commands/{deploy,release,feature,review}.md`, `packs/ios/rules/asc-troubleshooting.md`.
+
+**What to do in your project:**
+- Nothing yet. This is a canary, so **don't opt projects in** until the teewye trial passes and
+  the rollout is approved. Recomposing a legacy project picks up only the wording, attribution
+  and ASC-sentence changes above.
+
 ## 2026-06-10 — Xcode 27 / WWDC26 agent-tooling wave: new awareness rule, localization split, first-party skills
 
 Apple announced Xcode 27 + the iOS 27 betas at WWDC26 (2026-06-08): seven first-party

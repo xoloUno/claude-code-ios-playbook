@@ -36,8 +36,13 @@ work never lands on the protected default.
    produce content that must be committed, so they run **before staging**. Common kinds:
    - changelog / release-notes entry;
    - version-file sync (keep declared `version_files` in lockstep on a bump);
-   - session-state / worklog update — e.g. `CLAUDE.md` "Current State", `WORKLOG.md`
-     (only if present);
+   - session-state / worklog update, each only if present:
+     - "Current State" in the project-owned part of the instructions file (`AGENTS.md` when
+       it carries the playbook core markers, otherwise `CLAUDE.md`). Keep it to a short
+       summary. Never edit between the `playbook:core` markers, and never edit a `CLAUDE.md`
+       that is only the `@AGENTS.md` wrapper.
+     - A `WORKLOG.md` entry, added at the top as `## [DATE] — [session focus]`, with
+       **What changed**, **Decisions** and **Blockers** bullets;
    - manual-tasks handoff — if the session produced human-only tasks, append them to
      `MANUAL-TASKS.md` (the profile may specify the format);
    - prose-humanizer on touched user-facing prose (this is a *mutation*, not a gate).
@@ -52,9 +57,9 @@ work never lands on the protected default.
    touched.
 
 6. **Commit.** Conventional message: `type(scope): short description`
-   (`feat` / `fix` / `docs` / `refactor` / `chore` / `test` …), then
-   `Co-Authored-By: Claude <noreply@anthropic.com>`. Anything about `[skip ci]` is
-   kind-specific — it comes from the profile, not from here.
+   (`feat` / `fix` / `docs` / `refactor` / `chore` / `test` …), then any attribution the
+   host's settings or the user's policy call for. Don't hardcode a co-author line.
+   Anything about `[skip ci]` is kind-specific — it comes from the profile, not from here.
 
 7. **Push / PR.**
    - On a branch created in step 2 off the default: `git push -u origin <branch>` and

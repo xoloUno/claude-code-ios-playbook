@@ -11,8 +11,12 @@ marker (the explicit opt-in). Two subcommands:
 Opted-in layout (all must hold, or the command exits 2 and changes nothing):
   - AGENTS.md has exactly one line that is exactly BEGIN and one that is exactly END,
     BEGIN first, and no other line mentions a marker
-  - CLAUDE.md is exactly "@AGENTS.md\\n"
-  - neither AGENTS.md nor CLAUDE.md is a symlink, and .claude/CLAUDE.md does not exist
+  - AGENTS.md is a regular file, and CLAUDE.md is a symlink whose target is exactly
+    "AGENTS.md" (relative, same directory). In local tests the symlink loaded from the
+    repo root and from subdirectories, while an "@AGENTS.md" import did not load AGENTS.md
+    in fresh, unapproved headless launches from a subdirectory. Any other CLAUDE.md is
+    rejected.
+  - .claude/CLAUDE.md does not exist
   - <playbook-dir>/core/agents-core.md exists, is non-empty, and contains no marker
 
 Bytes outside the markers, including line endings, are never modified. Inserting the
@@ -25,7 +29,7 @@ import tempfile
 BEGIN = b"<!-- playbook:core:begin -->"
 END = b"<!-- playbook:core:end -->"
 MARKER_PREFIX = b"playbook:core:"
-WRAPPER = b"@AGENTS.md\n"
+ALIAS_TARGET = "AGENTS.md"
 
 
 class LayoutError(Exception):
@@ -46,18 +50,15 @@ def validate(target, playbook_dir):
     claude = os.path.join(target, "CLAUDE.md")
     source = os.path.join(playbook_dir, "core", "agents-core.md")
 
-    for path in (agents, claude):
-        if os.path.islink(path):
-            raise LayoutError(f"{os.path.basename(path)} is a symlink; opted-in projects need a regular file")
+    if os.path.islink(agents):
+        raise LayoutError("AGENTS.md is a symlink; opted-in projects need a regular file")
     if not os.path.isfile(agents):
         raise LayoutError("AGENTS.md is missing")
-    if os.path.exists(os.path.join(target, ".claude", "CLAUDE.md")):
+    if os.path.lexists(os.path.join(target, ".claude", "CLAUDE.md")):
         raise LayoutError(".claude/CLAUDE.md exists; it would load as a second instruction body")
-    if not os.path.isfile(claude):
-        raise LayoutError("CLAUDE.md is missing; it must be exactly '@AGENTS.md' plus a newline")
-    with open(claude, "rb") as f:
-        if f.read() != WRAPPER:
-            raise LayoutError("CLAUDE.md must be exactly '@AGENTS.md' plus a newline")
+    if not os.path.islink(claude) or os.readlink(claude) != ALIAS_TARGET:
+        raise LayoutError("CLAUDE.md must be a symlink whose target is exactly 'AGENTS.md' "
+                          "(ln -s AGENTS.md CLAUDE.md)")
 
     if not os.path.isfile(source):
         raise LayoutError(f"core block source not found: {source}")
@@ -96,10 +97,14 @@ def main(argv):
         print("usage: compose-agents-md.py check|write <target> <playbook-dir>", file=sys.stderr)
         return 64
     cmd, target, playbook_dir = argv[1], argv[2], argv[3]
+    unchanged = "Nothing was written." if cmd == "check" else "AGENTS.md was not changed."
     try:
         agents, data, lines, b, e, body = validate(target, playbook_dir)
     except LayoutError as err:
-        print(f"✗ AGENTS.md layout invalid: {err}. Nothing was written.", file=sys.stderr)
+        print(f"✗ AGENTS.md layout invalid: {err}. {unchanged}", file=sys.stderr)
+        return 2
+    except OSError as err:
+        print(f"✗ could not read the layout: {err}. {unchanged}", file=sys.stderr)
         return 2
     if cmd == "check":
         print("opted-in")
@@ -108,16 +113,18 @@ def main(argv):
     if new == data:
         print("✓ AGENTS.md core block already current")
         return 0
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(agents), prefix=".AGENTS.md.")
+    tmp = None
     try:
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(agents), prefix=".AGENTS.md.")
         with os.fdopen(fd, "wb") as f:
             f.write(new)
         os.chmod(tmp, os.stat(agents).st_mode & 0o777)
         os.replace(tmp, agents)
-    except BaseException:
-        if os.path.exists(tmp):
+    except OSError as err:
+        if tmp and os.path.exists(tmp):
             os.unlink(tmp)
-        raise
+        print(f"✗ could not write AGENTS.md: {err}. AGENTS.md was not changed.", file=sys.stderr)
+        return 1
     print("✓ AGENTS.md core block updated")
     return 0
 

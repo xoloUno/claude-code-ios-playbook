@@ -73,8 +73,8 @@ Steps:
    - Read `<playbook>/CLAUDE-TEMPLATE.md` and extract H2 section titles (`## ...`).
    - Read the project's instructions file and extract H2 section titles. The instructions
      file is `AGENTS.md` when it carries the playbook core markers; otherwise it's
-     `CLAUDE.md`. In an opted-in project, `CLAUDE.md` is only the `@AGENTS.md` wrapper; don't
-     read it for sections, and don't report the wrapper as a gap.
+     `CLAUDE.md`. In an opted-in project, `CLAUDE.md` is a symlink to `AGENTS.md`; read
+     `AGENTS.md`, and don't report the symlink as a gap.
    - For each section in the template that is absent from the project: drift = TEMPLATE_GAP.
    - Do NOT auto-fix these — the instructions file is project-specific and section gaps are
      usually a judgment call. Just surface for review.
@@ -153,9 +153,10 @@ Steps:
      - `playbook-inbox.md`: substitute the `$PLAYBOOK_HOME` token with the playbook directory
      - `build-deploy.md`, `testing.md`: if `.env.project` exists and defines `PRIMARY_SIM`
        with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
-     - **Opted-in projects:** fix STALE_CORE_BLOCK by running
-       `<playbook>/compose-claude.sh <project> <pack>`, which re-renders only the marked
-       block. Never copy `core/rules/` files in, and never auto-remove a DUPLICATE_CORE file.
+     - **Opted-in projects:** fix STALE_CORE_BLOCK with
+       `python3 <playbook>/compose-agents-md.py write <project> <playbook>`. This updates only
+       the marked block. Never copy `core/rules/` files in, and never auto-remove a
+       DUPLICATE_CORE file.
    - **Stale or missing playbook commands (Check B):** for a **composed (iOS)** project, copy from
      `<playbook>/.claude/commands/` overwriting the project version (NEVER copy `curate.md`). For a
      **symlink-bridged (non-iOS)** project a STALE result can't occur (the command *is* the

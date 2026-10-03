@@ -1,0 +1,5 @@
+# Sources compose-claude.sh requires from this pack. If one is missing, compose stops
+# before writing anything. A path ending in "/" must be a directory with at least one .md.
+rules/
+commands/
+command-profile.md

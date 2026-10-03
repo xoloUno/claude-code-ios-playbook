@@ -47,7 +47,8 @@ plan restrictions. Verifying them is not authorization to change them.
   - if `AGENTS.md` has a Current State section, give it a brief update in the project-owned
     part
   - keep durable decisions in tracked documentation
-  - never edit the generated core or the `CLAUDE.md` wrapper during wrapup
+  - never edit the generated core during wrapup; `CLAUDE.md` is a symlink to this file, so
+    write to `AGENTS.md` itself
 - `MANUAL-TASKS.md` and `WORKLOG.md` are local scratchpads. Check the project's ignore rules
   before treating their contents as untracked.
 

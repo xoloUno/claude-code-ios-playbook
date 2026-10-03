@@ -39,8 +39,8 @@ work never lands on the protected default.
    - session-state / worklog update, each only if present:
      - "Current State" in the project-owned part of the instructions file (`AGENTS.md` when
        it carries the playbook core markers, otherwise `CLAUDE.md`). Keep it to a short
-       summary. Never edit between the `playbook:core` markers, and never edit a `CLAUDE.md`
-       that is only the `@AGENTS.md` wrapper.
+       summary. Never edit between the `playbook:core` markers. When `CLAUDE.md` is a
+       symlink to `AGENTS.md`, write to `AGENTS.md` itself.
      - A `WORKLOG.md` entry, added at the top as `## [DATE] — [session focus]`, with
        **What changed**, **Decisions** and **Blockers** bullets;
    - manual-tasks handoff — if the session produced human-only tasks, append them to

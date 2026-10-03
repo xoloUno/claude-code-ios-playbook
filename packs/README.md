@@ -15,6 +15,15 @@ plus the iOS `command-profile.md`, with the `playbook-inbox` path substitution a
 `__PRIMARY_SIM__` marker intact. (`/status`, `/wrapup`, and `/test` are now universal skeletons
 that load the profile at runtime — see "Command profiles" below.)
 
+## Required sources (`required.txt`)
+
+Each pack lists what `compose-claude.sh` needs from it in `packs/<pack>/required.txt`, one path
+per line. A path ending in `/` must be a directory containing at least one `.md`. Compose checks
+the list, the universal commands, and the core source before it writes anything. A missing entry
+stops it with nothing written, so a deleted `packs/ios/rules/` can't produce a silently
+rule-less project. A pack without the manifest is rejected. When a pack gains or drops a
+component, update its manifest in the same change.
+
 ## Rules carved (Stage 1a, 2026-05-30)
 
 | Layer | Rules |

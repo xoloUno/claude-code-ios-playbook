@@ -30,13 +30,18 @@ signal during multi-version skips.
 
 ## 2026-10-01 — AGENTS.md opt-in: a generated core block (canary)
 
-Projects can now keep their instructions in `AGENTS.md`, with `CLAUDE.md` reduced to one
-line, `@AGENTS.md`. That layout is the only one that loads the same in Claude Code, Codex
-and Xcode's built-in Claude (2.1.154, which predates Claude Code's own AGENTS.md support).
+Projects can now keep their instructions in `AGENTS.md`, with `CLAUDE.md` reduced to a
+relative symlink to it (`ln -s AGENTS.md CLAUDE.md`). That layout was the only one tested
+that loads the same in Codex, current Claude Code and Xcode's built-in Claude (2.1.154,
+which predates Claude Code's own AGENTS.md support), whether launched from the repo root or
+a subdirectory. A `CLAUDE.md` containing `@AGENTS.md` loaded `AGENTS.md` from the repo
+root, but not in fresh, unapproved headless test launches from a subdirectory. Claude Code
+documents an approval step for imports outside the working directory; whether an interactive
+approval restores nested loading was not tested.
 `AGENTS.md` carries a compact, generated "Shared workflow" block between fixed markers that
 replaces the six `core/rules/` files. Background and evidence: `MODERNIZATION-REVIEW-2026-10.md`.
 
-- **`core/agents-core.md`** (new) is the source of the block: 59 lines, about 3.6 KB,
+- **`core/agents-core.md`** (new) is the source of the block: 60 lines, about 3.7 KB,
   replacing about 12 KB of core rules. It applies the review's behavior fixes: no automatic
   commit and push when a session degrades, attribution from host settings instead of a
   hardcoded co-author line, commits split by logical change instead of "~3 files", and
@@ -44,16 +49,23 @@ replaces the six `core/rules/` files. Background and evidence: `MODERNIZATION-RE
 - **`compose-agents-md.py`** (new) plus **`compose-claude.sh`**: a project opts in when its
   `AGENTS.md` contains `<!-- playbook:core:begin -->` and `<!-- playbook:core:end -->`.
   - Compose validates the whole layout before writing anything: exactly one of each marker,
-    in order; `CLAUDE.md` is exactly `@AGENTS.md`; no symlinked instruction files; no
-    `.claude/CLAUDE.md`.
+    in order; `AGENTS.md` is a regular file; `CLAUDE.md` is a symlink whose target is
+    exactly `AGENTS.md`, with any other symlink or file rejected; no `.claude/CLAUDE.md`.
   - It then replaces only the bytes between the markers and copies only pack rules.
   - Any invalid layout stops with no file changed.
   - Unmarked projects compose exactly as before and never invoke Python.
+- **Compose checks its sources before writing, for every project.** The pack directory, the
+  pack's new `required.txt` manifest (`packs/{ios,python}/required.txt`), the universal
+  commands, `core/rules` (legacy) and the generator (opted-in) must all be present.
+  - A missing one stops compose with nothing written. Before, a deleted `packs/ios/rules/`
+    composed silently with no iOS rules.
+  - A failure after writing begins is reported as possibly partial. Compose doesn't restore
+    files itself.
 - **Commands** (`/wrapup`, `/status`, `/inbox`, `/conform`, `/upgrade`,
   `/playbook:upgrade`, the iOS `command-profile`, `/deploy`, `/release`, `/feature`,
   `/review`) now read and write "the instructions file". That's `AGENTS.md` when it carries
   the markers, otherwise `CLAUDE.md`, so legacy projects behave as before.
-  - `/wrapup` never edits the block or the wrapper. It also drops the hardcoded
+  - `/wrapup` never edits the block, and writes to `AGENTS.md` itself. It also drops the hardcoded
     `Co-Authored-By` line in every project, and gains the worklog entry format.
   - `/conform` audits the block (STALE_CORE_BLOCK) and flags leftover core rules
     (DUPLICATE_CORE) without re-creating or auto-deleting them.
@@ -61,12 +73,16 @@ replaces the six `core/rules/` files. Background and evidence: `MODERNIZATION-RE
 - **`packs/ios/rules/asc-troubleshooting.md`** gains one sentence: verify fastlane/ASC
   behavior against the installed source or the API. This keeps that instruction for
   opted-in projects, which no longer load `assertion-discipline.md`.
-- **`tests/test_compose_agents_md.py`** (new): 19 acceptance tests covering legacy parity,
-  block rendering, idempotence, CRLF and final-newline preservation, and twelve rejected
-  layouts that must leave the tree unchanged.
+- **`tests/test_compose_agents_md.py`** (new): 30 acceptance tests.
+  - Legacy output is pinned to a reviewed diff (`tests/fixtures/legacy-intended.diff`) against
+    the pre-canary base.
+  - Block rendering, idempotence, and CRLF and final-newline preservation.
+  - Rejected layouts and missing sources must leave the tree unchanged.
+  - A failure after writing begins is reported as possibly partial.
 
 **Files affected:** `core/agents-core.md`, `compose-agents-md.py`, `compose-claude.sh`,
-`tests/test_compose_agents_md.py`, `.claude/commands/{wrapup,status,inbox,conform,upgrade}.md`,
+`packs/{ios,python}/required.txt`, `packs/README.md`, `tests/test_compose_agents_md.py`,
+`tests/fixtures/legacy-intended.diff`, `.claude/commands/{wrapup,status,inbox,conform,upgrade}.md`,
 `plugin/commands/upgrade.md`, `packs/ios/command-profile.md`,
 `packs/ios/commands/{deploy,release,feature,review}.md`, `packs/ios/rules/asc-troubleshooting.md`.
 

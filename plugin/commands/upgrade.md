@@ -5,7 +5,8 @@ This is the **marketplace** refresh verb — the graduated replacement for the o
 pinned `_playbook` submodule), there is no in-repo source tree to compose from. This command
 composes from the **installed plugin** at `${CLAUDE_PLUGIN_ROOT}` instead, so a project's
 `.claude/commands` + `.claude/rules` + `command-profile.md` are (re)generated from whatever
-plugin version is installed.
+plugin version is installed. A project whose `AGENTS.md` carries the playbook core markers
+also gets its generated core block re-rendered, and receives no `core/rules/` copies.
 
 It is **on-demand by design** — nothing recomposes on session start. The plugin *source* may
 auto-update silently (`autoUpdate: true`), but the composed files in your repo only change when

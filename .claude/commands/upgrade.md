@@ -12,7 +12,7 @@ Steps:
    a. The `$PLAYBOOK_HOME` environment variable, if set.
    b. The `PLAYBOOK_HOME` value in `~/.config/playbook/config` (`source` it, or grep the
       line). This is the canonical pointer — it survives the playbook repo moving.
-   c. **Legacy fallback** — the `**Inbox location:**` line in
+   c. **Legacy fallback** (only in projects that still carry the rule) — the `**Inbox location:**` line in
       `.claude/rules/playbook-inbox.md`, with the trailing `/inbox.md` stripped. Skip this
       if the line still holds an unsubstituted token (`$PLAYBOOK_HOME` or legacy `PLAYBOOK_PATH`).
    d. If none of the above resolve, ask the user for the playbook directory.
@@ -28,7 +28,9 @@ Steps:
    - Make the changes described in the upgrade steps
    - For rule file updates: copy the latest version from the playbook's `core/rules/` or
      `packs/<pack>/rules/` directory (rules were reorganized into core + packs),
-     re-applying the `$PLAYBOOK_HOME` substitution if needed
+     re-applying the `$PLAYBOOK_HOME` substitution if needed. **Exception:** if the project's
+     `AGENTS.md` carries the playbook core markers, never copy `core/rules/` files. The core
+     lives in the generated block; recompose instead (`<playbook>/compose-claude.sh <project> <pack>`)
    - For template/config changes: apply the specific changes described
 8. After all entries are processed, update `.playbook-version` with today's date:
    ```
@@ -41,5 +43,7 @@ Steps:
 Important:
 - Read each file before modifying it
 - If a change conflicts with project-specific customizations, flag it and ask the user
-- Never overwrite project-specific content in CLAUDE.md (scope, decisions, data models, etc.)
+- Never overwrite project-specific content in the instructions file (`AGENTS.md` /
+  `CLAUDE.md`: scope, decisions, data models, etc.), and never hand-edit between the
+  `playbook:core` markers
 - Rule files can be replaced safely since they're generic; commands may have project tweaks

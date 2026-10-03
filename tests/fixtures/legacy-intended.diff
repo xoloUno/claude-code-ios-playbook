@@ -1,0 +1,193 @@
+--- a/.claude/command-profile.md
++++ b/.claude/command-profile.md
+@@ -12,3 +12,4 @@
+ 
+-- **Build status.** If `CLAUDE.md` has a "Current State" section with a build field,
++- **Build status.** If the instructions file (`AGENTS.md` when it carries the playbook core
++  markers, otherwise `CLAUDE.md`) has a "Current State" section with a build field,
+   surface it as a `**Build:** <status>` headline line. (The build command itself lives
+@@ -56,4 +57,4 @@
+   this step and say so in the wrap-up summary. (Prose-humanizer is a *mutation*, not a gate.)
+-- **Scope items.** If `CLAUDE.md` has a scope/checklist section, check off any items this
+-  session completed.
++- **Scope items.** If the instructions file's project-owned part has a scope/checklist
++  section, check off any items this session completed.
+ 
+--- a/.claude/commands/conform.md
++++ b/.claude/commands/conform.md
+@@ -25,3 +25,4 @@
+      `<playbook>/packs/<pack>/rules/*.md` for the project's pack; compose flattens both into the
+-     project's single `.claude/rules/`. Audit `core/rules/` always, and also `packs/ios/rules/`
++     project's single `.claude/rules/`. Audit `core/rules/` always (except in opted-in projects;
++     see below), and also `packs/ios/rules/`
+      when the project is iOS (heuristic: `.claude/rules/build-deploy.md` present). Other packs
+@@ -34,2 +35,12 @@
+      - If non-trivial diff: drift = STALE
++   - **Opted-in projects.** If the project's `AGENTS.md` carries the playbook core markers
++     (`<!-- playbook:core:begin -->` / `<!-- playbook:core:end -->`), the core rules are the
++     generated block. Don't audit `core/rules/`, and never report its files as MISSING.
++     Instead:
++     - Compare the text between the markers with `<playbook>/core/agents-core.md`, ignoring
++       line endings. If it differs: drift = STALE_CORE_BLOCK.
++     - If any `core/rules/` filename is present in `.claude/rules/`: drift = DUPLICATE_CORE
++       (manual). It loads alongside the block. Remove it only after confirming it's an
++       unmodified playbook copy.
++     - Audit the pack rules as usual.
+ 
+@@ -60,8 +71,11 @@
+ 
+-   **Check D — CLAUDE.md template gaps (severity: LOW, advisory only)**
++   **Check D — Instructions-file template gaps (severity: LOW, advisory only)**
+    - Read `<playbook>/CLAUDE-TEMPLATE.md` and extract H2 section titles (`## ...`).
+-   - Read project's `CLAUDE.md` and extract H2 section titles.
++   - Read the project's instructions file and extract H2 section titles. The instructions
++     file is `AGENTS.md` when it carries the playbook core markers; otherwise it's
++     `CLAUDE.md`. In an opted-in project, `CLAUDE.md` is a symlink to `AGENTS.md`; read
++     `AGENTS.md`, and don't report the symlink as a gap.
+    - For each section in the template that is absent from the project: drift = TEMPLATE_GAP.
+-   - Do NOT auto-fix these — CLAUDE.md is project-specific and section gaps are usually a
+-     judgment call. Just surface for review.
++   - Do NOT auto-fix these — the instructions file is project-specific and section gaps are
++     usually a judgment call. Just surface for review.
+ 
+@@ -115,3 +129,4 @@
+    | iOS-pack commands | ❌ N missing | preflight.md (packs/ios/commands/) |
+-   | CLAUDE.md sections | ⚠️ N gaps | "Distribution", ... |
++   | Core block (opted-in) | ⚠️ stale / N duplicate core rules | git-workflow.md (duplicate), ... |
++   | Instructions-file sections | ⚠️ N gaps | "Distribution", ... |
+    | Doc bloat | ⚠️ N found | MILESTONES.md (see Appendix C) |
+@@ -140,2 +155,6 @@
+        with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
++     - **Opted-in projects:** fix STALE_CORE_BLOCK with
++       `python3 <playbook>/compose-agents-md.py write <project> <playbook>`. This updates only
++       the marked block. Never copy `core/rules/` files in, and never auto-remove a
++       DUPLICATE_CORE file.
+    - **Stale or missing playbook commands (Check B):** for a **composed (iOS)** project, copy from
+@@ -149,3 +168,4 @@
+      `compose-claude.sh <project> ios`.
+-   - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F),
++   - **Duplicate core rules (Check A, opted-in), instructions-file template gaps (Check D),
++     doc bloat (Check E), stranded files (Check F),
+      untracked rule files (Check G):** do not auto-apply. Surface again at the end as "manual
+@@ -162,3 +182,3 @@
+    ⏭️  Skipped: N items (list)
+-   📋 Manual follow-ups: N items (list — bootstrap commands, CLAUDE.md gaps, doc bloat,
++   📋 Manual follow-ups: N items (list — bootstrap commands, instructions-file gaps, doc bloat,
+        stranded files)
+@@ -172,3 +192,4 @@
+   with the user's explicit approval in step 4.
+-- Treat project-specific files (CLAUDE.md, fastlane/metadata, project.yml) as user-owned —
++- Treat project-specific files (`AGENTS.md` outside the playbook core markers, `CLAUDE.md`,
++  fastlane/metadata, project.yml) as user-owned —
+   surface drift but never overwrite.
+--- a/.claude/commands/deploy.md
++++ b/.claude/commands/deploy.md
+@@ -21,3 +21,4 @@
+ 6. Push main with `[skip ci]` to sync remote without triggering any workflows
+-7. Update "Current State" in CLAUDE.md with the deploy
++7. Update "Current State" with the deploy, in the project-owned part of the instructions file
++   (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
+ 
+--- a/.claude/commands/feature.md
++++ b/.claude/commands/feature.md
+@@ -5,2 +5,3 @@
+ 4. Wire it into the navigation/routing structure
+-5. Follow all conventions in CLAUDE.md (adaptive colors, no force unwraps, etc.)
++5. Follow all conventions in the project instructions (`AGENTS.md` / `CLAUDE.md` and
++   `.claude/rules/`: adaptive colors, no force unwraps, etc.)
+--- a/.claude/commands/inbox.md
++++ b/.claude/commands/inbox.md
+@@ -8,3 +8,4 @@
+    "What did you discover? (gotcha, pattern, suggestion, correction, tooling tip)"
+-2. Read the project's CLAUDE.md to get the app name for the entry
++2. Read the project's instructions file (`AGENTS.md` when it carries the playbook core
++   markers, otherwise `CLAUDE.md`) to get the app name from its title
+ 3. Classify the category: gotcha | suggestion | pattern | correction | tooling
+@@ -14,3 +15,4 @@
+    b. The `PLAYBOOK_HOME` value in `~/.config/playbook/config` (`source` it, or grep the line).
+-   c. Legacy fallback — the `**Inbox location:**` line in `.claude/rules/playbook-inbox.md`
++   c. Legacy fallback (only in projects that still carry the rule; opted-in projects don't)
++      — the `**Inbox location:**` line in `.claude/rules/playbook-inbox.md`
+       (in a composed copy it holds the resolved absolute path). Skip this if the line still
+@@ -23,3 +25,3 @@
+ ```markdown
+-### [TODAY'S DATE] — [APP_NAME from CLAUDE.md]
++### [TODAY'S DATE] — [APP_NAME from the instructions file]
+ 
+--- a/.claude/commands/release.md
++++ b/.claude/commands/release.md
+@@ -37,3 +37,4 @@
+ 9. Push main with `[skip ci]` to sync remote without triggering any workflows
+-10. Update "Current State" in CLAUDE.md with the release
++10. Update "Current State" with the release, in the project-owned part of the instructions file
++    (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
+ 
+--- a/.claude/commands/review.md
++++ b/.claude/commands/review.md
+@@ -6,3 +6,4 @@
+ 5. Force unwraps or unhandled optionals
+-6. Any deviation from CLAUDE.md conventions
++6. Any deviation from the project instructions' conventions (`AGENTS.md` / `CLAUDE.md`,
++   `.claude/rules/`)
+ Be specific about file names and line numbers. Suggest fixes, not just problems.
+--- a/.claude/commands/status.md
++++ b/.claude/commands/status.md
+@@ -28,3 +28,4 @@
+ 4. Open PRs: `gh pr list --state open --limit 10` (if `gh` is available).
+-5. If `CLAUDE.md` is present **and** has a "Current State" / "current status" section,
++5. If the instructions file (`AGENTS.md` when it carries the playbook core markers,
++   otherwise `CLAUDE.md`) is present **and** has a "Current State" / "current status" section,
+    summarize it (last-updated date, what's in flight, next up). If it has no such
+--- a/.claude/commands/upgrade.md
++++ b/.claude/commands/upgrade.md
+@@ -14,3 +14,3 @@
+       line). This is the canonical pointer — it survives the playbook repo moving.
+-   c. **Legacy fallback** — the `**Inbox location:**` line in
++   c. **Legacy fallback** (only in projects that still carry the rule) — the `**Inbox location:**` line in
+       `.claude/rules/playbook-inbox.md`, with the trailing `/inbox.md` stripped. Skip this
+@@ -30,3 +30,5 @@
+      `packs/<pack>/rules/` directory (rules were reorganized into core + packs),
+-     re-applying the `$PLAYBOOK_HOME` substitution if needed
++     re-applying the `$PLAYBOOK_HOME` substitution if needed. **Exception:** if the project's
++     `AGENTS.md` carries the playbook core markers, never copy `core/rules/` files. The core
++     lives in the generated block; recompose instead (`<playbook>/compose-claude.sh <project> <pack>`)
+    - For template/config changes: apply the specific changes described
+@@ -43,3 +45,5 @@
+ - If a change conflicts with project-specific customizations, flag it and ask the user
+-- Never overwrite project-specific content in CLAUDE.md (scope, decisions, data models, etc.)
++- Never overwrite project-specific content in the instructions file (`AGENTS.md` /
++  `CLAUDE.md`: scope, decisions, data models, etc.), and never hand-edit between the
++  `playbook:core` markers
+ - Rule files can be replaced safely since they're generic; commands may have project tweaks
+--- a/.claude/commands/wrapup.md
++++ b/.claude/commands/wrapup.md
+@@ -38,4 +38,9 @@
+    - version-file sync (keep declared `version_files` in lockstep on a bump);
+-   - session-state / worklog update — e.g. `CLAUDE.md` "Current State", `WORKLOG.md`
+-     (only if present);
++   - session-state / worklog update, each only if present:
++     - "Current State" in the project-owned part of the instructions file (`AGENTS.md` when
++       it carries the playbook core markers, otherwise `CLAUDE.md`). Keep it to a short
++       summary. Never edit between the `playbook:core` markers. When `CLAUDE.md` is a
++       symlink to `AGENTS.md`, write to `AGENTS.md` itself.
++     - A `WORKLOG.md` entry, added at the top as `## [DATE] — [session focus]`, with
++       **What changed**, **Decisions** and **Blockers** bullets;
+    - manual-tasks handoff — if the session produced human-only tasks, append them to
+@@ -54,5 +59,5 @@
+ 6. **Commit.** Conventional message: `type(scope): short description`
+-   (`feat` / `fix` / `docs` / `refactor` / `chore` / `test` …), then
+-   `Co-Authored-By: Claude <noreply@anthropic.com>`. Anything about `[skip ci]` is
+-   kind-specific — it comes from the profile, not from here.
++   (`feat` / `fix` / `docs` / `refactor` / `chore` / `test` …), then any attribution the
++   host's settings or the user's policy call for. Don't hardcode a co-author line.
++   Anything about `[skip ci]` is kind-specific — it comes from the profile, not from here.
+ 
+--- a/.claude/rules/asc-troubleshooting.md
++++ b/.claude/rules/asc-troubleshooting.md
+@@ -5,2 +5,6 @@
+ broken.
++
++Before asserting what fastlane or ASC will do (timeouts, retries, metadata sync, accepted
++dimensions or alpha, version-state transitions), read the installed `fastlane/<tool>/lib/...`
++source or query the ASC API with the JWT helper below. Don't recall it from memory.
+ 

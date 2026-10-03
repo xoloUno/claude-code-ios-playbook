@@ -38,6 +38,44 @@ PRIMARY_SIM="${PRIMARY_SIM:-iPhone 17 Pro}"
 PROVISIONING_PROFILES="${PROVISIONING_PROFILES:-see the Fastfile}"
 METADATA_LOCALES="${METADATA_LOCALES:-en-US}"
 
+# --- Preflight (nothing is written until every check passes) -----------------
+# Contract: an invalid layout or a missing required source stops compose before it writes
+# anything. A failure after writing begins (I/O, permissions) is reported as possibly
+# partial; compose never tries to restore files itself.
+fail() { echo "✗ $1. Nothing was written." >&2; exit 2; }
+[[ -d "$PLAYBOOK_DIR/packs/$PACK" ]] || fail "unknown pack '$PACK': $PLAYBOOK_DIR/packs/$PACK is missing"
+compgen -G "$PLAYBOOK_DIR/.claude/commands/*.md" >/dev/null \
+  || fail "universal commands are missing: $PLAYBOOK_DIR/.claude/commands"
+# Each pack lists what it requires in required.txt ("dir/" = a directory with at least one .md).
+PACK_MANIFEST="$PLAYBOOK_DIR/packs/$PACK/required.txt"
+[[ -f "$PACK_MANIFEST" ]] || fail "pack '$PACK' has no required.txt manifest"
+while IFS= read -r req || [[ -n "$req" ]]; do
+  req="${req%%#*}"
+  req="${req//[[:space:]]/}"
+  [[ -z "$req" ]] && continue
+  if [[ "$req" == */ ]]; then
+    compgen -G "$PLAYBOOK_DIR/packs/$PACK/${req}*.md" >/dev/null \
+      || fail "required pack source missing or empty: packs/$PACK/$req"
+  else
+    [[ -f "$PLAYBOOK_DIR/packs/$PACK/$req" ]] || fail "required pack source missing: packs/$PACK/$req"
+  fi
+done < "$PACK_MANIFEST"
+
+# A project opts in by putting the playbook core markers in its AGENTS.md. Opted-in
+# projects get the core block rendered into AGENTS.md instead of core/rules copies.
+# Unmarked projects never invoke python3 and compose exactly as before.
+AGENTS_MODE=legacy
+if [[ -f "$TARGET/AGENTS.md" ]] && grep -q 'playbook:core:' "$TARGET/AGENTS.md"; then
+  command -v python3 >/dev/null || fail "python3 is required for an opted-in AGENTS.md"
+  [[ -f "$SCRIPT_DIR/compose-agents-md.py" ]] || fail "the generator is missing: $SCRIPT_DIR/compose-agents-md.py"
+  python3 "$SCRIPT_DIR/compose-agents-md.py" check "$TARGET" "$PLAYBOOK_DIR" >/dev/null
+  AGENTS_MODE=opted-in
+else
+  compgen -G "$PLAYBOOK_DIR/core/rules/*.md" >/dev/null || fail "core rules are missing: $PLAYBOOK_DIR/core/rules"
+fi
+
+trap 'echo "✗ compose stopped after it began writing to $TARGET. Files under .claude/ (and AGENTS.md, for an opted-in project) may be partially updated; review the target before retrying." >&2' ERR
+
 mkdir -p "$TARGET/.claude/commands" "$TARGET/.claude/rules"
 
 # --- Commands ---------------------------------------------------------------
@@ -68,9 +106,11 @@ if [[ -f "$PLAYBOOK_DIR/packs/$PACK/command-profile.md" ]]; then
 fi
 
 # --- Rules ------------------------------------------------------------------
-# core/ (universal) + packs/<pack>/ (platform).
+# core/ (universal) + packs/<pack>/ (platform). Opted-in projects carry core in AGENTS.md.
 rules_copied=0
-for src in "$PLAYBOOK_DIR/core/rules" "$PLAYBOOK_DIR/packs/$PACK/rules"; do
+rule_srcs=("$PLAYBOOK_DIR/core/rules" "$PLAYBOOK_DIR/packs/$PACK/rules")
+[[ "$AGENTS_MODE" == opted-in ]] && rule_srcs=("$PLAYBOOK_DIR/packs/$PACK/rules")
+for src in "${rule_srcs[@]}"; do
   [[ -d "$src" ]] || continue
   for rule in "$src"/*.md; do
     [[ -e "$rule" ]] || continue
@@ -105,4 +145,9 @@ fi
 
 profile_note=""
 [[ -f "$TARGET/.claude/command-profile.md" ]] && profile_note="; $PACK command-profile"
-echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: core + $PACK$profile_note)"
+if [[ "$AGENTS_MODE" == opted-in ]]; then
+  python3 "$SCRIPT_DIR/compose-agents-md.py" write "$TARGET" "$PLAYBOOK_DIR"
+  echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: $PACK only, core in AGENTS.md$profile_note)"
+else
+  echo "✓ .claude composed from playbook ($cmds_copied $PACK-pack commands + universal; $rules_copied rules: core + $PACK$profile_note)"
+fi

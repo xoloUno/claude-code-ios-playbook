@@ -23,7 +23,8 @@ Steps:
    **Check A — Stale playbook-copied rule files (severity: HIGH, auto-fixable)**
    - Playbook rules live in `<playbook>/core/rules/*.md` (universal — every project) plus
      `<playbook>/packs/<pack>/rules/*.md` for the project's pack; compose flattens both into the
-     project's single `.claude/rules/`. Audit `core/rules/` always, and also `packs/ios/rules/`
+     project's single `.claude/rules/`. Audit `core/rules/` always (except in opted-in projects;
+     see below), and also `packs/ios/rules/`
      when the project is iOS (heuristic: `.claude/rules/build-deploy.md` present). Other packs
      extend this as they gain rules.
    - For each source rule, compared against the project's `.claude/rules/<name>.md`:
@@ -32,6 +33,16 @@ Steps:
        - `playbook-inbox.md`: ignore differences in the `**Inbox location:**` line (always substituted)
        - `build-deploy.md`, `testing.md`: ignore `iPhone 17 Pro` vs `${PRIMARY_SIM}` value differences
      - If non-trivial diff: drift = STALE
+   - **Opted-in projects.** If the project's `AGENTS.md` carries the playbook core markers
+     (`<!-- playbook:core:begin -->` / `<!-- playbook:core:end -->`), the core rules are the
+     generated block. Don't audit `core/rules/`, and never report its files as MISSING.
+     Instead:
+     - Compare the text between the markers with `<playbook>/core/agents-core.md`, ignoring
+       line endings. If it differs: drift = STALE_CORE_BLOCK.
+     - If any `core/rules/` filename is present in `.claude/rules/`: drift = DUPLICATE_CORE
+       (manual). It loads alongside the block. Remove it only after confirming it's an
+       unmodified playbook copy.
+     - Audit the pack rules as usual.
 
    **Check B — Stale/missing playbook-copied slash commands (severity: HIGH, auto-fixable)**
    - **The expected shared-command set depends on the bridge type** — same iOS heuristic as
@@ -58,12 +69,15 @@ Steps:
      `<playbook>/packs/ios/commands/<name>.md` and re-applying the `${PRIMARY_SIM}`/profile/locale
      markers from `.env.project`) restores them.
 
-   **Check D — CLAUDE.md template gaps (severity: LOW, advisory only)**
+   **Check D — Instructions-file template gaps (severity: LOW, advisory only)**
    - Read `<playbook>/CLAUDE-TEMPLATE.md` and extract H2 section titles (`## ...`).
-   - Read project's `CLAUDE.md` and extract H2 section titles.
+   - Read the project's instructions file and extract H2 section titles. The instructions
+     file is `AGENTS.md` when it carries the playbook core markers; otherwise it's
+     `CLAUDE.md`. In an opted-in project, `CLAUDE.md` is a symlink to `AGENTS.md`; read
+     `AGENTS.md`, and don't report the symlink as a gap.
    - For each section in the template that is absent from the project: drift = TEMPLATE_GAP.
-   - Do NOT auto-fix these — CLAUDE.md is project-specific and section gaps are usually a
-     judgment call. Just surface for review.
+   - Do NOT auto-fix these — the instructions file is project-specific and section gaps are
+     usually a judgment call. Just surface for review.
 
    **Check E — Doc bloat (severity: LOW, advisory)**
    - Check for `MILESTONES.md`, `FEEDBACK.md`, or files matching
@@ -113,7 +127,8 @@ Steps:
    | Untracked rules | ❌ N untracked | playbook-inbox.md (gitignored by .gitignore:12 `*.md`), ... |
    | Playbook commands | ⚠️ N stale, M missing | upgrade.md (stale), ... |
    | iOS-pack commands | ❌ N missing | preflight.md (packs/ios/commands/) |
-   | CLAUDE.md sections | ⚠️ N gaps | "Distribution", ... |
+   | Core block (opted-in) | ⚠️ stale / N duplicate core rules | git-workflow.md (duplicate), ... |
+   | Instructions-file sections | ⚠️ N gaps | "Distribution", ... |
    | Doc bloat | ⚠️ N found | MILESTONES.md (see Appendix C) |
    | Stranded files | ⚠️ N found | .claude/commands/custom.md |
 
@@ -138,6 +153,10 @@ Steps:
      - `playbook-inbox.md`: substitute the `$PLAYBOOK_HOME` token with the playbook directory
      - `build-deploy.md`, `testing.md`: if `.env.project` exists and defines `PRIMARY_SIM`
        with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
+     - **Opted-in projects:** fix STALE_CORE_BLOCK with
+       `python3 <playbook>/compose-agents-md.py write <project> <playbook>`. This updates only
+       the marked block. Never copy `core/rules/` files in, and never auto-remove a
+       DUPLICATE_CORE file.
    - **Stale or missing playbook commands (Check B):** for a **composed (iOS)** project, copy from
      `<playbook>/.claude/commands/` overwriting the project version (NEVER copy `curate.md`). For a
      **symlink-bridged (non-iOS)** project a STALE result can't occur (the command *is* the
@@ -147,7 +166,8 @@ Steps:
      projects, do not auto-apply; point the user at `<playbook>/packs/ios/commands/<name>.md` to
      copy (re-applying the `.env.project` markers), or have them re-run
      `compose-claude.sh <project> ios`.
-   - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F),
+   - **Duplicate core rules (Check A, opted-in), instructions-file template gaps (Check D),
+     doc bloat (Check E), stranded files (Check F),
      untracked rule files (Check G):** do not auto-apply. Surface again at the end as "manual
      follow-ups." Check G is HIGH-severity but still manual — its fix repairs the project-owned
      `.gitignore` and then `git add`s the rule file; report the offending pattern and the
@@ -160,7 +180,7 @@ Steps:
 
    ✅ Applied: N items (list)
    ⏭️  Skipped: N items (list)
-   📋 Manual follow-ups: N items (list — bootstrap commands, CLAUDE.md gaps, doc bloat,
+   📋 Manual follow-ups: N items (list — bootstrap commands, instructions-file gaps, doc bloat,
        stranded files)
    ```
 
@@ -170,7 +190,8 @@ Steps:
 Important:
 - This is a read-mostly command — only Check A and Check B writes are auto-applied, and only
   with the user's explicit approval in step 4.
-- Treat project-specific files (CLAUDE.md, fastlane/metadata, project.yml) as user-owned —
+- Treat project-specific files (`AGENTS.md` outside the playbook core markers, `CLAUDE.md`,
+  fastlane/metadata, project.yml) as user-owned —
   surface drift but never overwrite.
 - If the playbook directory can't be located in step 1, abort with a clear error message
   rather than guessing.

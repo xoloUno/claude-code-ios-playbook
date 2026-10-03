@@ -26,7 +26,8 @@ If none are present, the universal steps stand alone.
    the branch's upstream. Always `@{upstream}`, never a hardcoded `origin/main`: it
    resolves to whatever this branch tracks and stays silent when there is no upstream.
 4. Open PRs: `gh pr list --state open --limit 10` (if `gh` is available).
-5. If `CLAUDE.md` is present **and** has a "Current State" / "current status" section,
+5. If the instructions file (`AGENTS.md` when it carries the playbook core markers,
+   otherwise `CLAUDE.md`) is present **and** has a "Current State" / "current status" section,
    summarize it (last-updated date, what's in flight, next up). If it has no such
    section — e.g. a principles-only operating guide — skip it; don't invent one.
 6. If `WORKLOG.md` is present, read its latest entry — show the date and key points.

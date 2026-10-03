@@ -35,7 +35,8 @@ Steps:
    Otherwise remind them to upload manually in App Store Connect.
 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 9. Push main with `[skip ci]` to sync remote without triggering any workflows
-10. Update "Current State" in CLAUDE.md with the release
+10. Update "Current State" with the release, in the project-owned part of the instructions file
+    (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
 
 Fallback if local build/upload fails:
 - Restore any project files modified by fastlane: `git checkout -- *.xcodeproj`

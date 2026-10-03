@@ -19,7 +19,8 @@ Steps:
 4. Run: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
 5. If upload succeeds, ask user if they want to tag this release
 6. Push main with `[skip ci]` to sync remote without triggering any workflows
-7. Update "Current State" in CLAUDE.md with the deploy
+7. Update "Current State" with the deploy, in the project-owned part of the instructions file
+   (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
 
 Fallback if local build/upload fails:
 - Restore any project files modified by fastlane: `git checkout -- *.xcodeproj`

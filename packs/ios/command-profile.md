@@ -10,7 +10,8 @@ iOS app without overfitting the richest one.
 
 Fold these into the briefing after the universal git steps:
 
-- **Build status.** If `CLAUDE.md` has a "Current State" section with a build field,
+- **Build status.** If the instructions file (`AGENTS.md` when it carries the playbook core
+  markers, otherwise `CLAUDE.md`) has a "Current State" section with a build field,
   surface it as a `**Build:** <status>` headline line. (The build command itself lives
   in `.claude/rules/build-deploy.md`; `/status` reports, it doesn't build.)
 - **Dependabot lens.** If `gh` is available, `gh pr list --label dependencies --state open`
@@ -54,8 +55,8 @@ Slot these into the universal flow at the stage named — not in list order.
   and `/release` retranslates them fresh from en-US per `.claude/rules/metadata-translation.md`.
   Requires the `writing-prose-like-a-human-for-agents` plugin; if it isn't installed, skip
   this step and say so in the wrap-up summary. (Prose-humanizer is a *mutation*, not a gate.)
-- **Scope items.** If `CLAUDE.md` has a scope/checklist section, check off any items this
-  session completed.
+- **Scope items.** If the instructions file's project-owned part has a scope/checklist
+  section, check off any items this session completed.
 
 **Commit (stage 6):**
 

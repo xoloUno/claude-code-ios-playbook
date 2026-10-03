@@ -39,7 +39,7 @@ root, but not in fresh, unapproved headless test launches from a subdirectory. C
 documents an approval step for imports outside the working directory; whether an interactive
 approval restores nested loading was not tested.
 `AGENTS.md` carries a compact, generated "Shared workflow" block between fixed markers that
-replaces the six `core/rules/` files. Background and evidence: `MODERNIZATION-REVIEW-2026-10.md`.
+replaces the six `core/rules/` files.
 
 - **`core/agents-core.md`** (new) is the source of the block: 60 lines, about 3.7 KB,
   replacing about 12 KB of core rules. It applies the review's behavior fixes: no automatic

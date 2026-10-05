@@ -212,9 +212,11 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         - commands that read and write the instructions file
         - 30 tests, with legacy output pinned to a reviewed fixture
   - [x] **teewye canary, #2 → `53c4826`.** Passed:
-        - loading from the repo root and a subdirectory (desktop Claude Code 2.1.286 checked
-          against transcript content; Xcode-hosted 2.1.154 checked by hook; Codex CLI)
-        - `/conform` clean
+        - loading from the repo root and a subdirectory: desktop Claude Code 2.1.286 checked
+          against transcript content; Xcode-hosted 2.1.154 checked by hook; Codex CLI 0.136.0
+          run with `--ignore-user-config`, because the configured model was unsupported
+        - `/conform`: no false missing-core or template findings; six existing advisory section
+          gaps
         - `/wrapup` changing only the project-owned section
         - a recompose reproducible from the pinned commit
         - session-start instructions 87.8 → 78.8 KB
@@ -225,9 +227,13 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         2. `/wrapup`'s commit attempt was blocked by the test copy's guard, so the commit, hook
            and push steps weren't exercised.
         3. Xcode-hosted Claude was checked by hook only.
+
+        Not validated: the user's normal Codex configuration, and authenticated Xcode-hosted
+        workflows.
   - [ ] **Rollout. PROPOSED, awaiting Erik's approval. One project per PR, and Erik approves
-        each.**
-        - **R0, prerequisites (playbook PRs):**
+        each.** Scope: core instruction delivery only. Rule scoping (review item R2) stays
+        separately gated.
+        - **Step 0, prerequisites (playbook PRs):**
           - (a) Make `bridge-symlink.sh` opt-in aware. For a non-iOS repo whose `AGENTS.md`
             carries the markers, it skips the core-rule symlinks and renders the block with
             `compose-agents-md.py write`. Today it would re-create core-rule symlinks, which
@@ -235,31 +241,45 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
           - (b) Fix the never-substituted `[APP_NAME]` scheme placeholder (inbox, 2026-10-03).
           - (c) Bump the plugin version and tag before Flara's turn. Flara consumes
             `playbook@playbook`, still at 1.0.1.
-        - **R1, broadsheet-app** (iOS, submodule, 11 KB `CLAUDE.md`): the teewye recipe, a
+        - **Step 1, broadsheet-app** (iOS, submodule, 11 KB `CLAUDE.md`): the teewye recipe, a
           refresh commit then a layout commit. Stage 1b Phase 3 (moving to the plugin) stays a
           separate, later PR.
-        - **R2, devpulse** (smallest non-iOS), after R0(a). It's the first run of the non-iOS
-          path, and it also fixes the undelivered symlinked core rules there.
-        - **R3, shotsmith, then c3d-bridge-modeler** (non-iOS). shotsmith has a real test suite;
-          use it to close caveat 1. c3d's `CLAUDE.md` is 21.9 KB, so check the total against
-          Codex's 32 KiB default.
-        - **R4, Flara last.** It needs three things first:
+        - **Step 2, devpulse** (smallest non-iOS), after Step 0(a). It's the first run of the
+          non-iOS path, and it also fixes the undelivered symlinked core rules there.
+        - **Step 3, shotsmith, then c3d-bridge-modeler** (non-iOS), as separate project PRs.
+          Use shotsmith to verify the real-suite `/test` path; verify the emitted iOS command
+          resolves its scheme without manual substitution in broadsheet or a disposable iOS
+          fixture. Creating app test targets is not required for this migration. c3d's
+          `CLAUDE.md` is 21.9 KB, so check the total against Codex's 32 KiB default.
+        - **Step 4, Flara last.** It needs three things first:
           - the oversized-instructions fix: its `CLAUDE.md` is 140 KB, so session history moves
             to a tracked archive through a reviewed extraction, approved separately
-          - R0(c)
+          - Step 0(c)
           - a gap between releases
-        - **R5, new projects:** `bootstrap.sh` and `CLAUDE-TEMPLATE.md` emit the `AGENTS.md`
+        - **Step 5, new projects:** `bootstrap.sh` and `CLAUDE-TEMPLATE.md` emit the `AGENTS.md`
           layout.
-        - **Per-project acceptance (same as the canary):**
-          - loading from the root and a subdirectory on desktop Claude, Xcode-hosted Claude and
-            Codex
-          - `/conform` clean
-          - `/wrapup` run on a throwaway copy
-          - instructions within budget
-          - a recompose reproducible from the pinned or installed playbook
+        - **Per-project acceptance:**
+          - **Preservation.** Compare project text and history against the approved edits.
+            Preserve substitutions, local profiles and customized rules. Remove only verified
+            unmodified core copies or known core links.
+          - **Layout.** Verify:
+            - one matching block
+            - the exact alias
+            - no duplicate core loading
+            - the expected pack guidance
+          - **Refresh.** Confirm a rerender is idempotent, and that the core and alias are
+            unchanged during a disposable `/wrapup`. For pinned or installed playbooks, confirm a
+            recompose reproduces the tree. For live bridges, record the source revision and
+            demonstrate the block-refresh path.
+          - **Loading.** Test from the root and a subdirectory on the hosts each project actually
+            uses. Keep unverified hosts as recorded caveats.
+          - **`/conform`.** No false missing-core or template findings.
+          - **Budget.** Instructions within budget.
+          - **Record.** The source commit or installed version, the host versions, and the
+            authentication and Codex configuration used.
 
-          Close caveats 1–3 where a project allows: a real `/test` suite, a real commit through
-          the hooks, and an authenticated Xcode-hosted run.
+          A real commit or hook test belongs only in an explicitly authorized disposable copy,
+          with push disabled.
   - [ ] **Other review items. Proposed, not approved:**
         - R2: rule scoping, `globs:` → `paths:` or skills, since `globs:` is ignored (§7)
         - R3: the remaining behavior fixes in pack rules

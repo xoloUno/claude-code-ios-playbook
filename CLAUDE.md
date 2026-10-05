@@ -26,9 +26,9 @@ managed-block contract.
 - **Correctness-critical rules live flat in the always-on stub** (`CLAUDE.md` / `AGENTS.md`),
   never behind skill progressive disclosure — disclosure does not transfer across agents
   (Claude and Codex each decide when to load `references/`).
-- **One instruction file per project.** `AGENTS.md` holds project-owned text plus the generated
-  core block; `CLAUDE.md` is a relative symlink to it, never a second copy. This is approved and
-  live in teewye; other projects follow the Stage 1c rollout in `REFACTOR-PLAN.md`.
+- **Approved opted-in layout.** `AGENTS.md` holds project-owned text plus the generated core;
+  `CLAUDE.md` is the exact relative symlink. This is live in teewye. Migration of other projects
+  is proposed in Stage 1c and requires Erik's approval for each project PR.
 - **Every vendored dependency is pinned and degrades to a no-op** if it vanishes (Hudson gone →
   run the fork; Kickstart gone → lose a convenience, not a capability).
 - **Dynamic verbs become MCP _tools_, not prompts** (Codex doesn't surface MCP prompts).

@@ -38,18 +38,28 @@ layout (Stage 1c Step 0(a)).
 - **Opted-in repos** (their `AGENTS.md` carries the playbook core markers):
   - The script validates the layout with `compose-agents-md.py check` before changing
     anything; an invalid layout leaves the repo untouched.
-  - It removes only its own known core-rule links. Real files and other symlinks are kept, with
-    a warning that `/conform` will report them as DUPLICATE_CORE.
-  - It keeps linking the universal commands and the pack profile, then renders the block into
-    `AGENTS.md`.
+  - It links the universal commands and the pack profile as before, renders the block into
+    `AGENTS.md`, and only then removes its own known core-rule links. So a failure never leaves
+    a repo with neither the links nor the block.
+  - Real files and other symlinks are kept, with a warning that `/conform` will report them as
+    DUPLICATE_CORE.
   - The block is a rendered copy: re-run the script to refresh it.
-- **Every run** prints the playbook revision it used. A failure after changes begin is reported
-  as possibly partial, and nothing is restored automatically.
-- **Unmarked repos** get exactly the same links as before.
-- **`tests/test_bridge_symlink.py`** (new): 8 tests covering legacy links identical to
-  `d525afb`, replacing known core links with the block, idempotence, refreshing the block,
-  keeping a real file or a foreign symlink, an invalid layout changing nothing, and reporting a
-  partial failure. Each protection fails its test when removed.
+- **Every run, both modes:**
+  - The sibling layout (repo and playbook share a parent) is checked before anything changes.
+    Previously a non-sibling repo got dangling links and then an abort.
+  - Any later failure, whether a link that can't be created or re-pointed, a dangling link, or
+    a failed render, is reported as possibly partial. Nothing is restored automatically.
+  - The script prints the playbook revision it used, marked `+uncommitted` when the source has
+    uncommitted edits.
+- **Unmarked repos** with a valid layout get exactly the same links as before.
+- **`tests/test_bridge_symlink.py`** (new): 11 tests.
+  - Legacy links identical to `d525afb`; known core links replaced by the block; idempotence;
+    block refresh.
+  - A real file or a foreign symlink kept; an invalid layout changing nothing; a partial failure
+    reported.
+  - A failed command link reported as partial with the core links kept; a non-sibling layout
+    changing nothing; the `+uncommitted` revision flag.
+  - The last three fail against the first version of this change.
 
 **Files affected:** `bridge-symlink.sh`, `tests/test_bridge_symlink.py`.
 

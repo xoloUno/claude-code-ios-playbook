@@ -156,6 +156,52 @@ class BridgeSymlinkTest(unittest.TestCase):
         self.assertIn(b"may be partially updated", r.stderr)
         self.assertEqual(read(os.path.join(root, "AGENTS.md")), AGENTS)
 
+    # --- regressions from Codex's review of #35 -------------------------------------
+    def test_command_link_failure_reports_partial_and_keeps_core_links(self):
+        root = self.repo(self.parent("cmdfail"))
+        self.assertEqual(bridge(root).returncode, 0)            # legacy links exist
+        self.opt_in(root)
+        os.remove(os.path.join(root, ".claude", "commands", "status.md"))
+        cmds = os.path.join(root, ".claude", "commands")
+        os.chmod(cmds, stat.S_IRUSR | stat.S_IXUSR)               # linking will fail
+        try:
+            r = bridge(root)
+        finally:
+            os.chmod(cmds, stat.S_IRWXU)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn(b"may be partially updated", r.stderr)
+        for rule in CORE_RULES:                                  # removed only after the block
+            self.assertTrue(os.path.islink(os.path.join(root, ".claude", "rules", rule)), rule)
+        self.assertEqual(read(os.path.join(root, "AGENTS.md")), AGENTS)
+
+    def test_non_sibling_layout_changes_nothing(self):
+        parent = self.parent("nonsib")
+        elsewhere = os.path.join(self.tmp, "elsewhere")
+        root = self.repo(elsewhere, opted_in=True)
+        before = snapshot(root)
+        r = subprocess.run(["bash", os.path.join(parent, PB_NAME, "bridge-symlink.sh"), root, "python"],
+                           capture_output=True, env=ENV)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn(b"isn't a sibling", r.stderr)
+        self.assertIn(b"Nothing was changed", r.stderr)
+        self.assertEqual(snapshot(root), before)
+
+    def test_source_revision_flags_uncommitted_playbook_edits(self):
+        parent = self.parent("rev")
+        pb = os.path.join(parent, PB_NAME)
+        git = ["git", "-C", pb, "-c", "user.name=t", "-c", "user.email=t@example.com"]
+        subprocess.run(git + ["init", "-q"], check=True)
+        subprocess.run(git + ["add", "-A"], check=True)
+        subprocess.run(git + ["commit", "-q", "-m", "fixture"], check=True)
+        root = self.repo(parent, opted_in=True)
+        clean = bridge(root)
+        self.assertEqual(clean.returncode, 0, clean.stderr)
+        self.assertNotIn(b"+uncommitted", clean.stdout)
+        write(os.path.join(pb, "core", "agents-core.md"), self.body + b"\nEdited.\n")
+        dirty = bridge(root)
+        self.assertEqual(dirty.returncode, 0, dirty.stderr)
+        self.assertIn(b"+uncommitted", dirty.stdout)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -26,6 +26,15 @@
 #   <target>/.claude/commands/<n>.md    -> ../../../<playbook>/.claude/commands/<n>.md
 #   <target>/.claude/command-profile.md -> ../../<playbook>/packs/<pack>/command-profile.md
 # Each created link is checked to resolve; a dangling link aborts (target not a sibling?).
+#
+# AGENTS.md opt-in: a repo whose AGENTS.md carries the playbook core markers gets the core
+# block rendered into AGENTS.md (by compose-agents-md.py) instead of core-rule symlinks. Rules
+# linked from outside the repo didn't load on current Claude Code without an external-import
+# approval, while AGENTS.md (with CLAUDE.md as its relative symlink) loaded from the repo root
+# and from subdirectories. In that mode the script validates the layout before changing
+# anything, removes only its own known core-rule links (never real files or other symlinks),
+# and leaves commands and the profile linked as before. The block is a rendered copy: re-run
+# this script to refresh it. The script prints the playbook revision it used.
 set -euo pipefail
 
 # Link sources come from THIS script's own playbook tree; <playbook> in the links is its
@@ -65,7 +74,42 @@ relink() {
   return 0
 }
 
+# --- AGENTS.md opt-in (validated before anything changes) ------------------------------------
+AGENTS_MODE=legacy
+if [[ -f "$TARGET/AGENTS.md" ]] && grep -q 'playbook:core:' "$TARGET/AGENTS.md"; then
+  if ! command -v python3 >/dev/null; then
+    echo "✗ python3 is required for an opted-in AGENTS.md. Nothing was changed." >&2
+    exit 2
+  fi
+  if [[ ! -f "$SCRIPT_DIR/compose-agents-md.py" ]]; then
+    echo "✗ the generator is missing: $SCRIPT_DIR/compose-agents-md.py. Nothing was changed." >&2
+    exit 2
+  fi
+  python3 "$SCRIPT_DIR/compose-agents-md.py" check "$TARGET" "$SCRIPT_DIR" >/dev/null
+  AGENTS_MODE=opted-in
+fi
+SOURCE_REV="$(git -C "$SCRIPT_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+trap 'echo "✗ bridge stopped after it began changing $TARGET. Links under .claude/ (and AGENTS.md, for an opted-in repo) may be partially updated; review the target before retrying." >&2' ERR
+
 mkdir -p "$TARGET/.claude/rules" "$TARGET/.claude/commands"
+
+# --- opted-in: drop only this script's own core-rule links; the block replaces them --------
+core_links_removed=0
+if [[ "$AGENTS_MODE" == opted-in ]]; then
+  for src in "$SCRIPT_DIR"/core/rules/*.md; do
+    [[ -e "$src" ]] || continue
+    name="$(basename "$src")"
+    link="$TARGET/.claude/rules/$name"
+    if [[ -L "$link" && "$(readlink "$link")" == "../../../$PLAYBOOK_NAME/core/rules/$name" ]]; then
+      rm "$link"
+      core_links_removed=$((core_links_removed + 1))
+    elif [[ -e "$link" || -L "$link" ]]; then
+      echo "  ⚠ keeping $link: it isn't this script's core-rule link. Review it;" >&2
+      echo "    /conform reports it as DUPLICATE_CORE while it loads alongside the block." >&2
+    fi
+  done
+fi
 
 # --- core rules (glob so a newly-added core rule is bridged automatically) ------------------
 # Links core/rules ONLY. Non-iOS packs ship no rules/ today (packs/python, packs/cli are
@@ -74,13 +118,15 @@ mkdir -p "$TARGET/.claude/rules" "$TARGET/.claude/commands"
 # already composes core + pack rules for iOS; without the matching loop, bridged repos would
 # silently miss the pack's rules.
 rules_linked=0
-for src in "$SCRIPT_DIR"/core/rules/*.md; do
-  [[ -e "$src" ]] || continue
-  name="$(basename "$src")"
-  if relink "$TARGET/.claude/rules/$name" "../../../$PLAYBOOK_NAME/core/rules/$name"; then
-    rules_linked=$((rules_linked + 1))
-  fi
-done
+if [[ "$AGENTS_MODE" == legacy ]]; then
+  for src in "$SCRIPT_DIR"/core/rules/*.md; do
+    [[ -e "$src" ]] || continue
+    name="$(basename "$src")"
+    if relink "$TARGET/.claude/rules/$name" "../../../$PLAYBOOK_NAME/core/rules/$name"; then
+      rules_linked=$((rules_linked + 1))
+    fi
+  done
+fi
 
 # --- universal commands (exactly the five in COMMANDS) --------------------------------------
 cmds_linked=0
@@ -107,4 +153,9 @@ if [[ -n "$PACK" ]]; then
   fi
 fi
 
-echo "✓ bridged $TARGET/.claude → $PLAYBOOK_NAME ($rules_linked core rules + $cmds_linked commands$profile_note)"
+if [[ "$AGENTS_MODE" == opted-in ]]; then
+  python3 "$SCRIPT_DIR/compose-agents-md.py" write "$TARGET" "$SCRIPT_DIR"
+  echo "✓ bridged $TARGET/.claude → $PLAYBOOK_NAME @ $SOURCE_REV (core in AGENTS.md; $core_links_removed core-rule links removed; $cmds_linked commands$profile_note)"
+else
+  echo "✓ bridged $TARGET/.claude → $PLAYBOOK_NAME @ $SOURCE_REV ($rules_linked core rules + $cmds_linked commands$profile_note)"
+fi

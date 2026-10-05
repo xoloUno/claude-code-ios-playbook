@@ -28,6 +28,34 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-05 — `bridge-symlink.sh` understands the `AGENTS.md` opt-in
+
+Non-iOS repos are bridged with live symlinks. A rule symlinked from outside the repo didn't
+load on current Claude Code without an external-import approval, so the core rules weren't
+reliably reaching devpulse, shotsmith or c3d. This prepares those repos for the `AGENTS.md`
+layout (Stage 1c Step 0(a)).
+
+- **Opted-in repos** (their `AGENTS.md` carries the playbook core markers):
+  - The script validates the layout with `compose-agents-md.py check` before changing
+    anything; an invalid layout leaves the repo untouched.
+  - It removes only its own known core-rule links. Real files and other symlinks are kept, with
+    a warning that `/conform` will report them as DUPLICATE_CORE.
+  - It keeps linking the universal commands and the pack profile, then renders the block into
+    `AGENTS.md`.
+  - The block is a rendered copy: re-run the script to refresh it.
+- **Every run** prints the playbook revision it used. A failure after changes begin is reported
+  as possibly partial, and nothing is restored automatically.
+- **Unmarked repos** get exactly the same links as before.
+- **`tests/test_bridge_symlink.py`** (new): 8 tests covering legacy links identical to
+  `d525afb`, replacing known core links with the block, idempotence, refreshing the block,
+  keeping a real file or a foreign symlink, an invalid layout changing nothing, and reporting a
+  partial failure. Each protection fails its test when removed.
+
+**Files affected:** `bridge-symlink.sh`, `tests/test_bridge_symlink.py`.
+
+**What to do in your project:**
+- Nothing yet. Non-iOS repos opt in during their own Stage 1c rollout steps (devpulse first).
+
 ## 2026-10-01 — AGENTS.md opt-in: a generated core block (canary)
 
 Projects can now keep their instructions in `AGENTS.md`, with `CLAUDE.md` reduced to a

@@ -19,7 +19,8 @@
 #   PROVISIONING_PROFILES  ASC profile names for deploy   (default: see the Fastfile)
 #   METADATA_LOCALES       metadata locale dirs to check  (default: en-US)
 #   XCODE_SCHEME           scheme in the build/test lines (default: project.yml's top-level
-#                          name:; with neither, the [APP_NAME] placeholder stays and compose warns)
+#                          name:; with neither, the [APP_NAME] placeholder stays and compose warns).
+#                          Resolved and shell-quoted by resolve-xcode-scheme.sh.
 #
 # Sources load from this script's own tree (the submodule self-locates with no env). The
 # inbox path resolves to $PLAYBOOK_HOME (the central playbook, from ~/.config/playbook/config)
@@ -48,6 +49,8 @@ fail() { echo "✗ $1. Nothing was written." >&2; exit 2; }
 [[ -d "$PLAYBOOK_DIR/packs/$PACK" ]] || fail "unknown pack '$PACK': $PLAYBOOK_DIR/packs/$PACK is missing"
 compgen -G "$PLAYBOOK_DIR/.claude/commands/*.md" >/dev/null \
   || fail "universal commands are missing: $PLAYBOOK_DIR/.claude/commands"
+[[ -f "$SCRIPT_DIR/resolve-xcode-scheme.sh" ]] \
+  || fail "the scheme resolver is missing: $SCRIPT_DIR/resolve-xcode-scheme.sh"
 # Each pack lists what it requires in required.txt ("dir/" = a directory with at least one .md).
 PACK_MANIFEST="$PLAYBOOK_DIR/packs/$PACK/required.txt"
 [[ -f "$PACK_MANIFEST" ]] || fail "pack '$PACK' has no required.txt manifest"
@@ -147,17 +150,14 @@ fi
 # build-deploy/testing carry a literal "-scheme [APP_NAME]". Fill it from XCODE_SCHEME, else from
 # project.yml's top-level name: (the XcodeGen project and app scheme). With neither, warn and leave
 # the placeholder, so /test reports an unconfigured runner instead of guessing.
-SCHEME="${XCODE_SCHEME:-}"
-if [[ -z "$SCHEME" && -f "$TARGET/project.yml" ]]; then
-  SCHEME="$(sed -n '/^name:/{s/^name:[[:space:]]*//;p;q;}' "$TARGET/project.yml" \
-    | sed -e 's/[[:space:]]#.*$//' -e "s/^[\"']//" -e "s/[\"']$//" -e 's/[[:space:]]*$//')"
-fi
+# resolve-xcode-scheme.sh owns the parsing and shell quoting, so /conform resolves it identically.
+SCHEME_ARG="$(bash "$SCRIPT_DIR/resolve-xcode-scheme.sh" "$TARGET")"
 for f in "$TARGET/.claude/rules/build-deploy.md" "$TARGET/.claude/rules/testing.md"; do
   [[ -f "$f" ]] && grep -q '\[APP_NAME\]' "$f" || continue
-  if [[ -n "$SCHEME" ]]; then
-    sed -i '' "s|\[APP_NAME\]|$(printf '%s' "$SCHEME" | sed -e 's/[&|\\]/\\&/g')|g" "$f"
+  if [[ -n "$SCHEME_ARG" ]]; then
+    sed -i '' "s|\[APP_NAME\]|$(printf '%s' "$SCHEME_ARG" | sed -e 's/[&|\\]/\\&/g')|g" "$f"
   else
-    echo "! $(basename "$f") keeps the [APP_NAME] scheme placeholder: set XCODE_SCHEME or add a top-level name: to project.yml" >&2
+    echo "! $(basename "$f") keeps the [APP_NAME] scheme placeholder: set XCODE_SCHEME or give project.yml a plain or quoted top-level name:" >&2
   fi
 done
 

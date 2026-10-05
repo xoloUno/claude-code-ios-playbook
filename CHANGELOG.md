@@ -35,19 +35,31 @@ and compose never filled it in. The iOS profile told `/test` that the line alrea
 project's scheme, so every composed iOS app had an unrunnable test command. The teewye canary
 surfaced it.
 
-- **`compose-claude.sh`** replaces `[APP_NAME]` in those two rules with `XCODE_SCHEME` if set,
-  otherwise with `project.yml`'s top-level `name:` (quotes and trailing comments are handled).
-  With neither, it leaves the placeholder and prints a warning.
-- **`/conform`** treats the substitution as expected (Check A), and re-applies it when
-  auto-fixing.
+- **New `resolve-xcode-scheme.sh`** prints the scheme as one shell word, or nothing.
+  - **Source:** `XCODE_SCHEME` from the environment (composing callers load `.env.project`
+    first), otherwise `project.yml`'s first top-level `name:`.
+  - **Supported forms:** plain, double-quoted without escapes, or single-quoted (`''` = `'`), with
+    an optional trailing comment. Empty, comment-only and every other YAML form count as
+    unresolved.
+  - **Quoting:** a name with anything outside `[A-Za-z0-9._+-]` is single-quoted, so
+    `"Demo & Co"` becomes `'Demo & Co'`, one argument.
+- **`compose-claude.sh`** substitutes that output for `[APP_NAME]` in those two rules. When the
+  output is empty, it leaves the placeholder and prints a warning. The resolver is a required
+  source, checked before writing.
+- **`/conform`** gets the expected scheme from the same script (after loading `.env.project` the
+  way compose's callers do), for both Check A and its auto-fix, so the two can't drift.
 - **The iOS `command-profile`** `/test` step reports an unresolved placeholder as an
   unconfigured runner instead of guessing.
-- **Tests:** four new tests (from `project.yml`, a quoted name with a comment, an `XCODE_SCHEME`
-  override, unresolved), and the reviewed legacy fixture is updated for the wording above.
-  Copies of Flara, broadsheet and teewye resolve to `Flara`, `Broadsheet` and `TeeWye`.
+- **Tests:** the composed `xcodebuild` lines are split as a shell would split them, and the
+  `-scheme` argument must be exactly the intended name.
+  - Resolved cases: spaces, `&`, quoted `#`, apostrophes, `$()`/backticks, trailing whitespace,
+    CRLF, and an `XCODE_SCHEME` override.
+  - Unresolved forms: no `project.yml`, empty, comment-only, anchor, escaped, flow, nested-only.
+  - Compose inserts exactly the resolver's output, and a missing resolver is rejected.
+  - Copies of Flara, broadsheet and teewye resolve to `Flara`, `Broadsheet` and `TeeWye`.
 
-**Files affected:** `compose-claude.sh`, `.claude/commands/conform.md`,
-`packs/ios/command-profile.md`, `tests/test_compose_agents_md.py`,
+**Files affected:** `resolve-xcode-scheme.sh` (new), `compose-claude.sh`,
+`.claude/commands/conform.md`, `packs/ios/command-profile.md`, `tests/test_compose_agents_md.py`,
 `tests/fixtures/legacy-intended.diff`.
 
 **What to do in your project:**

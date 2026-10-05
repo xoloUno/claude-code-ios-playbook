@@ -26,8 +26,9 @@ managed-block contract.
 - **Correctness-critical rules live flat in the always-on stub** (`CLAUDE.md` / `AGENTS.md`),
   never behind skill progressive disclosure — disclosure does not transfer across agents
   (Claude and Codex each decide when to load `references/`).
-- **`CLAUDE.md` and `AGENTS.md` (Stage 3) are generated from one source** — two stubs
-  hand-maintained in parallel would drift. Not yet true; honor it when stub emission begins.
+- **Approved opted-in layout.** `AGENTS.md` holds project-owned text plus the generated core;
+  `CLAUDE.md` is the exact relative symlink. This is live in teewye. Migration of other projects
+  is proposed in Stage 1c and requires Erik's approval for each project PR.
 - **Every vendored dependency is pinned and degrades to a no-op** if it vanishes (Hudson gone →
   run the fork; Kickstart gone → lose a convenience, not a capability).
 - **Dynamic verbs become MCP _tools_, not prompts** (Codex doesn't surface MCP prompts).
@@ -77,7 +78,6 @@ managed-block contract.
 
 Deferred boundaries — don't start these unprompted; each is tracked in `REFACTOR-PLAN.md`:
 
-- **Deleting the iCloud rollback copies** — HELD, irreversible (§0); only on Erik's explicit go.
 - **Spinning out PlaybookLauncher** — Stage 4.
 - **Adopting Hudson / Kickstart** beyond the staged plan — Stage 2 / Decision B.
 - **Codex + MCP implementation** before the Claude bridge is stable — Phase 2/3.

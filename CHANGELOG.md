@@ -28,6 +28,44 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-05 — `bridge-symlink.sh` understands the `AGENTS.md` opt-in
+
+Non-iOS repos are bridged with live symlinks. A rule symlinked from outside the repo didn't
+load on current Claude Code without an external-import approval, so the core rules weren't
+reliably reaching devpulse, shotsmith or c3d. This prepares those repos for the `AGENTS.md`
+layout (Stage 1c Step 0(a)).
+
+- **Opted-in repos** (their `AGENTS.md` carries the playbook core markers):
+  - The script validates the layout with `compose-agents-md.py check` before changing
+    anything; an invalid layout leaves the repo untouched.
+  - It links the universal commands and the pack profile as before, renders the block into
+    `AGENTS.md`, and only then removes its own known core-rule links. So a failure never leaves
+    a repo with neither the links nor the block.
+  - Real files and other symlinks are kept, with a warning that `/conform` will report them as
+    DUPLICATE_CORE.
+  - The block is a rendered copy: re-run the script to refresh it.
+- **Every run, both modes:**
+  - The sibling layout (repo and playbook share a parent) is checked before anything changes.
+    Previously a non-sibling repo got dangling links and then an abort.
+  - Any later failure, whether a link that can't be created or re-pointed, a dangling link, or
+    a failed render, is reported as possibly partial. Nothing is restored automatically.
+  - The script prints the playbook revision it used, marked `+uncommitted` when the source has
+    uncommitted edits.
+- **Unmarked repos** with a valid layout get exactly the same links as before.
+- **`tests/test_bridge_symlink.py`** (new): 11 tests.
+  - Legacy links identical to `d525afb`; known core links replaced by the block; idempotence;
+    block refresh.
+  - A real file or a foreign symlink kept; an invalid layout changing nothing; a partial failure
+    reported.
+  - A failed command link reported as partial with the core links kept; a non-sibling layout
+    changing nothing; the `+uncommitted` revision flag.
+  - The last three fail against the first version of this change.
+
+**Files affected:** `bridge-symlink.sh`, `tests/test_bridge_symlink.py`.
+
+**What to do in your project:**
+- Nothing yet. Non-iOS repos opt in during their own Stage 1c rollout steps (devpulse first).
+
 ## 2026-10-05 — Compose fills the Xcode scheme in the build and test lines
 
 `packs/ios/rules/testing.md` and `build-deploy.md` shipped `xcodebuild … -scheme [APP_NAME]`,

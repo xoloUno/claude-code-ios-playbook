@@ -28,6 +28,33 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-05 — Compose fills the Xcode scheme in the build and test lines
+
+`packs/ios/rules/testing.md` and `build-deploy.md` shipped `xcodebuild … -scheme [APP_NAME]`,
+and compose never filled it in. The iOS profile told `/test` that the line already carried the
+project's scheme, so every composed iOS app had an unrunnable test command. The teewye canary
+surfaced it.
+
+- **`compose-claude.sh`** replaces `[APP_NAME]` in those two rules with `XCODE_SCHEME` if set,
+  otherwise with `project.yml`'s top-level `name:` (quotes and trailing comments are handled).
+  With neither, it leaves the placeholder and prints a warning.
+- **`/conform`** treats the substitution as expected (Check A), and re-applies it when
+  auto-fixing.
+- **The iOS `command-profile`** `/test` step reports an unresolved placeholder as an
+  unconfigured runner instead of guessing.
+- **Tests:** four new tests (from `project.yml`, a quoted name with a comment, an `XCODE_SCHEME`
+  override, unresolved), and the reviewed legacy fixture is updated for the wording above.
+  Copies of Flara, broadsheet and teewye resolve to `Flara`, `Broadsheet` and `TeeWye`.
+
+**Files affected:** `compose-claude.sh`, `.claude/commands/conform.md`,
+`packs/ios/command-profile.md`, `tests/test_compose_agents_md.py`,
+`tests/fixtures/legacy-intended.diff`.
+
+**What to do in your project:**
+- iOS apps: recompose (`/playbook:upgrade`, or your bridge's compose) to get a runnable test and
+  build line.
+- If your scheme differs from `project.yml`'s `name:`, set `XCODE_SCHEME` in `.env.project`.
+
 ## 2026-10-01 — AGENTS.md opt-in: a generated core block (canary)
 
 Projects can now keep their instructions in `AGENTS.md`, with `CLAUDE.md` reduced to a

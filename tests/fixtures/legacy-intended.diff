@@ -6,7 +6,14 @@
 +- **Build status.** If the instructions file (`AGENTS.md` when it carries the playbook core
 +  markers, otherwise `CLAUDE.md`) has a "Current State" section with a build field,
    surface it as a `**Build:** <status>` headline line. (The build command itself lives
-@@ -56,4 +57,4 @@
+@@ -33,3 +34,5 @@
+   `.claude/rules/testing.md` — that line already carries this project's scheme and
+-  simulator (composed in), so it's the single source of truth, not duplicated here. The
++  simulator (composed in), so it's the single source of truth, not duplicated here. If it
++  still reads `-scheme [APP_NAME]`, compose couldn't resolve the scheme (no `XCODE_SCHEME`,
++  no `project.yml` `name:`): report the runner as unconfigured rather than guessing. The
+   same rule documents the Swift Testing conventions and the SwiftData `TEST_HOST` gotcha;
+@@ -56,4 +59,4 @@
    this step and say so in the wrap-up summary. (Prose-humanizer is a *mutation*, not a gate.)
 -- **Scope items.** If `CLAUDE.md` has a scope/checklist section, check off any items this
 -  session completed.
@@ -21,7 +28,10 @@
 +     project's single `.claude/rules/`. Audit `core/rules/` always (except in opted-in projects;
 +     see below), and also `packs/ios/rules/`
       when the project is iOS (heuristic: `.claude/rules/build-deploy.md` present). Other packs
-@@ -34,2 +35,12 @@
+@@ -33,3 +34,15 @@
+        - `build-deploy.md`, `testing.md`: ignore `iPhone 17 Pro` vs `${PRIMARY_SIM}` value differences
++       - `build-deploy.md`, `testing.md`: ignore `[APP_NAME]` vs the resolved scheme
++         (`XCODE_SCHEME`, else `project.yml`'s top-level `name:`)
       - If non-trivial diff: drift = STALE
 +   - **Opted-in projects.** If the project's `AGENTS.md` carries the playbook core markers
 +     (`<!-- playbook:core:begin -->` / `<!-- playbook:core:end -->`), the core rules are the
@@ -34,7 +44,7 @@
 +       unmodified playbook copy.
 +     - Audit the pack rules as usual.
  
-@@ -60,8 +71,11 @@
+@@ -60,8 +73,11 @@
  
 -   **Check D — CLAUDE.md template gaps (severity: LOW, advisory only)**
 +   **Check D — Instructions-file template gaps (severity: LOW, advisory only)**
@@ -50,31 +60,34 @@
 +   - Do NOT auto-fix these — the instructions file is project-specific and section gaps are
 +     usually a judgment call. Just surface for review.
  
-@@ -115,3 +129,4 @@
+@@ -115,3 +131,4 @@
     | iOS-pack commands | ❌ N missing | preflight.md (packs/ios/commands/) |
 -   | CLAUDE.md sections | ⚠️ N gaps | "Distribution", ... |
 +   | Core block (opted-in) | ⚠️ stale / N duplicate core rules | git-workflow.md (duplicate), ... |
 +   | Instructions-file sections | ⚠️ N gaps | "Distribution", ... |
     | Doc bloat | ⚠️ N found | MILESTONES.md (see Appendix C) |
-@@ -140,2 +155,6 @@
+@@ -140,2 +157,9 @@
         with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
++     - `build-deploy.md`, `testing.md`: substitute `[APP_NAME]` with `XCODE_SCHEME` from
++       `.env.project`, else with `project.yml`'s top-level `name:`. If neither exists, leave
++       the placeholder and report it
 +     - **Opted-in projects:** fix STALE_CORE_BLOCK with
 +       `python3 <playbook>/compose-agents-md.py write <project> <playbook>`. This updates only
 +       the marked block. Never copy `core/rules/` files in, and never auto-remove a
 +       DUPLICATE_CORE file.
     - **Stale or missing playbook commands (Check B):** for a **composed (iOS)** project, copy from
-@@ -149,3 +168,4 @@
+@@ -149,3 +173,4 @@
       `compose-claude.sh <project> ios`.
 -   - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F),
 +   - **Duplicate core rules (Check A, opted-in), instructions-file template gaps (Check D),
 +     doc bloat (Check E), stranded files (Check F),
       untracked rule files (Check G):** do not auto-apply. Surface again at the end as "manual
-@@ -162,3 +182,3 @@
+@@ -162,3 +187,3 @@
     ⏭️  Skipped: N items (list)
 -   📋 Manual follow-ups: N items (list — bootstrap commands, CLAUDE.md gaps, doc bloat,
 +   📋 Manual follow-ups: N items (list — bootstrap commands, instructions-file gaps, doc bloat,
         stranded files)
-@@ -172,3 +192,4 @@
+@@ -172,3 +197,4 @@
    with the user's explicit approval in step 4.
 -- Treat project-specific files (CLAUDE.md, fastlane/metadata, project.yml) as user-owned —
 +- Treat project-specific files (`AGENTS.md` outside the playbook core markers, `CLAUDE.md`,

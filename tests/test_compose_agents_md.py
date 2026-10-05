@@ -27,7 +27,9 @@ BEGIN = b"<!-- playbook:core:begin -->"
 END = b"<!-- playbook:core:end -->"
 CORE_RULES = ["assertion-discipline.md", "git-workflow.md", "manual-tasks.md",
               "playbook-inbox.md", "session-health.md", "work-log.md"]
-ENV = dict(os.environ, PLAYBOOK_HOME="/fixture/playbook-home")
+ENV = {k: v for k, v in os.environ.items()
+       if k not in ("XCODE_SCHEME", "PRIMARY_SIM", "PROVISIONING_PROFILES", "METADATA_LOCALES")}
+ENV["PLAYBOOK_HOME"] = "/fixture/playbook-home"
 # Composed files the canary changes on purpose for unmarked (legacy) projects too: the
 # instructions-file wording, the R3 attribution fix, the worklog format, and the
 # one-sentence ASC addition. Their exact contents are pinned by LEGACY_FIXTURE.
@@ -44,9 +46,9 @@ OPTED_IN = PREFIX + b"stale block text\n" + SUFFIX
 ALIAS = object()  # project(claude=ALIAS): CLAUDE.md as the relative symlink to AGENTS.md
 
 
-def compose(target, playbook=PLAYBOOK, pack="ios"):
+def compose(target, playbook=PLAYBOOK, pack="ios", env=None):
     return subprocess.run(["bash", os.path.join(playbook, "compose-claude.sh"), target, pack],
-                          capture_output=True, env=ENV)
+                          capture_output=True, env=dict(ENV, **(env or {})))
 
 
 def unified(a_root, b_root, paths):
@@ -223,6 +225,43 @@ class ComposeAgentsMdTest(unittest.TestCase):
     def test_reject_inline_marker_text(self):
         agents = OPTED_IN + b"See " + BEGIN + b" for details.\n"
         self.assert_rejected(self.project("inline", agents=agents), msg="not exactly a delimiter")
+
+    # --- the "-scheme [APP_NAME]" placeholder in build-deploy.md and testing.md ----------
+    def scheme_lines(self, p):
+        out = []
+        for name in ("build-deploy.md", "testing.md"):
+            text = read(os.path.join(p, ".claude", "rules", name)).decode()
+            out += [l for l in text.splitlines() if "-scheme " in l]
+        return out
+
+    def test_scheme_from_project_yml_name(self):
+        p = self.project("scheme-yml", agents=None, claude=b"# P\n")
+        write(os.path.join(p, "project.yml"), b"name: Demo\noptions:\n  bundleIdPrefix: com.example\n")
+        r = compose(p)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        lines = self.scheme_lines(p)
+        self.assertEqual(len(lines), 2)
+        self.assertTrue(all("-scheme Demo " in l for l in lines), lines)
+        self.assertNotIn(b"[APP_NAME]", r.stderr)
+
+    def test_scheme_quoted_name_with_comment(self):
+        p = self.project("scheme-quoted", agents=None, claude=b"# P\n")
+        write(os.path.join(p, "project.yml"), b'name: "Demo & Co" # app\n')
+        self.assertEqual(compose(p).returncode, 0)
+        self.assertTrue(all("-scheme Demo & Co " in l for l in self.scheme_lines(p)))
+
+    def test_scheme_env_overrides_project_yml(self):
+        p = self.project("scheme-env", agents=None, claude=b"# P\n")
+        write(os.path.join(p, "project.yml"), b"name: Demo\n")
+        self.assertEqual(compose(p, env={"XCODE_SCHEME": "Other"}).returncode, 0)
+        self.assertTrue(all("-scheme Other " in l for l in self.scheme_lines(p)))
+
+    def test_scheme_unresolved_keeps_placeholder_and_warns(self):
+        p = self.project("scheme-none", agents=None, claude=b"# P\n")
+        r = compose(p)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(all("-scheme [APP_NAME] " in l for l in self.scheme_lines(p)))
+        self.assertIn(b"keeps the [APP_NAME] scheme placeholder", r.stderr)
 
     # --- CLAUDE.md must be exactly the relative alias "CLAUDE.md -> AGENTS.md" ----------
     def test_reject_import_wrapper_file(self):

@@ -32,6 +32,8 @@ Steps:
      - If present: `diff` against the playbook source. Account for known substitutions:
        - `playbook-inbox.md`: ignore differences in the `**Inbox location:**` line (always substituted)
        - `build-deploy.md`, `testing.md`: ignore `iPhone 17 Pro` vs `${PRIMARY_SIM}` value differences
+       - `build-deploy.md`, `testing.md`: ignore `[APP_NAME]` vs the resolved scheme
+         (`XCODE_SCHEME`, else `project.yml`'s top-level `name:`)
      - If non-trivial diff: drift = STALE
    - **Opted-in projects.** If the project's `AGENTS.md` carries the playbook core markers
      (`<!-- playbook:core:begin -->` / `<!-- playbook:core:end -->`), the core rules are the
@@ -153,6 +155,9 @@ Steps:
      - `playbook-inbox.md`: substitute the `$PLAYBOOK_HOME` token with the playbook directory
      - `build-deploy.md`, `testing.md`: if `.env.project` exists and defines `PRIMARY_SIM`
        with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
+     - `build-deploy.md`, `testing.md`: substitute `[APP_NAME]` with `XCODE_SCHEME` from
+       `.env.project`, else with `project.yml`'s top-level `name:`. If neither exists, leave
+       the placeholder and report it
      - **Opted-in projects:** fix STALE_CORE_BLOCK with
        `python3 <playbook>/compose-agents-md.py write <project> <playbook>`. This updates only
        the marked block. Never copy `core/rules/` files in, and never auto-remove a

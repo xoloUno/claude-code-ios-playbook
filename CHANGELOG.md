@@ -50,22 +50,32 @@ surfaced it.
   way compose's callers do), for both Check A and its auto-fix, so the two can't drift.
 - **The iOS `command-profile`** `/test` step reports an unresolved placeholder as an
   unconfigured runner instead of guessing.
+- **`bootstrap.sh`** composes with `XCODE_SCHEME` cleared. A new project's scheme is the
+  `project.yml` it just wrote (`name:` and target are `$APP_NAME`), and that's what `/conform`
+  resolves in a project with no `.env.project` of its own. So a value from the playbook-side
+  setup file or the shell can't make the two disagree.
 - **Tests:** the composed `xcodebuild` lines are split as a shell would split them, and the
   `-scheme` argument must be exactly the intended name.
   - Resolved cases: spaces, `&`, quoted `#`, apostrophes, `$()`/backticks, trailing whitespace,
     CRLF, and an `XCODE_SCHEME` override.
   - Unresolved forms: no `project.yml`, empty, comment-only, anchor, escaped, flow, nested-only.
   - Compose inserts exactly the resolver's output, and a missing resolver is rejected.
+  - Bootstrap's real compose line, with `XCODE_SCHEME` set in the shell, gives the same scheme
+    `/conform` resolves.
+  - A project's own `.env.project` `XCODE_SCHEME` gives the same result through
+    `/playbook:upgrade`'s sequence and `/conform`'s.
   - Copies of Flara, broadsheet and teewye resolve to `Flara`, `Broadsheet` and `TeeWye`.
 
-**Files affected:** `resolve-xcode-scheme.sh` (new), `compose-claude.sh`,
+**Files affected:** `resolve-xcode-scheme.sh` (new), `compose-claude.sh`, `bootstrap.sh`,
 `.claude/commands/conform.md`, `packs/ios/command-profile.md`, `tests/test_compose_agents_md.py`,
 `tests/fixtures/legacy-intended.diff`.
 
 **What to do in your project:**
 - iOS apps: recompose (`/playbook:upgrade`, or your bridge's compose) to get a runnable test and
   build line.
-- If your scheme differs from `project.yml`'s `name:`, set `XCODE_SCHEME` in `.env.project`.
+- If your scheme differs from `project.yml`'s `name:`, set `XCODE_SCHEME` in the project's own
+  `.env.project` and recompose. Bootstrap ignores `XCODE_SCHEME`, because the project it
+  generates always has `$APP_NAME` as its scheme.
 
 ## 2026-10-01 — AGENTS.md opt-in: a generated core block (canary)
 

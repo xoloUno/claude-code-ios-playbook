@@ -288,6 +288,38 @@ class ComposeAgentsMdTest(unittest.TestCase):
         testing = read(os.path.join(p, ".claude", "rules", "testing.md")).decode()
         self.assertIn("-scheme " + resolved + " -destination", testing)
 
+    def conform_scheme(self, p):
+        """/conform's documented sequence: load the project's .env.project, then run the resolver."""
+        script = ('set -a; [ -f .env.project ] && . ./.env.project; set +a; '
+                  f'bash "{PLAYBOOK}/resolve-xcode-scheme.sh" .')
+        return subprocess.run(["bash", "-c", script], cwd=p, capture_output=True,
+                              env=ENV).stdout.decode().strip()
+
+    def test_bootstrap_compose_call_matches_conform(self):
+        lines = [l.strip() for l in read(os.path.join(PLAYBOOK, "bootstrap.sh")).decode().splitlines()
+                 if 'compose-claude.sh" "$PWD" ios' in l and not l.strip().startswith("#")]
+        self.assertEqual(len(lines), 1, lines)
+        p = self.project("bootstrap-call", agents=None, claude=b"# P\n")
+        write(os.path.join(p, "project.yml"), b"name: Demo\n")
+        harness = (f'set -euo pipefail; PLAYBOOK_DIR="{PLAYBOOK}"; '
+                   'export PRIMARY_SIM PROVISIONING_PROFILES METADATA_LOCALES; ' + lines[0])
+        r = subprocess.run(["bash", "-c", harness], cwd=p, capture_output=True,
+                           env=dict(ENV, XCODE_SCHEME="Custom Scheme"))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.scheme_args(p), ["Demo", "Demo"])
+        self.assertEqual(self.conform_scheme(p), "Demo")
+
+    def test_project_env_scheme_agrees_between_upgrade_and_conform(self):
+        p = self.project("env-callers", agents=None, claude=b"# P\n")
+        write(os.path.join(p, "project.yml"), b"name: Demo\n")
+        write(os.path.join(p, ".env.project"), b'XCODE_SCHEME="Custom Scheme"\n')
+        upgrade = (f'set -a; source "{p}/.env.project" 2>/dev/null; set +a; '
+                   f'bash "{PLAYBOOK}/compose-claude.sh" "{p}" ios')   # plugin/commands/upgrade.md
+        r = subprocess.run(["bash", "-c", upgrade], capture_output=True, env=ENV)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.scheme_args(p), ["Custom Scheme", "Custom Scheme"])
+        self.assertEqual(self.conform_scheme(p), "'Custom Scheme'")
+
     def test_reject_missing_scheme_resolver(self):
         pb = self.playbook_copy("pb-no-resolver")
         os.remove(os.path.join(pb, "resolve-xcode-scheme.sh"))

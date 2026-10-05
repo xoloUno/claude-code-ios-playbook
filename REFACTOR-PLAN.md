@@ -1,10 +1,10 @@
 # Playbook & Dev-Environment Refactor — Canonical Plan
 
 > **Purpose:** the single durable reference for this multi-session initiative. If context
-> is lost, start here. Last updated **2026-06-10**.
+> is lost, start here. Last updated **2026-10-03**.
 > **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
 > all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
-> `~/dev` is canonical; iCloud copies retained as rollback pending deletion approval.
+> `~/dev` is canonical; the iCloud rollback copies were **deleted 2026-09-27**, closing Stage 0.
 > **Stage 1a carve COMPLETE (2026-05-31)** — rules (`0113986`) + iOS commands (`e3ce3cc`)
 > carved into `core/` + `packs/`; bootstrap output verified byte-identical both times.
 > **Stage 1a iOS bridge done (2026-05-31)** — `compose-claude.sh` + genericized deploy markers
@@ -44,6 +44,11 @@
 > (+ `TRANSLATION.md` glossary contract), Decision A amended (Apple first-party skills > Hudson
 > for the overlap; Hudson → SwiftData/Concurrency only), Xcode 27 facts in §7. **Next: Phase 3 —
 > broadsheet + teewye** (same recipe, one PR each).
+> **Modernization review + `AGENTS.md` canary (2026-10-01 → 03):** a Claude Code / Codex review of
+> what changed since June converged (decisions in §2). Approved and merged: project instructions
+> move to `AGENTS.md` with a generated core block, and `CLAUDE.md` becomes a relative symlink to it
+> (playbook #32 → `0b51f99`; teewye canary #2 → `53c4826`). **Next: the bounded rollout in §4
+> Stage 1c. It's proposed and awaiting approval.**
 
 ---
 
@@ -70,6 +75,8 @@
 | **Dist** | How elaborate to go | **Staged hybrid.** Symlink/submodule is an *interim bridge*; iOS apps graduate to a Claude marketplace. "MCP/skills only when earned." |
 | **Codex** | Sequencing | **Phase 2.** Design the shared source Codex-aware from day one; build/​debug the Codex adapter + MCP + bake-off harness later, after the Claude path works end-to-end. |
 | **Pinning** | Version primitive | **Semver `version` + git release tag** for your own marketplace (controlled rollout). **SHA-pin** only for the vendored Hudson fork and for freezing a release-critical consumer. |
+| **Instr** (2026-10-01; symlink 2026-10-02) | Where project instructions live | **`AGENTS.md`**, holding project-owned text plus a generated "Shared workflow" block between `<!-- playbook:core:begin -->` / `<!-- playbook:core:end -->` markers. For opted-in projects the block replaces the six `core/rules/` copies. **`CLAUDE.md` is a relative symlink to `AGENTS.md`.** An `@AGENTS.md` import was rejected because it failed in fresh, unapproved headless test launches from a subdirectory. Compose accepts only that exact alias. |
+| **Fail** (2026-10-01) | Compose failure contract | Validate the layout and every required source (each pack's `required.txt`, the universal commands, core) **before writing anything**. A failure after writing begins is reported as possibly partial. No automatic restore and no undo promise. |
 
 ## 3. Target architecture — "skill-first, plugin-wrapped, MCP-backed"
 
@@ -80,7 +87,7 @@ ONE playbook repo (source of truth)
         │
         ├── Claude adapter  (.claude-plugin/plugin.json) ──► your Claude marketplace
         ├── Codex adapter   (agents/openai.yaml)         ──► Phase 2
-        └── stub  ──► generated to BOTH CLAUDE.md and AGENTS.md from one source
+        └── stub  ──► AGENTS.md (generated core block + project text); CLAUDE.md = symlink to it
 
 local stdio MCP  (Phase 2; highest maintenance + security surface, not "free")
   dynamic verbs only: bootstrap, capture_lesson, status/health, suggest_upgrade,
@@ -93,17 +100,20 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
 - **Correctness-critical rules live FLAT in the stub** (`CLAUDE.md`/`AGENTS.md`), never behind
   skill progressive disclosure — disclosure does **not** transfer across agents (Claude and
   Codex independently decide when to load `references/`, so "same file" ≠ "same tokens").
-- **Generate `CLAUDE.md` and `AGENTS.md` from ONE source** so they can't drift.
+- **One instruction file.** `AGENTS.md` is the source and `CLAUDE.md` is a relative symlink to
+  it (Decision **Instr**), so the two can't drift.
 - **Every consumed dependency is vendored + pinned, and designed so its disappearance is a
   no-op** (exit test: Hudson vanishes → run the fork; Kickstart vanishes → lose a free
   convenience).
-- **Dynamic verbs are MCP tools, not prompts** (Codex doesn't surface MCP prompts).
+- **Dynamic verbs are MCP tools, not prompts** (Codex doesn't surface MCP prompts). *Proposed
+  amendment (review item R5, pending Erik): verbs default to a skill plus a deterministic script,
+  and a verb becomes an MCP tool only after a demonstrated limitation.*
 - **Don't claim "one skill, identical on both agents"** — claim "shared source + per-agent
   adapters, parity verified by a written bake-off harness."
 
 ## 4. Sequence (status tracker)
 
-- [x] **Stage 0 — Hygiene & safe migration** — done & verified; only the held iCloud-delete remains
+- [x] **Stage 0 — Hygiene & safe migration** — COMPLETE (iCloud copies deleted 2026-09-27)
   - [x] gitignore/​de-iCloud `.build`/build artifacts (removed `Flara/build`, 568 MB)
   - [x] `$PLAYBOOK_HOME` indirection: `~/.config/playbook/config` (source of truth) +
         `~/.zshenv` loader + `bootstrap.sh` honors it + `/upgrade` resolves via it.
@@ -115,20 +125,23 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         (`.env.playbook` / `.env.project` / `.env.fastlane` / `WORKLOG` / `MANUAL-TASKS`)
   - [x] config repointed → `~/dev/_playbook`; `getting-started.md` paths fixed (downstream
         `playbook-inbox.md` left fallback-only → Stage 1; gitignored `settings.local.json` regenerable)
-  - [ ] **Memory-migration gap (found 2026-06-03):** Claude Code keys per-project memory by absolute
-        path under `~/.claude/projects/<path-key>/memory/` — *outside* the repos — so the `rsync -a`
-        repo copy never carried it. Each migrated repo's accrued agent memory is stranded under its
-        dead iCloud key and does **not** load in `~/dev/<repo>` sessions: Flara 14 files, c3d 9,
-        teewye/broadsheet 3 each (+ the `Code` root and `_playbook` keys); the `~/dev/...` keys start
-        empty (only devpulse, born under `~/dev`, has its own). **Independent of the HELD iCloud-repo
-        delete below** — memory isn't in the iCloud *copies*, so that delete neither fixes nor
-        endangers it. **Decision pending:** (a) leave it — memory re-accrues per repo, past lessons
-        lost; (b) one-time copy `<iCloud-key>/memory/` → `<~/dev-key>/memory/` per repo to recover
-        history, auditing for post-migration staleness first (e.g. Flara's Ruby/`.zshenv` memory was
-        wrong on root cause — macOS `path_helper`, not a missing `.zshenv` source — and was corrected
-        2026-06-03); (c) cherry-pick only the still-valid memories forward.
-  - [ ] **HELD (irreversible, awaits Erik):** delete iCloud copies once `~/dev` is confirmed in daily use
-  - [ ] (optional) push `_playbook` `main` to origin for off-machine backup
+  - [x] **Memory-migration gap (found 2026-06-03; closed 2026-09-27):** Claude Code keys per-project
+        memory by absolute path under `~/.claude/projects/<path-key>/memory/`, *outside* the repos, so
+        the `rsync -a` repo copy never carried it. **Resolved by copying forward (option b):** the four
+        app keys (Flara, c3d, teewye, broadsheet) now hold every file from their old iCloud keys
+        (verified 2026-09-27, nothing only-in-old), and the `Code` root key's plan memory lives in the
+        `~/dev` key. The `_playbook` key was missed. On 2026-09-27 its one still-valid rule (public
+        repo, so no PII) was restored into the `~/dev` key and its stale TerraView bootstrap note was
+        dropped. The dead iCloud-path keys stay in `~/.claude/projects/`, unaffected by the iCloud
+        delete; prune them whenever.
+  - [x] **iCloud copies deleted (2026-09-27, Erik).** `~/dev` had been the daily-use location since
+        2026-05-30. Post-delete sweep: all 8 repos `git fsck`-clean, `$PLAYBOOK_HOME` →
+        `~/dev/_playbook`, no symlinks or git worktrees pointing into iCloud. Harmless leftovers:
+        stale allowlist entries in the gitignored `settings.local.json` of `_playbook` and Flara, and
+        old project keys in `~/.claude.json`. `command-reference.md` was moved to `~/dev` first.
+        **`Code/_ref/` and `Code/archive/` were never part of the migration and went with the folder**;
+        if either is needed, check iCloud Drive → Recently Deleted (kept ~30 days).
+  - [x] push `_playbook` `main` to origin — `origin/main` has tracked `main` via PRs since Stage 1a
 - [ ] **Stage 1a — Bridge (drift stops fast):** carve `core/` + `packs/`; symlink into Python
   utils, submodule into iOS apps; **de-bootstrap** each (delete old copied commands/rules so
   they don't shadow the shared source)
@@ -190,13 +203,84 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [ ] **Phase 3 — broadsheet-app + teewye-app (NEXT)** — same recipe as Flara, one PR each.
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
+- [~] **Stage 1c — Instruction layout (`AGENTS.md`). Canary DONE; rollout PROPOSED (2026-10)**
+  - [x] Modernization review converged (Claude Code + Codex, 2026-10-01).
+  - [x] **Generator and validation, playbook #32 → `0b51f99`:**
+        - `core/agents-core.md`
+        - `compose-agents-md.py`
+        - the compose source preflight, with each pack's `required.txt`
+        - commands that read and write the instructions file
+        - 30 tests, with legacy output pinned to a reviewed fixture
+  - [x] **teewye canary, #2 → `53c4826`.** Passed:
+        - loading from the repo root and a subdirectory (desktop Claude Code 2.1.286 checked
+          against transcript content; Xcode-hosted 2.1.154 checked by hook; Codex CLI)
+        - `/conform` clean
+        - `/wrapup` changing only the project-owned section
+        - a recompose reproducible from the pinned commit
+        - session-start instructions 87.8 → 78.8 KB
+
+        **Caveats:**
+        1. Test-command resolution was only partial: an honest skip (no test target), and the
+           `[APP_NAME]` scheme placeholder needed manual substitution.
+        2. `/wrapup`'s commit attempt was blocked by the test copy's guard, so the commit, hook
+           and push steps weren't exercised.
+        3. Xcode-hosted Claude was checked by hook only.
+  - [ ] **Rollout. PROPOSED, awaiting Erik's approval. One project per PR, and Erik approves
+        each.**
+        - **R0, prerequisites (playbook PRs):**
+          - (a) Make `bridge-symlink.sh` opt-in aware. For a non-iOS repo whose `AGENTS.md`
+            carries the markers, it skips the core-rule symlinks and renders the block with
+            `compose-agents-md.py write`. Today it would re-create core-rule symlinks, which
+            current Claude Code doesn't load without approval anyway.
+          - (b) Fix the never-substituted `[APP_NAME]` scheme placeholder (inbox, 2026-10-03).
+          - (c) Bump the plugin version and tag before Flara's turn. Flara consumes
+            `playbook@playbook`, still at 1.0.1.
+        - **R1, broadsheet-app** (iOS, submodule, 11 KB `CLAUDE.md`): the teewye recipe, a
+          refresh commit then a layout commit. Stage 1b Phase 3 (moving to the plugin) stays a
+          separate, later PR.
+        - **R2, devpulse** (smallest non-iOS), after R0(a). It's the first run of the non-iOS
+          path, and it also fixes the undelivered symlinked core rules there.
+        - **R3, shotsmith, then c3d-bridge-modeler** (non-iOS). shotsmith has a real test suite;
+          use it to close caveat 1. c3d's `CLAUDE.md` is 21.9 KB, so check the total against
+          Codex's 32 KiB default.
+        - **R4, Flara last.** It needs three things first:
+          - the oversized-instructions fix: its `CLAUDE.md` is 140 KB, so session history moves
+            to a tracked archive through a reviewed extraction, approved separately
+          - R0(c)
+          - a gap between releases
+        - **R5, new projects:** `bootstrap.sh` and `CLAUDE-TEMPLATE.md` emit the `AGENTS.md`
+          layout.
+        - **Per-project acceptance (same as the canary):**
+          - loading from the root and a subdirectory on desktop Claude, Xcode-hosted Claude and
+            Codex
+          - `/conform` clean
+          - `/wrapup` run on a throwaway copy
+          - instructions within budget
+          - a recompose reproducible from the pinned or installed playbook
+
+          Close caveats 1–3 where a project allows: a real `/test` suite, a real commit through
+          the hooks, and an authenticated Xcode-hosted run.
+  - [ ] **Other review items. Proposed, not approved:**
+        - R2: rule scoping, `globs:` → `paths:` or skills, since `globs:` is ignored (§7)
+        - R3: the remaining behavior fixes in pack rules
+        - R4: a Codex workflow-parity experiment
+        - R5: the MCP invariant amendment (§3)
+        - R6 (Xcode `mcp-server`), R7 (`.xcproj`) and R9 (tool evaluations): deferred until
+          needed
+        - R8: measure Frames 1.5.0 in isolation before any upgrade; it changes default bezels
+        - R10: a baseline toolchain step
+
+        Evidence lives in the review log, which is kept locally and not in this repo. Status
+        changes land here once approved.
 - [ ] **Stage 2 — Apple skills first, Hudson for gaps (re-scoped 2026-06-10, Decision A
   amendment):** adopt Apple's exported Xcode 27 skills for the overlapping ground
   (refresh = re-run the export per Xcode release; link into `~/.claude/skills` for Claude);
   vendor Hudson SHA-pinned only for SwiftData + Concurrency; thin overlapping Swift rules
   against the *Apple* skills, not Hudson's
 - [ ] **Stage 3 — Codex + MCP + bake-offs:** `AGENTS.md` from the same stub; verbs as MCP
-  tools; written bake-off harness before any comparison. **Note (2026-06-10):** Xcode 27's
+  tools; written bake-off harness before any comparison. *(Update 2026-10-03: instruction
+  delivery to Codex is now Stage 1c, `AGENTS.md` plus the `CLAUDE.md` symlink. Stage 3 keeps
+  Codex workflow parity, MCP and bake-offs.)* **Note (2026-06-10):** Xcode 27's
   agents are a *third* `AGENTS.md`/`CLAUDE.md` consumer (verified — its localization agents
   auto-read both), strengthening the one-source stub invariant; and Apple's own localization
   flow (coordinator + sub-agents over MCP *tools*, never prompts) is first-party precedent
@@ -256,6 +340,26 @@ uncommitted file — owner to handle). Nothing is broken today → migration is 
 emergency.
 
 ## 7. Verified facts (don't regress)
+
+**Instruction loading (tested 2026-10-01 → 03, each fact with its evidence):**
+
+- **Claude Code reads only `paths:` in rule frontmatter.** `globs:` is ignored, so those rules
+  load at session start. Documented, and tested on 2.1.141 and 2.1.284 with an
+  `InstructionsLoaded` hook.
+- **Rules symlinked from outside the project didn't load on 2.1.284** in a headless test (they
+  did on 2.1.141). The docs treat such links like external imports, which need approval. This
+  affects `bridge-symlink.sh` repos.
+- **`CLAUDE.md` = `@AGENTS.md` loaded `AGENTS.md` from the repo root, but not in fresh,
+  unapproved headless launches from a subdirectory.** The relative symlink loaded from both:
+  desktop 2.1.286 checked against transcript content, Xcode-hosted 2.1.154 checked by hook.
+  Whether an interactive approval restores nested imports wasn't tested.
+- **Xcode-hosted Claude is 2.1.154,** which predates Claude Code's direct `AGENTS.md` support
+  (2.1.277).
+- **Codex has no `@include` syntax,** reads `AGENTS.md` from the git root down to the working
+  directory, and caps combined project instructions at 32 KiB by default (`project_doc_max_bytes`).
+- **Staleness note:** several June facts below are out of date. For example, claude-code#52218
+  closed 2026-05-31, plugin installs no longer need `/reload-plugins`, and Xcode 27 GM adds a
+  headless `xcrun mcp-server`. A refresh is pending the baseline step (review item R10).
 
 Corrections a 10-agent adversarial review made to the earlier draft. Full analysis archived at
 the workflow output (run `wf_e73fd29f-ed9`).
@@ -334,8 +438,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
 - [x] Committed the two `_playbook` edits + this plan doc (branch `chore/playbook-home-indirection`,
   merged to `main` locally — not pushed).
 - [x] Migration to `~/dev` done & verified (all 7 repos; Flara builds; secrets transferred).
-- [ ] **HELD (irreversible):** delete the iCloud copies once `~/dev` is confirmed in daily use.
-- [ ] (optional) `git push` `_playbook` `main` for off-machine backup.
+- [x] iCloud copies deleted 2026-09-27 (see §4 Stage 0).
+- [x] `_playbook` `main` is on origin (see §4 Stage 0).
 - [ ] shotsmith still has 1 uncommitted file (present in both copies) — commit/stash when convenient.
 - [x] **Stage 1a carve** — rules (`0113986`) + iOS commands (`e3ce3cc`) carved into `core/`+`packs/`; bootstrap output verified byte-identical.
 - [x] **Stage 1a commands — Phase A DONE (2026-06-01)** — universal `/status`+`/wrapup`
@@ -392,6 +496,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
   inline-comment / anchored-scratchpad *write* fix landed earlier (PR #18). Downstream-visible →
   CHANGELOG entry; byte-identical iOS compose except `conform.md`. Inbox entry retired.
 - [ ] **Recommended near-term order:**
+  0. **Stage 1c rollout (proposed, see §4).** broadsheet and teewye migrate to `AGENTS.md`
+     before their Stage 1b Phase 3 plugin move, as separate PRs.
   1. **Stage 1b — IN PROGRESS.** Phase 1 (marketplace plugin scaffolding + `/playbook:upgrade`)
      landed on `main` (`ef631ed`, tag `playbook--v1.0.1`). Phase 2 (**Flara canary**) is **DONE
      (2026-06-02)** — cold-start install + idempotent no-diff `/playbook:upgrade` verified on Flara

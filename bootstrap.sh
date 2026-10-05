@@ -1051,7 +1051,11 @@ CLAUDEHOOKS
 # Honor an explicit $PLAYBOOK_HOME (set via ~/.config/playbook/config); else self-locate.
 PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
 export PRIMARY_SIM PROVISIONING_PROFILES METADATA_LOCALES
-"$PLAYBOOK_DIR/compose-claude.sh" "$PWD" ios
+# The scheme comes from the project.yml written above (its name: and target are $APP_NAME), the
+# same source /conform uses in a project with no .env.project of its own. Clear XCODE_SCHEME so a
+# value from this playbook-side .env.project or the shell can't make the two disagree. A project
+# that needs a different scheme sets XCODE_SCHEME in its own .env.project and recomposes.
+env -u XCODE_SCHEME "$PLAYBOOK_DIR/compose-claude.sh" "$PWD" ios
 # build-check.yml is scaffolding (not .claude), so fill its __PRIMARY_SIM__ marker here.
 [[ -f .github/workflows/build-check.yml ]] && sed -i '' "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" .github/workflows/build-check.yml
 # --- Playbook version marker (for /upgrade command) ---

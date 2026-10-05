@@ -32,7 +32,9 @@ default. (To *write* tests, use `/gen-tests` — a separate iOS-pack command, no
   than letting `xcodebuild` fail late.
 - **Command.** Run the suite with the `xcodebuild test …` invocation in
   `.claude/rules/testing.md` — that line already carries this project's scheme and
-  simulator (composed in), so it's the single source of truth, not duplicated here. The
+  simulator (composed in), so it's the single source of truth, not duplicated here. If it
+  still reads `-scheme [APP_NAME]`, compose couldn't resolve the scheme (no `XCODE_SCHEME`,
+  no `project.yml` `name:`): report the runner as unconfigured rather than guessing. The
   same rule documents the Swift Testing conventions and the SwiftData `TEST_HOST` gotcha;
   read it if a run fails oddly.
 - **Scope.** With `$ARGUMENTS`, narrow the run via `-only-testing:<Target>/<Suite>[/<test>]`.

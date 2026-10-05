@@ -13,6 +13,7 @@ diff and regenerate the fixture:  REGEN_LEGACY_FIXTURE=1 python3 tests/test_comp
 import difflib
 import hashlib
 import os
+import shlex
 import shutil
 import stat
 import subprocess
@@ -27,7 +28,9 @@ BEGIN = b"<!-- playbook:core:begin -->"
 END = b"<!-- playbook:core:end -->"
 CORE_RULES = ["assertion-discipline.md", "git-workflow.md", "manual-tasks.md",
               "playbook-inbox.md", "session-health.md", "work-log.md"]
-ENV = dict(os.environ, PLAYBOOK_HOME="/fixture/playbook-home")
+ENV = {k: v for k, v in os.environ.items()
+       if k not in ("XCODE_SCHEME", "PRIMARY_SIM", "PROVISIONING_PROFILES", "METADATA_LOCALES")}
+ENV["PLAYBOOK_HOME"] = "/fixture/playbook-home"
 # Composed files the canary changes on purpose for unmarked (legacy) projects too: the
 # instructions-file wording, the R3 attribution fix, the worklog format, and the
 # one-sentence ASC addition. Their exact contents are pinned by LEGACY_FIXTURE.
@@ -44,9 +47,9 @@ OPTED_IN = PREFIX + b"stale block text\n" + SUFFIX
 ALIAS = object()  # project(claude=ALIAS): CLAUDE.md as the relative symlink to AGENTS.md
 
 
-def compose(target, playbook=PLAYBOOK, pack="ios"):
+def compose(target, playbook=PLAYBOOK, pack="ios", env=None):
     return subprocess.run(["bash", os.path.join(playbook, "compose-claude.sh"), target, pack],
-                          capture_output=True, env=ENV)
+                          capture_output=True, env=dict(ENV, **(env or {})))
 
 
 def unified(a_root, b_root, paths):
@@ -223,6 +226,105 @@ class ComposeAgentsMdTest(unittest.TestCase):
     def test_reject_inline_marker_text(self):
         agents = OPTED_IN + b"See " + BEGIN + b" for details.\n"
         self.assert_rejected(self.project("inline", agents=agents), msg="not exactly a delimiter")
+
+    # --- the "-scheme [APP_NAME]" placeholder in build-deploy.md and testing.md ----------
+    def scheme_args(self, p):
+        """The -scheme argument of each composed xcodebuild line, split the way a shell would."""
+        args = []
+        for name in ("build-deploy.md", "testing.md"):
+            text = read(os.path.join(p, ".claude", "rules", name)).decode()
+            for line in text.splitlines():
+                if line.startswith("xcodebuild ") and " -scheme " in line:
+                    words = shlex.split(line)
+                    args.append(words[words.index("-scheme") + 1])
+        self.assertEqual(len(args), 2, "expected one xcodebuild line in each rule")
+        return args
+
+    def compose_with_name(self, label, yml, env=None):
+        p = self.project("scheme-" + label, agents=None, claude=b"# P\n")
+        if yml is not None:
+            write(os.path.join(p, "project.yml"), yml)
+        r = compose(p, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return p, r
+
+    def test_scheme_resolves_to_one_exact_shell_argument(self):
+        cases = {
+            "plain": (b"name: Demo\noptions:\n  x: 1\n", "Demo"),
+            "plain-comment": (b"name: Demo # app\n", "Demo"),
+            "spaces": (b"name: Demo App\n", "Demo App"),
+            "amp-comment": (b'name: "Demo & Co" # app\n', "Demo & Co"),
+            "quoted-hash": (b'name: "Demo # Co" # app\n', "Demo # Co"),
+            "trailing-ws": (b'name: "Demo"   \n', "Demo"),
+            "apostrophe": (b"name: 'Bob''s App'\n", "Bob's App"),
+            "metachars": (b'name: "A$(x)`y`;z"\n', "A$(x)`y`;z"),
+            "crlf": (b"name: Demo\r\n", "Demo"),
+        }
+        for label, (yml, want) in cases.items():
+            with self.subTest(label):
+                p, r = self.compose_with_name(label, yml)
+                self.assertEqual(self.scheme_args(p), [want, want])
+                self.assertNotIn(b"[APP_NAME]", r.stderr)
+
+    def test_scheme_env_overrides_project_yml(self):
+        p, _ = self.compose_with_name("env", b"name: Demo\n", env={"XCODE_SCHEME": "It's A&B"})
+        self.assertEqual(self.scheme_args(p), ["It's A&B", "It's A&B"])
+
+    def test_scheme_unresolved_forms_keep_placeholder_and_warn(self):
+        cases = {"no-project-yml": None, "empty": b"name:\n", "comment-only": b"name: # app\n",
+                 "anchor": b"name: &n Demo\n", "escaped": b'name: "De\\"mo"\n',
+                 "flow": b"name: [a, b]\n", "nested-only": b"options:\n  name: Nope\n"}
+        for label, yml in cases.items():
+            with self.subTest(label):
+                p, r = self.compose_with_name(label, yml)
+                self.assertEqual(self.scheme_args(p), ["[APP_NAME]", "[APP_NAME]"])
+                self.assertIn(b"keeps the [APP_NAME] scheme placeholder", r.stderr)
+
+    def test_compose_inserts_exactly_the_resolver_output(self):
+        p, _ = self.compose_with_name("shared", b'name: "Demo & Co"\n')
+        resolved = subprocess.run(["bash", os.path.join(PLAYBOOK, "resolve-xcode-scheme.sh"), p],
+                                  capture_output=True, env=ENV).stdout.decode().strip()
+        self.assertEqual(resolved, "'Demo & Co'")
+        testing = read(os.path.join(p, ".claude", "rules", "testing.md")).decode()
+        self.assertIn("-scheme " + resolved + " -destination", testing)
+
+    def conform_scheme(self, p):
+        """/conform's documented sequence: load the project's .env.project, then run the resolver."""
+        script = ('set -a; [ -f .env.project ] && . ./.env.project; set +a; '
+                  f'bash "{PLAYBOOK}/resolve-xcode-scheme.sh" .')
+        return subprocess.run(["bash", "-c", script], cwd=p, capture_output=True,
+                              env=ENV).stdout.decode().strip()
+
+    def test_bootstrap_compose_call_matches_conform(self):
+        lines = [l.strip() for l in read(os.path.join(PLAYBOOK, "bootstrap.sh")).decode().splitlines()
+                 if 'compose-claude.sh" "$PWD" ios' in l and not l.strip().startswith("#")]
+        self.assertEqual(len(lines), 1, lines)
+        p = self.project("bootstrap-call", agents=None, claude=b"# P\n")
+        write(os.path.join(p, "project.yml"), b"name: Demo\n")
+        harness = (f'set -euo pipefail; PLAYBOOK_DIR="{PLAYBOOK}"; '
+                   'export PRIMARY_SIM PROVISIONING_PROFILES METADATA_LOCALES; ' + lines[0])
+        r = subprocess.run(["bash", "-c", harness], cwd=p, capture_output=True,
+                           env=dict(ENV, XCODE_SCHEME="Custom Scheme"))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.scheme_args(p), ["Demo", "Demo"])
+        self.assertEqual(self.conform_scheme(p), "Demo")
+
+    def test_project_env_scheme_agrees_between_upgrade_and_conform(self):
+        p = self.project("env-callers", agents=None, claude=b"# P\n")
+        write(os.path.join(p, "project.yml"), b"name: Demo\n")
+        write(os.path.join(p, ".env.project"), b'XCODE_SCHEME="Custom Scheme"\n')
+        upgrade = (f'set -a; source "{p}/.env.project" 2>/dev/null; set +a; '
+                   f'bash "{PLAYBOOK}/compose-claude.sh" "{p}" ios')   # plugin/commands/upgrade.md
+        r = subprocess.run(["bash", "-c", upgrade], capture_output=True, env=ENV)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.scheme_args(p), ["Custom Scheme", "Custom Scheme"])
+        self.assertEqual(self.conform_scheme(p), "'Custom Scheme'")
+
+    def test_reject_missing_scheme_resolver(self):
+        pb = self.playbook_copy("pb-no-resolver")
+        os.remove(os.path.join(pb, "resolve-xcode-scheme.sh"))
+        self.assert_rejected(self.project("no-resolver", agents=None, claude=b"# P\n"),
+                             playbook=pb, msg="scheme resolver is missing")
 
     # --- CLAUDE.md must be exactly the relative alias "CLAUDE.md -> AGENTS.md" ----------
     def test_reject_import_wrapper_file(self):

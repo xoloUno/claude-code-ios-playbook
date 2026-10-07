@@ -28,6 +28,69 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-07 — Plugin `v1.1.0` — contract minor tag
+
+Bumps `.claude-plugin/plugin.json` from `1.0.1` to `1.1.0`. After this merges, the merge
+commit gets the tag `playbook--v1.1.0`, the third marketplace **contract** tag. Tag version
+and manifest version stay equal, following the v1.0.0 convention. Apps on the plugin have
+been stuck on the June 1 source. This plugin declares a version, so new commits alone don't
+refresh its cached installs; they refresh when the manifest version changes. This release
+ships everything merged since.
+
+It's a minor release: nothing below breaks a 1.0.1 project, and nothing needs a migration.
+Most changes add something or are opt-in. A few change existing behavior in every project:
+the attribution line, the `WORKLOG.md` entry format, and `/test` stopping on an unresolved
+scheme. The `/playbook:upgrade` interface and the plugin layout haven't changed. A project without the
+`AGENTS.md` markers still composes the legacy way and never calls Python.
+
+**What a 1.0.1 consumer gets** (the dated entries below have the details):
+- **New iOS pack rules:**
+  - `wwdc26-ios27.md`, for iOS 27 and Xcode 27 awareness (2026-06-10)
+  - `app-intents.md` and `simulator.md` (2026-06-04)
+- **Changed iOS pack rules:**
+  - `build-deploy.md`: a Ruby and bundler PATH section (2026-06-03), plus the Xcode 27 MCP
+    names (2026-06-10)
+  - `metadata-translation.md`: the two-surface split and the `TRANSLATION.md` glossary
+    (2026-06-10)
+  - `wwdc25-ios26.md`: its date header now defers to the iOS 27 rule (2026-06-10)
+  - `screenshot-pipeline.md`: simulator state hygiene (2026-06-04)
+  - `testing.md`: error-path testing (2026-06-04)
+  - `asc-troubleshooting.md`: one sentence on checking fastlane and ASC behavior at the source
+    (2026-10-01)
+- **Compose:**
+  - The scheme in the composed `xcodebuild` build and test lines is now filled in, from
+    `XCODE_SCHEME` or else `project.yml`'s `name:`. Before this, `[APP_NAME]` was never
+    replaced (2026-10-05).
+  - Before writing anything, compose now checks that its sources exist, including each pack's
+    `required.txt` (2026-10-01).
+  - There's an opt-in `AGENTS.md` core block for projects that carry the markers (2026-10-01).
+- **Commands:**
+  - Commands now read and write "the instructions file": `AGENTS.md` when it has the markers,
+    otherwise `CLAUDE.md` (2026-10-01).
+  - `/wrapup` no longer hardcodes a `Co-Authored-By` line, and writes `WORKLOG.md` entries
+    (when the project has that file) as `## [DATE] — [session focus]` (2026-10-01).
+  - The iOS profile's `/test` step reports a scheme left as `[APP_NAME]` as an unconfigured
+    runner instead of guessing (2026-10-05).
+  - `/release` step 7 gets the Homebrew Ruby prefix, like steps 3 and 6 (2026-06-03).
+  - `/conform` gains STALE_CORE_BLOCK, DUPLICATE_CORE and a shared scheme check (2026-10-01,
+    2026-10-05).
+- `bridge-symlink.sh` also understands the opt-in now (2026-10-05). Plugin consumers don't use
+  that script.
+
+**Files affected:**
+- `.claude-plugin/plugin.json`: `version` `1.0.1` → `1.1.0`.
+- `CHANGELOG.md`: restores the heading of the `v1.0.1` entry below, which a June edit had
+  dropped.
+
+**What to do in your project:**
+- **iOS apps on the marketplace plugin:** update the plugin, run `/playbook:upgrade`, then read
+  the diff before committing. Coming from 1.0.1, expect three new rule files
+  (`wwdc26-ios27.md`, `app-intents.md` and `simulator.md`), several changed rules and commands,
+  and the real scheme on the composed `xcodebuild` lines when it resolves. If it doesn't,
+  compose warns and leaves `[APP_NAME]`; set `XCODE_SCHEME` in `.env.project`. Opting in to
+  `AGENTS.md` is a separate step that each project takes in its own Stage 1c rollout PR.
+- **Submodule and symlink bridges:** nothing to do. They don't read the plugin version.
+
 ## 2026-10-05 — `bridge-symlink.sh` understands the `AGENTS.md` opt-in
 
 Non-iOS repos are bridged with live symlinks. A rule symlinked from outside the repo didn't

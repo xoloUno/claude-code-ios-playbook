@@ -290,6 +290,8 @@ and `.claude/commands/release.md` differ.
 - **iOS apps:** recompose (`/playbook:upgrade`, or your bridge's compose) to pick up the rule note. It's
   documentation/defense — the machine fix above is what actually resolves the failure.
 
+## 2026-06-01 — Plugin `v1.0.1` — contract patch tag
+
 Bumps `.claude-plugin/plugin.json` from `1.0.0` to `1.0.1` and tags `playbook--v1.0.1`, the second
 marketplace **contract** tag (after `playbook--v1.0.0`). This is a patch release: no change to the
 `/playbook:upgrade` interface, plugin layout, or compose behavior — it just rolls up the iOS

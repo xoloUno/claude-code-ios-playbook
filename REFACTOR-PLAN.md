@@ -1,7 +1,7 @@
 # Playbook & Dev-Environment Refactor — Canonical Plan
 
 > **Purpose:** the single durable reference for this multi-session initiative. If context
-> is lost, start here. Last updated **2026-10-03**.
+> is lost, start here. Last updated **2026-10-07**.
 > **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
 > all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
 > `~/dev` is canonical; the iCloud rollback copies were **deleted 2026-09-27**, closing Stage 0.
@@ -29,8 +29,9 @@
 > command moved to `packs/ios/commands/gen-tests.md`. Bridge now links six universal verbs (`test`
 > added); `/conform` Check B/C updated in lockstep; CHANGELOG entry added. **shotsmith re-bridged +
 > `test_command` fixed (shotsmith#3) — its `/test` is live; devpulse/c3d can re-bridge when next
-> touched (both no-op).** Remaining Phase C verbs (`/context-health`, `/preflight`) stay
-> deferred-on-contact — neither has forcing contact yet. **Stage 1b STARTED (2026-06-01, branch
+> touched (both no-op).** *(Both were re-bridged in Stage 1c, 2026-10, and have `/test`.)*
+> Remaining Phase C verbs (`/context-health`, `/preflight`) stay deferred-on-contact — neither
+> has forcing contact yet. **Stage 1b STARTED (2026-06-01, branch
 > `feat/stage1b-marketplace-plugin`)** — Phase 1: the playbook now ships as a Claude marketplace
 > plugin (`.claude-plugin/{marketplace,plugin}.json` + a single namespaced `/playbook:upgrade`
 > recompose verb under `plugin/commands/`); `compose-claude.sh` verified self-locating and
@@ -47,8 +48,12 @@
 > **Modernization review + `AGENTS.md` canary (2026-10-01 → 03):** a Claude Code / Codex review of
 > what changed since June converged (decisions in §2). Approved and merged: project instructions
 > move to `AGENTS.md` with a generated core block, and `CLAUDE.md` becomes a relative symlink to it
-> (playbook #32 → `0b51f99`; teewye canary #2 → `53c4826`). **Next: the bounded rollout in §4
-> Stage 1c. It's proposed and awaiting approval.**
+> (playbook #32 → `0b51f99`; teewye canary #2 → `53c4826`).
+> **Stage 1c rollout (2026-10-05 → 07):** Steps 0(a,b) and 1–3 are done, one PR per project with
+> Erik's approval. broadsheet, devpulse, shotsmith and c3d-bridge-modeler now use `AGENTS.md`. The
+> three non-iOS repos had been running without the shared rules on desktop Claude Code; the
+> generated block fixed that. **Next: Step 4, Flara** (housekeeping, the `CLAUDE.md` slim-down,
+> then the Step 0(c) plugin bump), then Step 5 (bootstrap). See §4 Stage 1c.
 
 ---
 
@@ -203,7 +208,8 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [ ] **Phase 3 — broadsheet-app + teewye-app (NEXT)** — same recipe as Flara, one PR each.
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
-- [~] **Stage 1c — Instruction layout (`AGENTS.md`). Canary DONE; rollout PROPOSED (2026-10)**
+- [~] **Stage 1c — Instruction layout (`AGENTS.md`). Canary DONE; rollout IN PROGRESS, Steps
+  0(a,b)–3 DONE (2026-10)**
   - [x] Modernization review converged (Claude Code + Codex, 2026-10-01).
   - [x] **Generator and validation, playbook #32 → `0b51f99`:**
         - `core/agents-core.md`
@@ -223,41 +229,60 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
 
         **Caveats:**
         1. Test-command resolution was only partial: an honest skip (no test target), and the
-           `[APP_NAME]` scheme placeholder needed manual substitution.
+           `[APP_NAME]` scheme placeholder needed manual substitution. **Closed 2026-10-07:**
+           #34 fills the scheme; broadsheet's composed `xcodebuild test` line passed with no
+           manual substitution, and the real-suite `/test` passed on shotsmith (101) and c3d
+           (201).
         2. `/wrapup`'s commit attempt was blocked by the test copy's guard, so the commit, hook
-           and push steps weren't exercised.
-        3. Xcode-hosted Claude was checked by hook only.
+           and push steps weren't exercised. **Still open:** the broadsheet, devpulse,
+           shotsmith and c3d `/wrapup` runs all had clean trees, so the commit step never
+           fired.
+        3. Xcode-hosted Claude was checked by hook only. **Still true** for every rollout
+           project.
 
         Not validated: the user's normal Codex configuration, and authenticated Xcode-hosted
-        workflows.
-  - [ ] **Rollout. PROPOSED, awaiting Erik's approval. One project per PR, and Erik approves
-        each.** Scope: core instruction delivery only. Rule scoping (review item R2) stays
-        separately gated.
+        workflows. **Update 2026-10-07:** the normal Codex configuration (the CLI bundled in
+        ChatGPT.app, 0.162.0-alpha.2, gpt-6.1-sol, high effort) loaded `AGENTS.md` from the root
+        and a subdirectory on shotsmith and c3d. Authenticated Xcode-hosted workflows are still
+        unvalidated.
+  - [~] **Rollout. APPROVED, IN PROGRESS. One project per PR, and Erik approves each.** Scope:
+        core instruction delivery only. Rule scoping (review item R2) stays separately gated.
         - **Step 0, prerequisites (playbook PRs):**
-          - (a) Make `bridge-symlink.sh` opt-in aware. For a non-iOS repo whose `AGENTS.md`
-            carries the markers, it skips the core-rule symlinks and renders the block with
-            `compose-agents-md.py write`. Today it would re-create core-rule symlinks, which
-            current Claude Code doesn't load without approval anyway.
-          - (b) Fix the never-substituted `[APP_NAME]` scheme placeholder (inbox, 2026-10-03).
-          - (c) Bump the plugin version and tag before Flara's turn. Flara consumes
-            `playbook@playbook`, still at 1.0.1.
-        - **Step 1, broadsheet-app** (iOS, submodule, 11 KB `CLAUDE.md`): the teewye recipe, a
-          refresh commit then a layout commit. Stage 1b Phase 3 (moving to the plugin) stays a
-          separate, later PR.
-        - **Step 2, devpulse** (smallest non-iOS), after Step 0(a). It's the first run of the
-          non-iOS path, and it also fixes the undelivered symlinked core rules there.
-        - **Step 3, shotsmith, then c3d-bridge-modeler** (non-iOS), as separate project PRs.
-          Use shotsmith to verify the real-suite `/test` path; verify the emitted iOS command
-          resolves its scheme without manual substitution in broadsheet or a disposable iOS
-          fixture. Creating app test targets is not required for this migration. c3d's
-          `CLAUDE.md` is 21.9 KB, so check the total against Codex's 32 KiB default.
-        - **Step 4, Flara last.** It needs three things first:
+          - (a) **DONE, #35 → `d495f41`.** Make `bridge-symlink.sh` opt-in aware. For a
+            non-iOS repo whose `AGENTS.md` carries the markers, it skips the core-rule symlinks
+            and renders the block with `compose-agents-md.py write`. Re-running it is the
+            block-refresh path.
+          - (b) **DONE, #34 → `9d8140b`.** Fix the never-substituted `[APP_NAME]` scheme
+            placeholder (inbox, 2026-10-03). Compose fills it from `XCODE_SCHEME`, else
+            `project.yml`'s `name:`.
+          - (c) **Not done, deliberately.** Bump the plugin version and tag before Flara's
+            turn, so the release includes #34 and #35. Flara consumes `playbook@playbook`,
+            still at 1.0.1.
+        - **Step 1, broadsheet-app. DONE, #4 → `f0d4931` (to `dev`).** iOS, submodule, 11 KB
+          pre-migration `CLAUDE.md`: the teewye recipe, a refresh commit then a layout commit.
+          Stage 1b Phase 3 (moving to the plugin) stays a separate, later PR.
+        - **Step 2, devpulse. DONE, #2 → `de1d756`.** The first run of the non-iOS path.
+          Before the switch, desktop Claude Code 2.1.286 loaded 0 of the 6 symlinked core rules;
+          after it, the block is in context.
+        - **Step 3, shotsmith, then c3d-bridge-modeler. DONE: shotsmith #6 → `a85eeb6`; c3d
+          #22 → `11830be`.** shotsmith had no instruction file at all, so desktop sessions ran
+          with no instructions; it now has a new `AGENTS.md`. c3d's `AGENTS.md` is 26.8 KB,
+          under Codex's 32 KiB default, and it gained a `test_command` in `.claude/project.yml`.
+        - **Open after Steps 1–3:** `/conform` Check D compares every project with the iOS
+          `CLAUDE-TEMPLATE.md`, so devpulse, shotsmith and c3d get false template findings. That
+          misses the `/conform` acceptance line below. Follow-up: a pack-aware Check D (inbox,
+          2026-10-07).
+        - **Step 4, Flara last. NEXT.** It needs these first:
+          - housekeeping: the local checkout is on `chore/swift-testing-modernization` with #61
+            open since 2026-06-10, and `origin/main` has #62, which that branch lacks
           - the oversized-instructions fix: its `CLAUDE.md` is 140 KB, so session history moves
             to a tracked archive through a reviewed extraction, approved separately
           - Step 0(c)
           - a gap between releases
         - **Step 5, new projects:** `bootstrap.sh` and `CLAUDE-TEMPLATE.md` emit the `AGENTS.md`
-          layout.
+          layout. `bootstrap.sh` also still pins Xcode 26.3 in `project.yml` and the CI
+          `xcode-select` (`xcodeVersion: "26.3"` and two `Xcode_26.3.app` lines). Fix that no
+          later than this step, so new projects don't start on an old Xcode.
         - **Per-project acceptance:**
           - **Preservation.** Compare project text and history against the approved edits.
             Preserve substitutions, local profiles and customized rules. Remove only verified
@@ -361,14 +386,16 @@ emergency.
 
 ## 7. Verified facts (don't regress)
 
-**Instruction loading (tested 2026-10-01 → 03, each fact with its evidence):**
+**Instruction loading (tested 2026-10-01 → 07, each fact with its evidence):**
 
 - **Claude Code reads only `paths:` in rule frontmatter.** `globs:` is ignored, so those rules
   load at session start. Documented, and tested on 2.1.141 and 2.1.284 with an
   `InstructionsLoaded` hook.
 - **Rules symlinked from outside the project didn't load on 2.1.284** in a headless test (they
   did on 2.1.141). The docs treat such links like external imports, which need approval. This
-  affects `bridge-symlink.sh` repos.
+  affects `bridge-symlink.sh` repos. Confirmed during the Stage 1c rollout (2026-10-05 → 07):
+  headless runs of the desktop app's Claude Code 2.1.286–2.1.289 loaded 0 of 6 core rules in
+  devpulse, shotsmith and c3d, while Xcode-hosted 2.1.154 still followed the links.
 - **`CLAUDE.md` = `@AGENTS.md` loaded `AGENTS.md` from the repo root, but not in fresh,
   unapproved headless launches from a subdirectory.** The relative symlink loaded from both:
   desktop 2.1.286 checked against transcript content, Xcode-hosted 2.1.154 checked by hook.
@@ -481,7 +508,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
   to `/wrapup` + the project's `command-profile`. The iOS `command-profile.md` `## /wrapup` already
   owned `[skip ci]` + release notes, so this was **mostly deletion — no new `packs/ios/` rule**.
   Gates green: iOS compose still carries every git behavior (relocated to the profile); the live
-  symlink in devpulse / shotsmith / c3d-bridge-modeler now serves the cleaned rule. CHANGELOG entry
+  symlink in devpulse / shotsmith / c3d-bridge-modeler now serves the cleaned rule *(since Stage
+  1c, those three carry the core as a rendered `AGENTS.md` block instead)*. CHANGELOG entry
   added; `COMMANDS-ARCHITECTURE.md` "Related cleanup" marked done. The second follow-up — a
   **`packs/<pack>/rules` loop** in `bridge-symlink.sh` — stays **latent**: no non-iOS pack has a
   `rules/` dir yet (packs/python + packs/cli are command-profile-only), so there was nothing to
@@ -501,7 +529,9 @@ the workflow output (run `wf_e73fd29f-ed9`).
       (shotsmith#3):** re-bridged + corrected its `project.yml` `test_command` to `python3 -m pytest -q`
       (bare `pytest` wasn't on PATH); `/test` is live and verified green (101 passed). **devpulse + c3d:
       not yet re-bridged — they can re-bridge when next touched** (both no-op cleanly: devpulse has no
-      tests, c3d declares no runner), so neither has `/test` until then.
+      tests, c3d declares no runner), so neither has `/test` until then. **Update 2026-10:** both
+      were re-bridged in Stage 1c (devpulse #2, c3d #22) and have `/test`; c3d now declares
+      `python3 -m pytest -q test` (201 passed).
   - [ ] **`/context-health`** — already universal+bridged; convert to skeleton+profile only when a
     kind-specific signal is wanted. No forcing contact yet.
   - [ ] **`/preflight`** — iOS-pack, deploy-coupled; leave iOS-pack unless a real non-iOS need
@@ -516,8 +546,9 @@ the workflow output (run `wf_e73fd29f-ed9`).
   inline-comment / anchored-scratchpad *write* fix landed earlier (PR #18). Downstream-visible →
   CHANGELOG entry; byte-identical iOS compose except `conform.md`. Inbox entry retired.
 - [ ] **Recommended near-term order:**
-  0. **Stage 1c rollout (proposed, see §4).** broadsheet and teewye migrate to `AGENTS.md`
-     before their Stage 1b Phase 3 plugin move, as separate PRs.
+  0. **Stage 1c rollout (in progress, see §4).** Steps 0(a,b)–3 are done, so teewye and
+     broadsheet are on `AGENTS.md` ahead of their Stage 1b Phase 3 plugin move. Next: Step 4
+     (Flara), then Step 5 (bootstrap).
   1. **Stage 1b — IN PROGRESS.** Phase 1 (marketplace plugin scaffolding + `/playbook:upgrade`)
      landed on `main` (`ef631ed`, tag `playbook--v1.0.1`). Phase 2 (**Flara canary**) is **DONE
      (2026-06-02)** — cold-start install + idempotent no-diff `/playbook:upgrade` verified on Flara

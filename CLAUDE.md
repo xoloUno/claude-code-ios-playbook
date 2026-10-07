@@ -2,7 +2,8 @@
 
 `_playbook` is the source of truth for the shared Claude Code / Codex rules, commands, and
 scaffolding distributed to every project under `~/dev`. It's a docs-and-tooling repo: no app,
-no build, no test suite. The deliverable is the shared source other repos consume.
+no build; `tests/` covers the compose and bridge scripts. The deliverable is the shared source
+other repos consume.
 
 **Prime directive: kill drift.** Every fact has exactly one home. When something must differ
 per project, that's a *layer*, not a copy — never fork a shared file to make a local change.
@@ -16,10 +17,10 @@ whim — a one-off repo like shotsmith/devpulse/c3d, or a bootstrapped iOS app �
 inherit the shared workflow surface without re-deriving commands, rules, or lessons. Universal
 verbs live once; kind behavior extends through packs/profiles; project facts stay tiny.
 Battle scars flow `/inbox` → `/curate` → `_playbook` once, then propagate automatically where
-the bridge allows it: live symlinks for non-iOS repos, controlled compose/marketplace rollout
-for iOS. Judge new work by whether it reduces tool/wisdom drift, shrinks per-project upkeep,
-and keeps project-owned files outside auto-clobber boundaries unless they have an explicit
-managed-block contract.
+the bridge allows it: live symlinks plus a re-rendered core block for non-iOS repos, controlled
+compose/marketplace rollout for iOS. Judge new work by whether it reduces tool/wisdom drift,
+shrinks per-project upkeep, and keeps project-owned files outside auto-clobber boundaries
+unless they have an explicit managed-block contract.
 
 ## Invariants (do not violate)
 
@@ -27,8 +28,8 @@ managed-block contract.
   never behind skill progressive disclosure — disclosure does not transfer across agents
   (Claude and Codex each decide when to load `references/`).
 - **Approved opted-in layout.** `AGENTS.md` holds project-owned text plus the generated core;
-  `CLAUDE.md` is the exact relative symlink. This is live in teewye. Migration of other projects
-  is proposed in Stage 1c and requires Erik's approval for each project PR.
+  `CLAUDE.md` is the exact relative symlink. Each project migrates in its own Stage 1c PR, and
+  Erik approves each one (status in `REFACTOR-PLAN.md`).
 - **Every vendored dependency is pinned and degrades to a no-op** if it vanishes (Hudson gone →
   run the fork; Kickstart gone → lose a convenience, not a capability).
 - **Dynamic verbs become MCP _tools_, not prompts** (Codex doesn't surface MCP prompts).
@@ -43,15 +44,18 @@ managed-block contract.
 - `compose-claude.sh` — assembles a project's `.claude/` from `core/` + a pack. Shared by
   `bootstrap.sh` (new projects) **and** the submodule bridge (existing iOS apps) so the two
   paths can't drift.
-- `bridge-symlink.sh` — the symlink counterpart: links a non-iOS repo's `.claude/` (core
-  rules + the universal commands + an optional pack `command-profile.md`) back into this tree
-  with relative symlinks. No compose step, no pin — always the current shared source. Surgical
-  and idempotent; never overwrites a real file or a project-owned `settings.local.json` /
-  `project.yml` / `command-profile.local.md`.
+- `bridge-symlink.sh` — the symlink counterpart: links a non-iOS repo's `.claude/` (the
+  universal commands + an optional pack `command-profile.md`) back into this tree with relative
+  symlinks. No pin, so the links always serve the current shared source. For a repo opted in to
+  the `AGENTS.md` layout it renders the core block instead of linking core rules; that block is
+  a snapshot until the next run, and re-running the script refreshes it. Repos not yet opted in
+  still get core-rule links. Surgical and idempotent; never overwrites a real file or a
+  project-owned `settings.local.json` / `project.yml` / `command-profile.local.md`.
 - `bootstrap.sh` — scaffolds a brand-new iOS project. `CLAUDE-TEMPLATE.md` → the downstream
   project's `CLAUDE.md` (not this file).
 - **Bridges:** iOS apps = pinned submodule + composed copies (`compose-claude.sh`); non-iOS
-  repos = live symlinks into this tree (`bridge-symlink.sh`).
+  repos = live symlinks into this tree, plus the rendered core block once opted in
+  (`bridge-symlink.sh`).
 - `$PLAYBOOK_HOME` (`~/.config/playbook/config`) is the runtime pointer; `/inbox`, `/conform`,
   `/upgrade` resolve through it. `inbox.md` aggregates captured lessons centrally; `CHANGELOG.md`
   is the contract downstream `/upgrade` reads.

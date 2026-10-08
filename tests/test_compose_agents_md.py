@@ -13,6 +13,7 @@ diff and regenerate the fixture:  REGEN_LEGACY_FIXTURE=1 python3 tests/test_comp
 import difflib
 import hashlib
 import os
+import re
 import shlex
 import shutil
 import stat
@@ -45,6 +46,10 @@ PREFIX = b"# AGENTS.md \xe2\x80\x94 Fixture\n\nProject intro line.\n\n" + BEGIN 
 SUFFIX = END + b"\n\n## Current State\n\nFixture state.\n"
 OPTED_IN = PREFIX + b"stale block text\n" + SUFFIX
 ALIAS = object()  # project(claude=ALIAS): CLAUDE.md as the relative symlink to AGENTS.md
+# What bootstrap.sh pins for new projects (Xcode 27.1 builds for iPhone Duo; only GitHub's
+# xcode-27 runner has Xcode 27). Change these only together with bootstrap.sh.
+BOOTSTRAP_XCODE = "27.1"
+BOOTSTRAP_RUNNER = "xcode-27"
 
 
 def compose(target, playbook=PLAYBOOK, pack="ios", env=None):
@@ -308,6 +313,59 @@ class ComposeAgentsMdTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(self.scheme_args(p), ["Demo", "Demo"])
         self.assertEqual(self.conform_scheme(p), "Demo")
+
+    def bootstrap_lines(self, start, stop):
+        """bootstrap.sh lines from the one starting with `start` up to (not including) `stop`."""
+        lines = read(os.path.join(PLAYBOOK, "bootstrap.sh")).decode().splitlines()
+        i = next(n for n, l in enumerate(lines) if l.startswith(start))
+        j = next(n for n, l in enumerate(lines) if n > i and l.startswith(stop))
+        return lines[i:j]
+
+    def test_bootstrap_births_the_opted_in_layout(self):
+        """bootstrap's own instructions-file and compose lines give a valid, current layout."""
+        section = self.bootstrap_lines("# --- Instructions file", "# --- Playbook version marker")
+        p = self.project("bootstrap-birth", agents=None, claude=None)
+        write(os.path.join(p, "project.yml"), b"name: Demo\n")
+        harness = "\n".join([
+            "set -euo pipefail",
+            'require_file() { [[ -f "$1" ]] || { echo "missing $1" >&2; exit 1; }; }',
+            f'SCRIPT_DIR="{PLAYBOOK}"; APP_NAME=Demo; BUNDLE_ID=com.example.demo; REPO_NAME=demo-app',
+            *section])
+        # bootstrap resolves the playbook from PLAYBOOK_HOME, as a real run does.
+        r = subprocess.run(["bash", "-c", harness], cwd=p, capture_output=True,
+                           env=dict(ENV, PLAYBOOK_HOME=PLAYBOOK))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(os.readlink(os.path.join(p, "CLAUDE.md")), "AGENTS.md")
+        agents = read(os.path.join(p, "AGENTS.md"))
+        self.assertTrue(agents.startswith(b"# AGENTS.md \xe2\x80\x94 Demo\n"), agents[:60])
+        self.assertNotIn(b"[APP_NAME]", agents)
+        self.assertIn(BEGIN + b"\n" + self.body + END + b"\n", agents)
+        rules = os.listdir(os.path.join(p, ".claude", "rules"))
+        self.assertFalse(set(CORE_RULES) & set(rules), rules)
+        check = subprocess.run(["python3", os.path.join(PLAYBOOK, "compose-agents-md.py"), "check", p, PLAYBOOK],
+                               capture_output=True)
+        self.assertEqual(check.returncode, 0, check.stderr)
+        # /conform Check D: a fresh project has every H2 the template has.
+        h2 = lambda b: {l for l in b.decode().splitlines() if l.startswith("## ")}
+        template = read(os.path.join(PLAYBOOK, "CLAUDE-TEMPLATE.md")).replace(b"[APP_NAME]", b"Demo")
+        self.assertEqual(h2(template) - h2(agents), set())
+        before = snapshot(p)
+        self.assertEqual(compose(p).returncode, 0)
+        self.assertEqual(snapshot(p), before)
+
+    def test_bootstrap_xcode_pins(self):
+        """project.yml and each generated workflow use the reviewed Xcode and runner label.
+        Bump BOOTSTRAP_XCODE / BOOTSTRAP_RUNNER together with bootstrap.sh."""
+        text = read(os.path.join(PLAYBOOK, "bootstrap.sh")).decode()
+        self.assertEqual(re.findall(r'^  xcodeVersion: "([0-9.]+)"$', text, re.M), [BOOTSTRAP_XCODE])
+        workflows = re.findall(r"^cat > \.github/workflows/(\S+) << '(\w+)'\n(.*?)^\2$", text, re.M | re.S)
+        self.assertEqual(sorted(w[0] for w in workflows),
+                         ["build-check.yml", "release.yml", "testflight.yml"])
+        for name, _, body in workflows:
+            with self.subTest(workflow=name):
+                self.assertEqual(re.findall(r"^    runs-on: (\S+)$", body, re.M), [BOOTSTRAP_RUNNER])
+                self.assertEqual(re.findall(r"xcode-select -s /Applications/Xcode_(\S+)\.app/Contents/Developer",
+                                            body), [BOOTSTRAP_XCODE])
 
     def test_project_env_scheme_agrees_between_upgrade_and_conform(self):
         p = self.project("env-callers", agents=None, claude=b"# P\n")

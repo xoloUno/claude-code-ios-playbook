@@ -28,6 +28,44 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-08 — New projects start in the `AGENTS.md` layout, on Xcode 27.1
+
+`bootstrap.sh` now creates new iOS projects in the layout all six existing projects moved to
+in Stage 1c (Step 5), and stops pinning Xcode 26.3.
+
+- **Instructions file:**
+  - Before compose runs, `bootstrap.sh` writes `AGENTS.md` from `CLAUDE-TEMPLATE.md` and makes
+    `CLAUDE.md` a relative symlink to it. The template's empty core markers opt the project in,
+    so compose renders the core block into `AGENTS.md` and copies only the ios pack's rules.
+  - A missing template now stops bootstrap instead of skipping the file, so a new project
+    can't silently start in the legacy layout.
+  - `CLAUDE-TEMPLATE.md` takes the wording Flara and TeeWye adopted: the `AGENTS.md` title and
+    intro, the markers, a pointer to the generated core, the Current State note, and
+    `AGENTS.md` plus the symlink in the project tree. Its `##` sections are unchanged, so
+    `/conform` Check D reads it as before.
+- **Xcode 27.1** (needed to build for iPhone Duo):
+  - `project.yml`'s `xcodeVersion` and every workflow's `xcode-select` move to 27.1.
+    `build-check.yml` gets the select step it lacked.
+  - The workflows run on GitHub's `xcode-27` runner, because `macos-26` has no Xcode 27.
+    `xcode-27` is still a preview image: jobs may queue, and its label may change at GA.
+  - In image 20261006, `Xcode_27.1.app` is the 27.1 beta (27A9269); Apple's RC is 27A9275.
+    CI selects that beta. Building and uploading on that image are unverified until a new
+    project's first run, and the TestFlight and release lanes may be refused until GitHub
+    installs a non-beta 27.1.
+  - `build-check.yml` builds for `generic/platform=iOS Simulator` instead of a named
+    simulator, since the `xcode-27` image has no iPhone 17 Pro. `PRIMARY_SIM` still sets the
+    local build and test simulator.
+- **`tests/test_compose_agents_md.py`:** two new tests (39 in all).
+  - Bootstrap's own instructions-file and compose lines produce a valid, idempotent opted-in
+    layout with every template section.
+  - `xcodeVersion`, each job's `xcode-select` and the runner label agree.
+
+**In your project:** nothing to do. Only what `bootstrap.sh` creates changes; composed output
+is unchanged. Apps that pin Xcode 26.3 in their own workflows (Flara, TeeWye, broadsheet)
+move in their own PRs.
+
+---
+
 ## 2026-10-07 — Plugin `v1.1.0` — contract minor tag
 
 Bumps `.claude-plugin/plugin.json` from `1.0.1` to `1.1.0`. After this merges, the merge

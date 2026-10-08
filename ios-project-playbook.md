@@ -1608,7 +1608,7 @@ lean as it grows.
 | **SwiftLint** | Standard Swift linter, 200+ rules, 30% faster in recent versions. Catches style issues pre-commit. | swift-format (Apple's official formatter, but fewer rules and less community adoption) |
 | **Lefthook** | Fast Go binary, parallel hook execution, no runtime dependencies. Config is one YAML file. | Husky (Node.js dependency — overkill for a Swift project), pre-commit (Python dependency) |
 | **Gitleaks** | Catches secrets in staged files before commit. Fast, no config needed for common patterns. | Betterleaks (successor by original Gitleaks creator — better recall, drop-in replacement, recommended for new projects) |
-| **GitHub Actions** | Free for public repos, generous minutes for private. `macos-26` runners with Xcode 26.3. | Xcode Cloud (limited customization), Bitrise (free tier exists, iOS-focused), CircleCI |
+| **GitHub Actions** | Free for public repos, generous minutes for private. New projects run on the `xcode-27` runner (a preview image; `macos-26` has no Xcode 27) and select Xcode 27.1. | Xcode Cloud (limited customization), Bitrise (free tier exists, iOS-focused), CircleCI |
 | **Conventional Commits** | Machine-parseable commit messages. Enables automated changelogs and semantic versioning. Enforced by Lefthook hook. | Free-form commits (no tooling integration) |
 
 ## Appendix B: Decision Trees

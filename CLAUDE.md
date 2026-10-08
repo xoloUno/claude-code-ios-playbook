@@ -52,7 +52,7 @@ unless they have an explicit managed-block contract.
   still get core-rule links. Surgical and idempotent; never overwrites a real file or a
   project-owned `settings.local.json` / `project.yml` / `command-profile.local.md`.
 - `bootstrap.sh` — scaffolds a brand-new iOS project. `CLAUDE-TEMPLATE.md` → the downstream
-  project's `CLAUDE.md` (not this file).
+  project's `AGENTS.md`, born in the opted-in layout (not this file).
 - **Bridges:** iOS apps = pinned submodule + composed copies (`compose-claude.sh`); non-iOS
   repos = live symlinks into this tree, plus the rendered core block once opted in
   (`bridge-symlink.sh`).

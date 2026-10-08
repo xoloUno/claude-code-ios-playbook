@@ -1,14 +1,18 @@
-# CLAUDE.md — [APP_NAME]
+# AGENTS.md — [APP_NAME]
 
-This file is the source of truth for every Claude Code session on this project.
+This file contains the shared workflow and project-specific instructions for this project.
 Read it fully before writing any code or suggesting architecture changes.
+
+<!-- playbook:core:begin -->
+<!-- playbook:core:end -->
+
+---
 
 > **Reference:** For CI/CD setup, StoreKit 2 subscription setup, and App Store submission
 > procedures, see `ios-project-playbook.md` in the `_playbook/` directory.
 >
-> **Operational rules** (git workflow, build/deploy, code style, WWDC25, session checklists,
-> manual tasks, work log, session health) live in `.claude/rules/` and are loaded
-> automatically by path glob. Do not duplicate them here.
+> Shared workflow rules are in the generated core above; iOS-specific guidance remains in
+> `.claude/rules/`. Do not duplicate either here.
 
 ---
 
@@ -50,9 +54,9 @@ and HealthKit. No user accounts. No server.]
 
 **Next up:** [What the next session should focus on]
 
-> **Update this section and WORKLOG.md at the end of every session.** CLAUDE.md gets a
-> summary update; WORKLOG.md gets the detailed session diary entry. Full session history
-> lives in `WORKLOG.md`.
+> **Update this section and WORKLOG.md at the end of every session.** The project-owned
+> Current State section of AGENTS.md gets a summary update; WORKLOG.md gets the detailed
+> session diary entry. Full session history lives in `WORKLOG.md`.
 
 ---
 
@@ -84,7 +88,8 @@ and HealthKit. No user accounts. No server.]
 ├── Services/
 │   └── [list key services]
 │
-└── CLAUDE.md                    # This file
+├── AGENTS.md                    # This file
+└── CLAUDE.md -> AGENTS.md
 ```
 
 ---

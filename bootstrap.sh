@@ -112,7 +112,7 @@ options:
   bundleIdPrefix: ${BUNDLE_ID%.*}
   deploymentTarget:
     iOS: "$MINIMUM_IOS"
-  xcodeVersion: "26.3"
+  xcodeVersion: "27.1"
   generateEmptyDirectories: true
 settings:
   base:
@@ -642,9 +642,11 @@ jobs:
   build:
     name: Xcode Build
     if: "!contains(github.event.head_commit.message, '[skip build]')"
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -654,7 +656,7 @@ jobs:
           SCHEME=$(ls -d *.xcodeproj | head -1 | sed 's/.xcodeproj//')
           xcodebuild build \
             -scheme "$SCHEME" \
-            -destination 'platform=iOS Simulator,name=__PRIMARY_SIM__' \
+            -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation \
             -quiet \
             CODE_SIGN_IDENTITY="" \
@@ -674,12 +676,12 @@ concurrency:
 jobs:
   deploy:
     name: Build & Upload to TestFlight
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -747,12 +749,12 @@ concurrency:
 jobs:
   release:
     name: Build & Upload to App Store
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -932,7 +934,7 @@ cat > WORKLOG.md << WORKLOG
 # ${APP_NAME} Work Log
 
 > Session diary for Claude Code sessions. Reverse-chronological.
-> CLAUDE.md is the reference doc; this file tracks what happened session by session.
+> AGENTS.md is the reference doc; this file tracks what happened session by session.
 > This file is gitignored — local scratchpad only.
 
 ---
@@ -1046,7 +1048,21 @@ cat > .claude/hooks.json << 'CLAUDEHOOKS'
   }
 }
 CLAUDEHOOKS
-# --- Claude Code rules + slash commands (composed from core/ + the ios pack) ---
+# --- Instructions file: AGENTS.md from the template, CLAUDE.md as its alias ---
+# Written before compose: the template's empty core markers opt the project in to the AGENTS.md
+# layout, so compose renders the playbook core into AGENTS.md and copies only the ios pack's rules.
+TEMPLATE="$SCRIPT_DIR/CLAUDE-TEMPLATE.md"
+[[ -f "$TEMPLATE" ]] || { echo "❌ CLAUDE-TEMPLATE.md not found at $TEMPLATE"; exit 1; }
+APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
+sed -e "s|\[APP_NAME\]|$APP_NAME|g" \
+    -e "s|\[com\.example\.appname\]|$BUNDLE_ID|g" \
+    -e "s|\[appname\]|$APP_NAME_LOWER|g" \
+    -e "s|\[REPO_NAME\]|$REPO_NAME|g" \
+    "$TEMPLATE" > AGENTS.md
+require_file AGENTS.md
+ln -s AGENTS.md CLAUDE.md
+echo "✓ AGENTS.md generated from template (CLAUDE.md is a symlink to it)"
+# --- Claude Code rules + slash commands (ios pack; core goes into AGENTS.md) ---
 # Shared with the submodule bridge via compose-claude.sh so the two paths can't drift.
 # Honor an explicit $PLAYBOOK_HOME (set via ~/.config/playbook/config); else self-locate.
 PLAYBOOK_DIR="${PLAYBOOK_HOME:-$SCRIPT_DIR}"
@@ -1056,8 +1072,6 @@ export PRIMARY_SIM PROVISIONING_PROFILES METADATA_LOCALES
 # value from this playbook-side .env.project or the shell can't make the two disagree. A project
 # that needs a different scheme sets XCODE_SCHEME in its own .env.project and recomposes.
 env -u XCODE_SCHEME "$PLAYBOOK_DIR/compose-claude.sh" "$PWD" ios
-# build-check.yml is scaffolding (not .claude), so fill its __PRIMARY_SIM__ marker here.
-[[ -f .github/workflows/build-check.yml ]] && sed -i '' "s|__PRIMARY_SIM__|${PRIMARY_SIM}|g" .github/workflows/build-check.yml
 # --- Playbook version marker (for /upgrade command) ---
 cat > .playbook-version << 'PBVERSION'
 # Last synced with playbook CHANGELOG
@@ -1069,20 +1083,6 @@ if command -v lefthook &> /dev/null; then
   lefthook install
 else
   echo "⚠️  Lefthook not installed. Run: brew install lefthook && lefthook install"
-fi
-# --- Generate CLAUDE.md from template ---
-TEMPLATE="$SCRIPT_DIR/CLAUDE-TEMPLATE.md"
-if [[ -f "$TEMPLATE" ]]; then
-  APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
-  sed -e "s|\[APP_NAME\]|$APP_NAME|g" \
-      -e "s|\[com\.example\.appname\]|$BUNDLE_ID|g" \
-      -e "s|\[appname\]|$APP_NAME_LOWER|g" \
-      -e "s|\[REPO_NAME\]|$REPO_NAME|g" \
-      "$TEMPLATE" > CLAUDE.md
-  require_file CLAUDE.md
-  echo "✓ CLAUDE.md generated from template"
-else
-  echo "⚠️  CLAUDE-TEMPLATE.md not found at $TEMPLATE — skipping CLAUDE.md generation"
 fi
 # --- Initial commit ---
 git add -A
@@ -1118,5 +1118,5 @@ echo "   2. Create app record in App Store Connect"
 echo "   3. Create provisioning profile for $BUNDLE_ID"
 echo "   4. Add GitHub Secrets (see Phase 1 in ios-project-playbook.md)"
 echo "   5. Enable GitHub Pages (Settings → Pages → main branch, /docs folder)"
-echo "   6. Open CLAUDE.md and fill in project-specific sections (core problem, tech stack, etc.)"
+echo "   6. Open AGENTS.md (CLAUDE.md links to it) and fill in its project-specific sections (core problem, tech stack, etc.)"
 echo ""

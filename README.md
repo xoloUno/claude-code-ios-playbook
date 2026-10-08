@@ -63,7 +63,7 @@ If you're brand new, start with `getting-started.md`.
 | **`ios-project-playbook.md`** | The main playbook. Covers bootstrap through post-launch monitoring. What Claude Code reads to understand your projects. |
 | **`bootstrap.sh`** | One-command project bootstrap script. Creates an Xcode project, Fastlane config, GitHub Actions workflows, linting, hooks, legal templates, and pushes to GitHub. |
 | **`getting-started.md`** | Step-by-step guide for first-time setup. Walks through prerequisites, creating your first project, and daily workflow. Start here if this is your first time. |
-| **`CLAUDE-TEMPLATE.md`** | Template for per-project `CLAUDE.md` files. The bootstrap script uses this to generate each project's Claude Code configuration. |
+| **`CLAUDE-TEMPLATE.md`** | Template for a new project's `AGENTS.md`. The bootstrap script generates `AGENTS.md` from it, links `CLAUDE.md` to it, and compose fills in its playbook core block. |
 | **`claude-code-plugins-setup.md`** | Guide for setting up Claude Code plugins and MCP servers for iOS development (XcodeBuildMCP, Apple's Xcode MCP bridge, etc.). |
 | **`CHANGELOG.md`** | Playbook updates with upgrade instructions for existing projects. |
 | **`.env.playbook.example`** | Template for your personal configuration (Team ID, ASC credentials, GitHub org). Copy to `.env.playbook` and fill in your values once. |

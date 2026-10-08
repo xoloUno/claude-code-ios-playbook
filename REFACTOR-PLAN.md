@@ -209,7 +209,7 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
 - [~] **Stage 1c — Instruction layout (`AGENTS.md`). Canary DONE; rollout IN PROGRESS, Steps
-  0(a,b)–3 DONE (2026-10)**
+  0–4 DONE (2026-10), all six projects migrated; Step 5 next**
   - [x] Modernization review converged (Claude Code + Codex, 2026-10-01).
   - [x] **Generator and validation, playbook #32 → `0b51f99`:**
         - `core/agents-core.md`
@@ -236,15 +236,16 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         2. `/wrapup`'s commit attempt was blocked by the test copy's guard, so the commit, hook
            and push steps weren't exercised. **Still open:** the broadsheet, devpulse,
            shotsmith and c3d `/wrapup` runs all had clean trees, so the commit step never
-           fired.
+           fired. Flara had no `/wrapup` run at all, because the headless desktop binary's
+           sign-in had expired.
         3. Xcode-hosted Claude was checked by hook only. **Still true** for every rollout
-           project.
+           project, Flara included.
 
         Not validated: the user's normal Codex configuration, and authenticated Xcode-hosted
         workflows. **Update 2026-10-07:** the normal Codex configuration (the CLI bundled in
         ChatGPT.app, 0.162.0-alpha.2, gpt-6.1-sol, high effort) loaded `AGENTS.md` from the root
-        and a subdirectory on shotsmith and c3d. Authenticated Xcode-hosted workflows are still
-        unvalidated.
+        and a subdirectory on shotsmith, c3d and Flara. Authenticated Xcode-hosted workflows are
+        still unvalidated.
   - [~] **Rollout. APPROVED, IN PROGRESS. One project per PR, and Erik approves each.** Scope:
         core instruction delivery only. Rule scoping (review item R2) stays separately gated.
         - **Step 0, prerequisites (playbook PRs):**
@@ -255,9 +256,9 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
           - (b) **DONE, #34 → `9d8140b`.** Fix the never-substituted `[APP_NAME]` scheme
             placeholder (inbox, 2026-10-03). Compose fills it from `XCODE_SCHEME`, else
             `project.yml`'s `name:`.
-          - (c) **Not done, deliberately.** Bump the plugin version and tag before Flara's
-            turn, so the release includes #34 and #35. Flara consumes `playbook@playbook`,
-            still at 1.0.1.
+          - (c) **DONE 2026-10-07, #37 → `6f5770e`, tag `playbook--v1.1.0`.** `plugin.json`
+            1.0.1 → 1.1.0, so the release includes #34 and #35. The CHANGELOG entry lists what
+            a 1.0.1 consumer gets. Flara consumes `playbook@playbook`.
         - **Step 1, broadsheet-app. DONE, #4 → `f0d4931` (to `dev`).** iOS, submodule, 11 KB
           pre-migration `CLAUDE.md`: the teewye recipe, a refresh commit then a layout commit.
           Stage 1b Phase 3 (moving to the plugin) stays a separate, later PR.
@@ -272,16 +273,29 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
           `CLAUDE-TEMPLATE.md`, so devpulse, shotsmith and c3d get false template findings. That
           misses the `/conform` acceptance line below. Follow-up: a pack-aware Check D (inbox,
           2026-10-07).
-        - **Step 4, Flara last. NEXT.** It needs these first:
-          - housekeeping: the local checkout is on `chore/swift-testing-modernization` with #61
-            open since 2026-06-10, and `origin/main` has #62, which that branch lacks
-          - the oversized-instructions fix: its `CLAUDE.md` is 140 KB, so session history moves
-            to a tracked archive through a reviewed extraction, approved separately
-          - Step 0(c)
-          - a gap between releases
-        - **Step 5, new projects:** `bootstrap.sh` and `CLAUDE-TEMPLATE.md` emit the `AGENTS.md`
-          layout. `bootstrap.sh` also still pins Xcode 26.3 in `project.yml` and the CI
-          `xcode-select` (`xcodeVersion: "26.3"` and two `Xcode_26.3.app` lines). Fix that no
+        - **Step 4, Flara last. DONE 2026-10-07, flara-app #64 → `bac15ce`.**
+          - Prerequisites, each in its own PR:
+            - housekeeping: #61 → `b06b516`
+            - the oversized-instructions fix: #63 → `c77ac24`, which took `CLAUDE.md` from
+              141 KB to 22.8 KB, with detail moved to `spec/` and the archive to `history/`
+            - Step 0(c)
+            - a release gap: v2.1.2 is open and not yet submitted
+          - The local folder was renamed to `flara-app` to match the repo, which left the
+            plugin's project-scope install record pointing at the old path. The plugin was
+            reinstalled at 1.1.0.
+          - #64 is a refresh commit from the installed plugin, then a layout commit (the
+            broadsheet recipe). `AGENTS.md` is 26.7 KB.
+          - Loading was checked from the root and `Flara/Views`:
+            - desktop 2.1.293 and Xcode-hosted 2.1.154, by hook (both signed out headless, so
+              content came from transcripts)
+            - Codex 0.162, which answered a project question and a core question with no tool
+              calls
+          - `/conform` Checks A–G, reproduced by hand: no core, rule or command drift. Check F
+            flags the Flara-only `media-handling.md`; Check D shows the same two advisory gaps
+            as before.
+        - **Step 5, new projects. NEXT.** `bootstrap.sh` and `CLAUDE-TEMPLATE.md` emit the
+          `AGENTS.md` layout. `bootstrap.sh` also still pins Xcode 26.3 in `project.yml` and the
+          CI `xcode-select` (`xcodeVersion: "26.3"` and two `Xcode_26.3.app` lines). Fix that no
           later than this step, so new projects don't start on an old Xcode.
         - **Per-project acceptance:**
           - **Preservation.** Compare project text and history against the approved edits.

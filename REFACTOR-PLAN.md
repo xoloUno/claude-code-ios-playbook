@@ -1,7 +1,7 @@
 # Playbook & Dev-Environment Refactor — Canonical Plan
 
 > **Purpose:** the single durable reference for this multi-session initiative. If context
-> is lost, start here. Last updated **2026-10-07**.
+> is lost, start here. Last updated **2026-10-22**.
 > **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
 > all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
 > `~/dev` is canonical; the iCloud rollback copies were **deleted 2026-09-27**, closing Stage 0.
@@ -61,8 +61,9 @@
 > rules and `PLAYBOOK_AUTONOMY=on`, and the owner switched it on the same day. All six opted-in
 > projects were re-rendered the same day, so autonomy now applies in each; plugin installs are
 > at `playbook--v1.2.3` (decision **Auto** in §2, steps in §9).
-> **Next:** lift the lean Xcode pin (`.xcode-version`, piloted on Flara #65) into `bootstrap.sh`,
-> then M0/M1. See §9.
+> **Xcode pin (2026-10-22, #53):** `bootstrap.sh` now gives new projects the lean Xcode pin
+> piloted on Flara #65: one `.xcode-version` that CI reads at run time.
+> **Next:** roll `.xcode-version` out to teewye and broadsheet, then 3a and M0/M1. See §9.
 
 ---
 
@@ -311,10 +312,12 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
             because `macos-26` has no Xcode 27. Build-check builds for a generic simulator.
           - Validation: two new tests (39 in all), and a full bootstrap dry run with `gh`
             stubbed. Codex: "ready to commit" on round 2.
-          - **Follow-up:** the Xcode pins are still written into each workflow. Flara #65 piloted
-            a leaner pattern: one `.xcode-version` per app that CI reads at run time, checked
-            against `project.yml`. It passed on its first CI run. Lift it into `bootstrap.sh` next
-            (inbox, 2026-10-21). teewye and broadsheet still pin Xcode 26.3.
+          - **Follow-up, Xcode pin. Bootstrap DONE 2026-10-22, #53.** Flara #65 piloted a leaner
+            pattern than writing the version into each workflow: one `.xcode-version` per app
+            that CI reads at run time, checked against `project.yml`. It passed on its first CI
+            run (inbox, 2026-10-21). `bootstrap.sh` now writes the file, and its three workflows
+            read it; composed output is unchanged. teewye and broadsheet still pin Xcode 26.3 in
+            their workflows; rolling the file out to them is next, one PR each.
         - **Per-project acceptance:**
           - **Preservation.** Compare project text and history against the approved edits.
             Preserve substitutions, local profiles and customized rules. Remove only verified
@@ -614,7 +617,7 @@ the workflow output (run `wf_e73fd29f-ed9`).
   - [~] Cleanup: the memory notes are done; the owner still shortens the starter prompts.
 - [ ] **Recommended near-term order:**
   0. **Stage 1c — DONE (see §4).** All six projects and new bootstraps use `AGENTS.md`. Next, in
-     order: lift `.xcode-version` into `bootstrap.sh` (and roll it out to teewye and broadsheet);
+     order: roll `.xcode-version` out to teewye and broadsheet (`bootstrap.sh` has it since #53);
      3a, `loadcheck.sh` as a playbook tool (`codex-review.sh` landed with autonomy); M0/M1,
      the toolchain and iOS 27 fact refresh, including iPhone Duo; then inbox curation (2026-10-21 entries from Flara's
      v2.1.2).

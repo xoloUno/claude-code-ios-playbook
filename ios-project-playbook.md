@@ -1613,7 +1613,7 @@ lean as it grows.
 | **SwiftLint** | Standard Swift linter, 200+ rules, 30% faster in recent versions. Catches style issues pre-commit. | swift-format (Apple's official formatter, but fewer rules and less community adoption) |
 | **Lefthook** | Fast Go binary, parallel hook execution, no runtime dependencies. Config is one YAML file. | Husky (Node.js dependency — overkill for a Swift project), pre-commit (Python dependency) |
 | **Gitleaks** | Catches secrets in staged files before commit. Fast, no config needed for common patterns. | Betterleaks (successor by original Gitleaks creator — better recall, drop-in replacement, recommended for new projects) |
-| **GitHub Actions** | Free for public repos, generous minutes for private. New projects run on the `xcode-27` runner (a preview image; `macos-26` has no Xcode 27) and select Xcode 27.1. | Xcode Cloud (limited customization), Bitrise (free tier exists, iOS-focused), CircleCI |
+| **GitHub Actions** | Free for public repos, generous minutes for private. New projects run on the `xcode-27` runner (a preview image; `macos-26` has no Xcode 27) and select the Xcode their `.xcode-version` names. | Xcode Cloud (limited customization), Bitrise (free tier exists, iOS-focused), CircleCI |
 | **Conventional Commits** | Machine-parseable commit messages. Enables automated changelogs and semantic versioning. Enforced by Lefthook hook. | Free-form commits (no tooling integration) |
 
 ## Appendix B: Decision Trees
@@ -1715,7 +1715,8 @@ After installing a new Xcode version:
 2. Check Xcode → Settings → Components for required iOS platform downloads
 3. Verify your project compiles: `xcodebuild build -scheme YourApp -destination 'generic/platform=iOS'`
 4. If using XcodeGen, regenerate: `xcodegen generate`
-5. If CI fails, check GitHub's [runner images changelog](https://github.com/actions/runner-images) for the latest `macos-*` runner and Xcode version
+5. Move CI to it: change `.xcode-version` and `project.yml`'s `xcodeVersion` together (Build Check fails if they differ). Change the workflows' `runs-on` only when GitHub ships that Xcode on a different runner; its [runner images](https://github.com/actions/runner-images) list which Xcodes each runner has. An app with no `.xcode-version` still names Xcode in each workflow's `xcode-select` step
+6. For new projects, bump `XCODE_VERSION` in `bootstrap.sh` and `BOOTSTRAP_XCODE` in `tests/test_compose_agents_md.py`
 
 ### When iOS ships a new major version
 

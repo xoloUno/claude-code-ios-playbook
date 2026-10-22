@@ -50,8 +50,9 @@ PREFIX = b"# AGENTS.md \xe2\x80\x94 Fixture\n\nProject intro line.\n\n" + BEGIN 
 SUFFIX = END + b"\n\n## Current State\n\nFixture state.\n"
 OPTED_IN = PREFIX + b"stale block text\n" + SUFFIX
 ALIAS = object()  # project(claude=ALIAS): CLAUDE.md as the relative symlink to AGENTS.md
-# What bootstrap.sh pins for new projects (Xcode 27.1 builds for iPhone Duo; only GitHub's
-# xcode-27 runner has Xcode 27). Change these only together with bootstrap.sh.
+# What bootstrap.sh pins for new projects: .xcode-version (Xcode 27.1 builds for iPhone Duo) and
+# the runner label (only GitHub's xcode-27 runner has Xcode 27). Change these only together with
+# bootstrap.sh.
 BOOTSTRAP_XCODE = "27.1"
 BOOTSTRAP_RUNNER = "xcode-27"
 
@@ -357,19 +358,69 @@ class ComposeAgentsMdTest(unittest.TestCase):
         self.assertEqual(compose(p).returncode, 0)
         self.assertEqual(snapshot(p), before)
 
-    def test_bootstrap_xcode_pins(self):
-        """project.yml and each generated workflow use the reviewed Xcode and runner label.
-        Bump BOOTSTRAP_XCODE / BOOTSTRAP_RUNNER together with bootstrap.sh."""
+    def bootstrap_workflows(self):
+        """{file name: body} for each workflow heredoc in bootstrap.sh."""
         text = read(os.path.join(PLAYBOOK, "bootstrap.sh")).decode()
-        self.assertEqual(re.findall(r'^  xcodeVersion: "([0-9.]+)"$', text, re.M), [BOOTSTRAP_XCODE])
-        workflows = re.findall(r"^cat > \.github/workflows/(\S+) << '(\w+)'\n(.*?)^\2$", text, re.M | re.S)
-        self.assertEqual(sorted(w[0] for w in workflows),
-                         ["build-check.yml", "release.yml", "testflight.yml"])
-        for name, _, body in workflows:
+        return {name: body for name, _, body in
+                re.findall(r"^cat > \.github/workflows/(\S+) << '(\w+)'\n(.*?)^\2$", text, re.M | re.S)}
+
+    def workflow_step(self, body, name):
+        """The `run: |` script of the workflow step called `name`, unindented."""
+        m = re.search(rf"^      - name: {re.escape(name)}\n        run: \|\n((?:          .*\n)+)", body, re.M)
+        self.assertIsNotNone(m, name)
+        return "".join(l[10:] for l in m.group(1).splitlines(True))
+
+    def test_bootstrap_xcode_pins(self):
+        """bootstrap writes the reviewed Xcode to .xcode-version and project.yml; every workflow runs
+        on the reviewed runner and reads .xcode-version instead of naming an Xcode.
+        Bump BOOTSTRAP_XCODE / BOOTSTRAP_RUNNER together with bootstrap.sh."""
+        section = self.bootstrap_lines("# --- Xcode pin", "# --- Create source directory")
+        p = self.project("bootstrap-xcode", agents=None, claude=None)
+        harness = "\n".join(["set -euo pipefail",
+                             "APP_NAME=Demo; BUNDLE_ID=com.example.demo; MINIMUM_IOS=26.0; TEAM_ID=TEAM",
+                             *section])
+        r = subprocess.run(["bash", "-c", harness], cwd=p, capture_output=True, env=ENV)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(read(os.path.join(p, ".xcode-version")), BOOTSTRAP_XCODE.encode() + b"\n")
+        self.assertEqual(re.findall(r'^  xcodeVersion: "(.*)"$', read(os.path.join(p, "project.yml")).decode(),
+                                    re.M), [BOOTSTRAP_XCODE])
+        workflows = self.bootstrap_workflows()
+        self.assertEqual(sorted(workflows), ["build-check.yml", "release.yml", "testflight.yml"])
+        select = self.workflow_step(workflows["build-check.yml"], "Select Xcode")
+        self.assertIn("< .xcode-version", select)
+        for name, body in workflows.items():
             with self.subTest(workflow=name):
                 self.assertEqual(re.findall(r"^    runs-on: (\S+)$", body, re.M), [BOOTSTRAP_RUNNER])
-                self.assertEqual(re.findall(r"xcode-select -s /Applications/Xcode_(\S+)\.app/Contents/Developer",
-                                            body), [BOOTSTRAP_XCODE])
+                self.assertEqual(self.workflow_step(body, "Select Xcode"), select)
+                self.assertNotRegex(body, r"Xcode_[0-9]")
+
+    def test_bootstrap_xcode_pin_readers(self):
+        """Build Check's pin check passes the emitted pin (CRLF too) and matches it literally, and
+        Select Xcode fails, listing the installed Xcodes, when the runner lacks the pinned one."""
+        workflows = self.bootstrap_workflows()
+        check = self.workflow_step(workflows["build-check.yml"], "Check Xcode pins agree")
+        select = self.workflow_step(workflows["build-check.yml"], "Select Xcode")
+        p = self.project("xcode-readers", agents=None, claude=None)
+
+        def run(script, pin, xcode_version):
+            write(os.path.join(p, ".xcode-version"), pin)
+            write(os.path.join(p, "project.yml"), b'name: Demo\noptions:\n  xcodeVersion: "%s"\n' % xcode_version)
+            # GitHub Actions runs a bash `run:` step as `bash -e`.
+            return subprocess.run(["bash", "-e", "-c", script], cwd=p, capture_output=True, env=ENV)
+
+        v = BOOTSTRAP_XCODE.encode()
+        for pin, xcode_version, ok in [(v + b"\n", v, True), (v + b"\r\n", v, True),
+                                       (v + b"\n", v.replace(b".", b"0"), False),  # "." is not a wildcard
+                                       (v + b"\n", b"26.3", False)]:
+            with self.subTest(pin=pin, xcode_version=xcode_version):
+                r = run(check, pin, xcode_version)
+                self.assertEqual(r.returncode == 0, ok, r.stdout + r.stderr)
+                if not ok:
+                    self.assertIn(b"::error::project.yml xcodeVersion must equal .xcode-version", r.stdout)
+        # An Xcode no runner has: the step stops before xcode-select.
+        r = run(select, b"0.0\n", b"0.0")
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn(b"::error::Xcode 0.0 from .xcode-version is not on this runner. Installed: ", r.stdout)
 
     def test_project_env_scheme_agrees_between_upgrade_and_conform(self):
         p = self.project("env-callers", agents=None, claude=b"# P\n")

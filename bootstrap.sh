@@ -105,6 +105,11 @@ fastlane/shotsmith/upload-staging/
 # These are tracked manual-gesture inputs (Live Activity stack, Home Screen
 # widget, Control Center) — recaptured once per release. Do not gitignore.
 GITIGNORE
+# --- Xcode pin (the app's only one) ---
+# The workflows select /Applications/Xcode_<version>.app from .xcode-version at run time, and
+# Build Check fails if project.yml's xcodeVersion disagrees. Bump both together.
+XCODE_VERSION="27.1"
+echo "$XCODE_VERSION" > .xcode-version
 # --- XcodeGen project.yml ---
 cat > project.yml << XCODEGEN
 name: $APP_NAME
@@ -112,7 +117,7 @@ options:
   bundleIdPrefix: ${BUNDLE_ID%.*}
   deploymentTarget:
     iOS: "$MINIMUM_IOS"
-  xcodeVersion: "27.1"
+  xcodeVersion: "$XCODE_VERSION"
   generateEmptyDirectories: true
 settings:
   base:
@@ -645,8 +650,18 @@ jobs:
     runs-on: xcode-27
     steps:
       - uses: actions/checkout@v4
+      - name: Check Xcode pins agree
+        run: |
+          V=$(tr -d '[:space:]' < .xcode-version)
+          grep -Fqx "  xcodeVersion: \"$V\"" project.yml \
+            || { echo "::error::project.yml xcodeVersion must equal .xcode-version ($V)"; exit 1; }
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
+        run: |
+          V=$(tr -d '[:space:]' < .xcode-version)
+          XCODE="/Applications/Xcode_$V.app"
+          [ -d "$XCODE" ] || { echo "::error::Xcode $V from .xcode-version is not on this runner. Installed: $(echo /Applications/Xcode_*.app)"; exit 1; }
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -681,7 +696,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
+        run: |
+          V=$(tr -d '[:space:]' < .xcode-version)
+          XCODE="/Applications/Xcode_$V.app"
+          [ -d "$XCODE" ] || { echo "::error::Xcode $V from .xcode-version is not on this runner. Installed: $(echo /Applications/Xcode_*.app)"; exit 1; }
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -754,7 +774,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
+        run: |
+          V=$(tr -d '[:space:]' < .xcode-version)
+          XCODE="/Applications/Xcode_$V.app"
+          [ -d "$XCODE" ] || { echo "::error::Xcode $V from .xcode-version is not on this runner. Installed: $(echo /Applications/Xcode_*.app)"; exit 1; }
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project

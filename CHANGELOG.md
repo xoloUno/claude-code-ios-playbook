@@ -28,6 +28,39 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Plugin `v1.2.0` — contract minor tag
+
+Bumps `.claude-plugin/plugin.json` from `1.1.0` to `1.2.0`. After this merges, the merge
+commit gets the tag `playbook--v1.2.0`; tag and manifest versions stay equal. Cached plugin
+installs refresh only when the manifest version changes, so until now `/playbook:upgrade`
+recomposed the 1.1.0 source and would have rolled back the autonomy changes below.
+
+It's a minor release. Autonomy stays off unless the owner sets `PLAYBOOK_AUTONOMY=on`; the
+drift fixes listed below change behavior everywhere.
+
+**What a 1.1.0 consumer gets** (the dated entries below have the details):
+- **Core block:** "Autonomy", "Second opinions" and "Code Review Rules"; `MANUAL-TASKS.md`
+  items marked `approve`, `do` or `decide`; checkpoints commit and push only under autonomy.
+- **Commands:** `/wrapup`, `/upgrade`, `/conform`, `/curate`, `/context-health` and
+  `/playbook:upgrade` act on their own recommendation under autonomy and ask otherwise.
+  `/status` lists unchecked `MANUAL-TASKS.md` items first.
+- **Drift fixes, in effect now:** `/deploy` and `/release` never push `main` (fastlane
+  commits go through a `chore/` PR), and `/preflight` expects `main`.
+- **Fix in this release:** "Second opinions" now says to resolve `PLAYBOOK_HOME` the way
+  "Playbook lessons" does, so the local Codex review also works when the variable lives only
+  in `~/.config/playbook/config`.
+
+**Files affected:** `.claude-plugin/plugin.json` (`version` `1.1.0` → `1.2.0`);
+`core/agents-core.md` (one "Second opinions" sentence).
+
+**What to do in your project:**
+- **iOS apps on the marketplace plugin:** update the plugin, run `/playbook:upgrade`, and read
+  the diff before committing. Flara was already recomposed from this source, so expect no
+  diff there.
+- **Submodule and symlink bridges:** re-render the core block (one sentence changed).
+
+---
+
 ## 2026-10-22 — Autonomy, lean: auto mode and native rules, no sandbox
 
 The sandbox from the two entries below fenced the whole home folder from shell commands. It

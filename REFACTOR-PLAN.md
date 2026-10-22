@@ -601,11 +601,16 @@ the workflow output (run `wf_e73fd29f-ed9`).
       and record "Current State" through a `chore/` PR;
     - 1.2.2 (#49) and 1.2.3 (#51): the restore covers only the `.pbxproj` and `Info.plist`
       files fastlane changed, and stops and asks if anything else is still changed.
-  - [ ] With the next core change: add the review fallback to the merge checklist. If the
-    GitHub Codex review hasn't finished within about 15 minutes, one local `codex-review.sh`
-    review with the same bar counts as the merge review. Two bot reviews stalled for 20–30
-    minutes on 2026-10-22 while about ten ran at once; #49 and #51 already used the fallback,
-    and on #51 the local review caught a real bug.
+  - [ ] With the next core change, add two owner-approved rules (2026-10-22) to the merge
+    checklist, so one re-render round covers both:
+    - **Review fallback.** If the GitHub Codex review hasn't finished within about 15 minutes,
+      one local `codex-review.sh` review with the same bar counts as the merge review. Two
+      bot reviews stalled for 20–30 minutes on 2026-10-22 while about ten ran at once; #49
+      and #51 already used the fallback, and on #51 the local review caught a real bug.
+    - **Prose-only PRs.** "A PR that changes only prose outside `AGENTS.md`/`CLAUDE.md`,
+      `.claude/`, hooks, workflows and code needs no Codex review; publishing still needs
+      the user." The rule goes by path, not by judgment, because instruction files change
+      agent behavior even in small edits.
   - [~] Cleanup: the memory notes are done; the owner still shortens the starter prompts.
 - [ ] **Recommended near-term order:**
   0. **Stage 1c — DONE (see §4).** All six projects and new bootstraps use `AGENTS.md`. Next, in

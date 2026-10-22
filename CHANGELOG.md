@@ -28,7 +28,26 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Plugin `v1.2.3` — restore only fastlane's files
+
+A patch release that narrows 1.2.2. `git checkout -- .` would also discard tracked files
+someone edited in the same checkout while the build and upload ran. `/deploy` and `/release`
+now restore only the files fastlane writes, `git checkout -- '*.pbxproj' '*Info.plist'` at
+any depth, and stop and ask if `git status --porcelain` still lists changes afterward. The
+fallbacks point to the same step. The Codex review of the teewye follow-up PR found this.
+
+**Files affected:** `packs/ios/commands/deploy.md`, `packs/ios/commands/release.md`;
+`.claude-plugin/plugin.json` (`version` `1.2.2` → `1.2.3`); the legacy compose fixture.
+After this merges, the merge commit gets the tag `playbook--v1.2.3`.
+
+**What to do in your project:** iOS apps recompose. Non-iOS repos aren't affected.
+
+---
+
 ## 2026-10-22 — Plugin `v1.2.2` — restore every file fastlane edits
+
+> **Superseded by:** 2026-10-22 — Plugin `v1.2.3`. The restore is narrowed to `.pbxproj` and
+> `Info.plist` files; ignore `git checkout -- .`.
 
 A patch release. `increment_build_number` also writes `CFBundleVersion` into an `Info.plist`
 that holds a literal build number, so restoring only `*.xcodeproj` (1.2.1) could still leave

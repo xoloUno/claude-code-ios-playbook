@@ -36,15 +36,16 @@ Steps:
    Otherwise remind them to upload manually in App Store Connect.
 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 9. Restore fastlane's project edits. fastlane sets the build number and signing at archive
-   time without committing them, in the project and sometimes in `Info.plist`, so run
-   `git checkout -- .`. The tree was clean before fastlane ran, so this discards only
-   fastlane's edits.
+   time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
+   restore just those: `git checkout -- '*.pbxproj' '*Info.plist'`. If
+   `git status --porcelain` still lists changes, they aren't fastlane's: stop and ask the
+   user.
 10. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
     release in the project-owned part of the instructions file (`AGENTS.md` when it carries
     the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on
     `main`, and open a PR
 
 Fallback if local build/upload fails:
-- Restore the files fastlane modified (the tree was clean before it ran): `git checkout -- .`
+- Restore fastlane's edits as in step 9
 - Trigger the GitHub Actions workflow: `gh workflow run release.yml`
 - Monitor: `gh run list --workflow=release.yml --limit 1`

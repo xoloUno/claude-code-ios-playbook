@@ -1,49 +1,52 @@
 #!/usr/bin/env bash
 # codex-review.sh <prompt-file> <name> — run one read-only Codex review non-interactively.
 #
-# Installed by tools/install-autonomy.py to ~/.config/playbook/tools/, and run from there as
-#   ~/.config/playbook/tools/codex-review.sh <prompt-file> <name>
-# written exactly like that, with nothing before it (no VAR=value prefix, no `&&` chain), or
-# the playbook's Claude Code settings won't exempt it from the sandbox. Because it runs
-# outside the sandbox, the script guards itself:
-#   - <name> must match [a-z0-9-]+, and <prompt-file> must be a regular file inside the
-#     current git repo or a temp directory.
-#   - Codex runs under a permissions profile built from the ":workspace" built-in: it writes
-#     only to a fresh temp workspace, and the OS denies it reads of the personal folders in
-#     DENY_READ (verified with a hidden-path probe on codex-cli 0.163).
-# Its final message lands in /private/tmp/codex-reviews/<name>-<time>/review.md; the caller
-# appends it verbatim to the review log. Verdicts are inputs, not approvals.
+# A second opinion during development; the GitHub Codex bot reviews the PR itself. Run it
+# from the playbook, from inside the repo under review:
+#   "$PLAYBOOK_HOME"/tools/codex-review.sh <prompt-file> <name>
+# Codex runs under a permissions profile built from the ":workspace" built-in: it writes only
+# to a fresh temp workspace, and the OS denies it reads of the personal folders in DENY_READ.
+# A repo inside one of them (a project under ~/Documents) stays readable: the script denies
+# that folder's other entries instead, because a nested "read" can't override a parent
+# "deny" (probed on codex-cli 0.163).
+# Its final message lands in /private/tmp/codex-reviews/<name>-<time>/review.md. Findings
+# are inputs, not approvals.
 #
-# Overrides: CODEX_BIN, CODEX_MODEL, CODEX_EFFORT, CODEX_TIER, CODEX_REVIEWS_DIR (output root).
+# Overrides: CODEX_BIN, CODEX_MODEL, CODEX_EFFORT, CODEX_TIER.
 set -euo pipefail
 CODEX="${CODEX_BIN:-/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex}"
 MODEL="${CODEX_MODEL:-gpt-6.1-sol}"
 EFFORT="${CODEX_EFFORT:-high}"
 TIER="${CODEX_TIER:-priority}"
-DENY_READ=("~/Documents" "~/Desktop" "~/Downloads" "~/Library/Mobile Documents"
-           "~/Library/Mail" "~/Library/Messages" "~/.ssh" "~/.aws")
+DENY_READ=("$HOME/Documents" "$HOME/Desktop" "$HOME/Downloads" "$HOME/Library/Mobile Documents"
+           "$HOME/Library/Mail" "$HOME/Library/Messages" "$HOME/.ssh" "$HOME/.aws")
 
 usage() { echo "usage: codex-review.sh <prompt-file> <name>" >&2; exit 2; }
 fail() { echo "✗ $*" >&2; exit 2; }
 [[ $# -eq 2 ]] || usage
 PROMPT_FILE="$1" NAME="$2"
 [[ "$NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "name must match [a-z0-9-]+: $NAME"
-[[ -f "$PROMPT_FILE" && ! -L "$PROMPT_FILE" ]] || fail "prompt file must be a regular file: $PROMPT_FILE"
-PROMPT_REAL="$(cd "$(dirname "$PROMPT_FILE")" && pwd -P)/$(basename "$PROMPT_FILE")"
-ALLOWED=(/private/tmp /tmp /private/var/folders)
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
-[[ -n "$REPO_ROOT" ]] && ALLOWED+=("$(cd "$REPO_ROOT" && pwd -P)")
-ok=0
-for root in "${ALLOWED[@]}"; do [[ "$PROMPT_REAL" == "$root"/* ]] && ok=1; done
-[[ $ok -eq 1 ]] || fail "prompt file must be inside the current git repo or a temp directory"
+[[ -f "$PROMPT_FILE" ]] || fail "prompt file not found: $PROMPT_FILE"
 [[ -x "$CODEX" ]] || fail "codex CLI not found: $CODEX"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[[ -n "$REPO_ROOT" ]] && REPO_ROOT="$(cd "$REPO_ROOT" && pwd -P)"
 
 deny=""
-for p in "${DENY_READ[@]}"; do deny+="${deny:+, }\"$p\"=\"deny\""; done
+add_deny() { local p="${1//\\/\\\\}"; p="${p//\"/\\\"}"; deny+="${deny:+, }\"$p\"=\"deny\""; }
+for d in "${DENY_READ[@]}"; do
+  if [[ -z "$REPO_ROOT" || "$REPO_ROOT/" != "$d/"* ]]; then add_deny "$d"; continue; fi
+  while [[ "$d" != "$REPO_ROOT" ]]; do   # deny the siblings at each level down to the repo
+    rest="${REPO_ROOT#"$d"/}"
+    next="$d/${rest%%/*}"
+    while IFS= read -r -d '' e; do [[ "$e" == "$next" ]] || add_deny "$e"; done \
+      < <(find "$d" -mindepth 1 -maxdepth 1 -print0)
+    d="$next"
+  done
+done
 
-OUT="${CODEX_REVIEWS_DIR:-/private/tmp/codex-reviews}/$NAME-$(date +%Y%m%d-%H%M%S)"
+OUT="/private/tmp/codex-reviews/$NAME-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT/work"
-cp "$PROMPT_REAL" "$OUT/prompt.md"
+cp "$PROMPT_FILE" "$OUT/prompt.md"
 
 echo "codex: $("$CODEX" --version) | out: $OUT"
 start=$(date +%s)

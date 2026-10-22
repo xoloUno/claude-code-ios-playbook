@@ -90,6 +90,9 @@ version_files:                  # kept in sync on a release bump
   - shotsmith/__init__.py
 ```
 
+One more optional fact: `autonomy: off` opts a project out of the core "Autonomy" rules.
+Use it, for example, when merging to `main` deploys a live site.
+
 **Escape hatch — instance prose.** For genuine judgment that isn't a datum and isn't shared:
 the playbook repo's own CHANGELOG/`Superseded by:` logic; c3d's `.dyn` merge-hostility and
 Civil-3D manual-task handoff. Same `## /<verb>` section format as `command-profile.md`. A

@@ -33,7 +33,8 @@ Steps:
 
 4. **Git state** —
    - `git status` must be clean (warn if untracked files)
-   - Current branch must NOT be `main` — should be `dev`, `release/*`, or feature/*
+   - `/deploy` and `/release` run from `main`: on `main` this passes; on any other branch,
+     WARN that its PR must merge first
    - Branch should be pushed and up-to-date with origin
 
 5. **Version sanity** — Read `MARKETING_VERSION` from `project.yml`. Ask the user

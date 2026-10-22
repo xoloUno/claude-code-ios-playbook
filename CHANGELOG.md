@@ -28,6 +28,50 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Autonomy policy: stop asking about routine, reversible work
+
+The core gains an "Autonomy" section. When it applies, sessions no longer ask before routine
+work. They commit to a task branch, push feature branches, open PRs, and merge a PR that
+passes a checklist: tests and lint, CI when the repo has it, current `main`, and Codex's
+`ready to merge`. A fixed list of actions still needs the user. Sessions park those in
+`MANUAL-TASKS.md`, keep working, and send one notification when nothing else is left. The
+policy is inert until the guard is installed (a later PR); until then nothing changes.
+
+**Files affected:**
+- `core/agents-core.md`:
+  - a new "Autonomy" section: when it applies, the merge checklist, what always needs the
+    user, the public-repo text check, and never stopping on a question;
+  - checkpoints commit and push only under autonomy;
+  - `MANUAL-TASKS.md` now also holds approvals and decisions, each marked `approve`, `do`
+    or `decide`.
+- `.claude/commands/wrapup.md`:
+  - never commit or push the default branch;
+  - a failing gate is parked under autonomy;
+  - PRs are created and, if they pass the checklist, merged under autonomy.
+- `.claude/commands/status.md`, `upgrade.md`, `conform.md`, `curate.md`, `context-health.md`,
+  `plugin/commands/upgrade.md`: each step that asks now acts on its own recommendation
+  under autonomy, and asks as before otherwise.
+- `packs/ios/commands/deploy.md`, `release.md`: no more pushing `main` after an upload.
+- `packs/ios/commands/preflight.md`: the git check expects `main`, matching `/deploy` and
+  `/release`.
+- `packs/ios/command-profile.md`: `[skip ci]` stays off the last push before a merge.
+- `packs/ios/rules/metadata-translation.md`: translations are approved once, at the upload.
+- `packs/python/command-profile.md`: a failing test gate follows `/wrapup` stage 4.
+- `core/rules/git-workflow.md`: no hardcoded co-author line.
+- `ios-project-playbook.md`: merges go through PRs and ship nothing.
+- `COMMANDS-ARCHITECTURE.md`: documents the `autonomy: off` fact.
+- `tests/`: the legacy compose fixture covers the new wording.
+
+**In your project:**
+- Opted-in projects: re-render the core block (`/upgrade`, or re-run `bridge-symlink.sh`
+  for non-iOS repos).
+- Composed iOS projects: recompose to pick up the command and pack changes.
+- Plugin installs pick it up at the next plugin version.
+- If merging to `main` deploys something live, add `autonomy: off` to `.claude/project.yml`,
+  or note which paths are live in `AGENTS.md`.
+
+---
+
 ## 2026-10-08 — New projects start in the `AGENTS.md` layout, on Xcode 27.1
 
 `bootstrap.sh` now creates new iOS projects in the layout all six existing projects moved to

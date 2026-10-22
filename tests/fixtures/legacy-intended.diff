@@ -20,6 +20,14 @@
 +- **Scope items.** If the instructions file's project-owned part has a scope/checklist
 +  section, check off any items this session completed.
  
+@@ -62,3 +65,5 @@
+ - **`[skip ci]`.** On a **local** session, append `[skip ci]` to the commit subject unless
+-  the user says otherwise. On a **cloud** session, do **not** — let CI run. (This is the
+-  iOS-specific rule the universal skeleton deliberately stays silent about.)
++  the user says otherwise. On a **cloud** session, do **not** — let CI run. Either way,
++  leave it off the last push before a merge, so CI checks the PR's final commit (core
++  merge checklist). (This is the iOS-specific rule the universal skeleton deliberately
++  stays silent about.)
 --- a/.claude/commands/conform.md
 +++ b/.claude/commands/conform.md
 @@ -25,3 +25,4 @@
@@ -69,7 +77,14 @@
 +   | Core block (opted-in) | ⚠️ stale / N duplicate core rules | git-workflow.md (duplicate), ... |
 +   | Instructions-file sections | ⚠️ N gaps | "Distribution", ... |
     | Doc bloat | ⚠️ N found | MILESTONES.md (see Appendix C) |
-@@ -140,2 +160,10 @@
+@@ -124,3 +144,5 @@
+ 
+-4. **Ask the user how to proceed.** Use `AskUserQuestion` with three options:
++4. **Choose how to proceed.** When autonomy applies (core "Autonomy"), take **Apply all
++   auto-fixable** on a task branch without asking. Otherwise ask the user with
++   `AskUserQuestion`, offering three options:
+    - **Apply all auto-fixable** — apply the HIGH-severity *auto-fixable* items (stale/missing
+@@ -140,2 +162,10 @@
         with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
 +     - `build-deploy.md`, `testing.md`: substitute `[APP_NAME]` with the output of
 +       `bash <playbook>/resolve-xcode-scheme.sh <project>`, run after loading `.env.project` as
@@ -80,28 +95,45 @@
 +       the marked block. Never copy `core/rules/` files in, and never auto-remove a
 +       DUPLICATE_CORE file.
     - **Stale or missing playbook commands (Check B):** for a **composed (iOS)** project, copy from
-@@ -149,3 +177,4 @@
+@@ -149,3 +179,4 @@
       `compose-claude.sh <project> ios`.
 -   - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F),
 +   - **Duplicate core rules (Check A, opted-in), instructions-file template gaps (Check D),
 +     doc bloat (Check E), stranded files (Check F),
       untracked rule files (Check G):** do not auto-apply. Surface again at the end as "manual
-@@ -162,3 +191,3 @@
+@@ -162,3 +193,3 @@
     ⏭️  Skipped: N items (list)
 -   📋 Manual follow-ups: N items (list — bootstrap commands, CLAUDE.md gaps, doc bloat,
 +   📋 Manual follow-ups: N items (list — bootstrap commands, instructions-file gaps, doc bloat,
         stranded files)
-@@ -172,3 +201,4 @@
-   with the user's explicit approval in step 4.
+@@ -171,4 +202,5 @@
+ - This is a read-mostly command — only Check A and Check B writes are auto-applied, and only
+-  with the user's explicit approval in step 4.
 -- Treat project-specific files (CLAUDE.md, fastlane/metadata, project.yml) as user-owned —
++  with the user's explicit approval in step 4, or under autonomy.
 +- Treat project-specific files (`AGENTS.md` outside the playbook core markers, `CLAUDE.md`,
 +  fastlane/metadata, project.yml) as user-owned —
    surface drift but never overwrite.
+--- a/.claude/commands/context-health.md
++++ b/.claude/commands/context-health.md
+@@ -49,2 +49,3 @@
+ 
+-After showing the dashboard, if recommendation is not "Healthy", offer to run `/wrapup`.
++After showing the dashboard, if recommendation is not "Healthy", run `/wrapup` when autonomy
++applies (core "Autonomy"); otherwise offer to.
 --- a/.claude/commands/deploy.md
 +++ b/.claude/commands/deploy.md
-@@ -21,3 +21,4 @@
- 6. Push main with `[skip ci]` to sync remote without triggering any workflows
+@@ -5,3 +5,3 @@
+ - `.env.fastlane` must exist in the project root
+-- Must be on `main` branch (offer to merge dev/feature branch first if not)
++- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
+ - Provisioning profiles must be installed locally (see check below)
+@@ -20,4 +20,6 @@
+ 5. If upload succeeds, ask user if they want to tag this release
+-6. Push main with `[skip ci]` to sync remote without triggering any workflows
 -7. Update "Current State" in CLAUDE.md with the deploy
++6. Never push `main`. If fastlane left commits on `main` (for example a build-number bump),
++   put them on a `chore/` branch and open a PR
 +7. Update "Current State" with the deploy, in the project-owned part of the instructions file
 +   (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
  
@@ -131,11 +163,27 @@
 -### [TODAY'S DATE] — [APP_NAME from CLAUDE.md]
 +### [TODAY'S DATE] — [APP_NAME from the instructions file]
  
+--- a/.claude/commands/preflight.md
++++ b/.claude/commands/preflight.md
+@@ -35,3 +35,4 @@
+    - `git status` must be clean (warn if untracked files)
+-   - Current branch must NOT be `main` — should be `dev`, `release/*`, or feature/*
++   - `/deploy` and `/release` run from `main`: on `main` this passes; on any other branch,
++     WARN that its PR must merge first
+    - Branch should be pushed and up-to-date with origin
 --- a/.claude/commands/release.md
 +++ b/.claude/commands/release.md
-@@ -37,3 +37,4 @@
- 9. Push main with `[skip ci]` to sync remote without triggering any workflows
+@@ -5,3 +5,3 @@
+ - `.env.fastlane` must exist in the project root
+-- Must be on `main` branch (offer to merge dev/feature branch first if not)
++- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
+ - Provisioning profiles must be installed locally (see check below)
+@@ -36,4 +36,6 @@
+ 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
+-9. Push main with `[skip ci]` to sync remote without triggering any workflows
 -10. Update "Current State" in CLAUDE.md with the release
++9. Never push `main`. If fastlane left commits on `main` (for example a build-number bump),
++   put them on a `chore/` branch and open a PR
 +10. Update "Current State" with the release, in the project-owned part of the instructions file
 +    (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
  
@@ -155,6 +203,18 @@
 +5. If the instructions file (`AGENTS.md` when it carries the playbook core markers,
 +   otherwise `CLAUDE.md`) is present **and** has a "Current State" / "current status" section,
     summarize it (last-updated date, what's in flight, next up). If it has no such
+@@ -32,4 +33,4 @@
+ 6. If `WORKLOG.md` is present, read its latest entry — show the date and key points.
+-7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them and ask
+-   whether any are now done.
++7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them at the top of
++   the briefing and ask whether any are now done.
+ 
+@@ -60,2 +61,3 @@
+ 
+-After presenting, ask: "What would you like to work on?"
++After presenting, recommend the next item. When autonomy applies (core "Autonomy"), start
++it unless it needs the user; otherwise ask: "What would you like to work on?"
 --- a/.claude/commands/upgrade.md
 +++ b/.claude/commands/upgrade.md
 @@ -14,3 +14,3 @@
@@ -162,14 +222,21 @@
 -   c. **Legacy fallback** — the `**Inbox location:**` line in
 +   c. **Legacy fallback** (only in projects that still carry the rule) — the `**Inbox location:**` line in
        `.claude/rules/playbook-inbox.md`, with the trailing `/inbox.md` stripped. Skip this
-@@ -30,3 +30,5 @@
+@@ -25,3 +25,5 @@
+      to this project), or **manual** (needs human action)
+-6. Ask the user which entries to apply
++6. When autonomy applies (core "Autonomy"), apply the entries you recommend on a task
++   branch and park the **manual** ones in `MANUAL-TASKS.md`. Otherwise ask the user which
++   entries to apply.
+ 7. For each applied entry:
+@@ -30,3 +32,5 @@
       `packs/<pack>/rules/` directory (rules were reorganized into core + packs),
 -     re-applying the `$PLAYBOOK_HOME` substitution if needed
 +     re-applying the `$PLAYBOOK_HOME` substitution if needed. **Exception:** if the project's
 +     `AGENTS.md` carries the playbook core markers, never copy `core/rules/` files. The core
 +     lives in the generated block; recompose instead (`<playbook>/compose-claude.sh <project> <pack>`)
     - For template/config changes: apply the specific changes described
-@@ -43,3 +45,5 @@
+@@ -43,3 +47,5 @@
  - If a change conflicts with project-specific customizations, flag it and ask the user
 -- Never overwrite project-specific content in CLAUDE.md (scope, decisions, data models, etc.)
 +- Never overwrite project-specific content in the instructions file (`AGENTS.md` /
@@ -178,7 +245,15 @@
  - Rule files can be replaced safely since they're generic; commands may have project tweaks
 --- a/.claude/commands/wrapup.md
 +++ b/.claude/commands/wrapup.md
-@@ -38,4 +38,9 @@
+@@ -30,5 +30,4 @@
+    (`feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>`) from HEAD so the commit
+-   lands on the branch. If already on a feature branch, stay on it. Direct commit/push
+-   to the default is only ever on explicit per-session authorization — "wrap up" alone
+-   in chat is **not** authorization.
++   lands on the branch. If already on a feature branch, stay on it. Never commit or push
++   directly to the default branch.
+ 
+@@ -38,4 +37,9 @@
     - version-file sync (keep declared `version_files` in lockstep on a bump);
 -   - session-state / worklog update — e.g. `CLAUDE.md` "Current State", `WORKLOG.md`
 -     (only if present);
@@ -190,7 +265,18 @@
 +     - A `WORKLOG.md` entry, added at the top as `## [DATE] — [session focus]`, with
 +       **What changed**, **Decisions** and **Blockers** bullets;
     - manual-tasks handoff — if the session produced human-only tasks, append them to
-@@ -54,5 +59,5 @@
+@@ -45,5 +49,7 @@
+ 4. **Run validation gates** — profile-driven; each fires only when declared (tests,
+-   preflight, lint). A failing gate blocks the commit: fix it or get explicit
+-   acknowledgement first. Gates run *after* the mutations (so they check the final tree)
+-   and *before* the commit (so they can still block it).
++   preflight, lint). A failing gate blocks the commit. Fix it. If you can't, then when
++   autonomy applies (core "Autonomy"), park it in `MANUAL-TASKS.md` and carry on with
++   other work; otherwise get explicit acknowledgement first. Gates run *after* the
++   mutations (so they check the final tree) and *before* the commit (so they can still
++   block it).
+ 
+@@ -54,5 +60,5 @@
  6. **Commit.** Conventional message: `type(scope): short description`
 -   (`feat` / `fix` / `docs` / `refactor` / `chore` / `test` …), then
 -   `Co-Authored-By: Claude <noreply@anthropic.com>`. Anything about `[skip ci]` is
@@ -199,6 +285,14 @@
 +   host's settings or the user's policy call for. Don't hardcode a co-author line.
 +   Anything about `[skip ci]` is kind-specific — it comes from the profile, not from here.
  
+@@ -61,3 +67,6 @@
+      open a PR with `gh pr create`. Report the URL.
+-   - On a pre-existing feature branch: push; if no PR exists, offer to create one.
++   - On a pre-existing feature branch: push. If no PR exists, create one when autonomy
++     applies; otherwise offer to.
++   - When autonomy applies and the PR meets the core merge checklist, merge it and delete
++     its branch. Otherwise leave it open and list it in step 8.
+    - Never `git push --force` without an explicit request.
 --- a/.claude/rules/asc-troubleshooting.md
 +++ b/.claude/rules/asc-troubleshooting.md
 @@ -5,2 +5,6 @@
@@ -207,4 +301,29 @@
 +Before asserting what fastlane or ASC will do (timeouts, retries, metadata sync, accepted
 +dimensions or alpha, version-state transitions), read the installed `fastlane/<tool>/lib/...`
 +source or query the ASC API with the JWT helper below. Don't recall it from memory.
+ 
+--- a/.claude/rules/git-workflow.md
++++ b/.claude/rules/git-workflow.md
+@@ -40,3 +40,4 @@
+ 2. Stage selectively with explicit pathspecs (never `git add .` blindly)
+-3. Conventional commit + `Co-Authored-By: Claude <noreply@anthropic.com>`
++3. Conventional commit, with attribution per the host's settings and the user's policy
++   (don't hardcode a co-author line)
+ 4. Push to a feature/fix branch, not `main`
+--- a/.claude/rules/metadata-translation.md
++++ b/.claude/rules/metadata-translation.md
+@@ -100,7 +100,10 @@
+      terms, do-not-translate list, regional variants)
+-4. Show a diff (old locale file vs. proposed new translation)
+-5. Ask for approval before writing — translations are high-stakes
++4. Write the new translation and show a diff (old locale file vs. new
++   translation)
++5. Get approval before any metadata upload — translations are high-stakes
+    (App Store rejection risk for bad translations; cultural missteps are
+-   not reversible without a new submission)
+-6. Write the new translation only after approval
++   not reversible without a new submission). The App Store Connect upload
++   already needs the user's yes, so ask once there, not per locale
++6. Upload nothing until that approval; unapproved translations stay on the
++   branch
  

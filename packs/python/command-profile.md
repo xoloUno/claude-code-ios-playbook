@@ -58,6 +58,7 @@ Slot these into the universal flow at the stage named — not in list order.
 - **Tests.** If `project.yml` declares a `test_command` (or a `tests/` directory exists),
   run it — the declared command, or `python3 -m pytest -q` by default — when Python source
   changed. (Same runner `/test` invokes; `python3 -m` form survives a missing `pytest`
-  console script.) Failures must be fixed or explicitly acknowledged before the commit. This is a *gate*:
+  console script.) Failures must be fixed before the commit, or handled as `/wrapup`
+  stage 4 says. This is a *gate*:
   it runs after the record mutations above and before staging/commit, so a red test can
   still stop the commit.

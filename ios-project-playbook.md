@@ -437,8 +437,9 @@ feature/*     ← one branch per feature
 fix/*         ← one branch per bug fix
 ```
 
-Never commit directly to `main`. Push to `dev` or feature branches. Merge to `main` only
-when ready for TestFlight or App Store.
+Never commit directly to `main`. Push to `dev` or feature branches, and merge to `main`
+through a PR. TestFlight and App Store uploads are separate steps you start by hand, so a
+merge ships nothing.
 
 **Concurrent Claude Code sessions:** If you run multiple Claude Code sessions against the
 same repo simultaneously, use **worktrees** (`/worktree` in Claude Code) to give each
@@ -1515,7 +1516,8 @@ This is a blocking error — no builds can be uploaded until the version is bump
 - Reply to the rejection in Resolution Center to provide context, but the resubmission
   is done through the normal submission flow (select new build on the version page)
 - In the App Review Information → Notes field, explain what changed since the last review
-- Bump build number, push to main, wait for TestFlight processing, then submit
+- Bump the build number, merge it to main through a PR, wait for TestFlight processing,
+  then submit
 
 ---
 

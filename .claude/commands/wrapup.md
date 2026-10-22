@@ -28,9 +28,8 @@ work never lands on the protected default.
 2. **Decide the branch route — before any commit.** If on `main` (or the repo's
    protected default), do **NOT** commit there: create a feature branch
    (`feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>`) from HEAD so the commit
-   lands on the branch. If already on a feature branch, stay on it. Direct commit/push
-   to the default is only ever on explicit per-session authorization — "wrap up" alone
-   in chat is **not** authorization.
+   lands on the branch. If already on a feature branch, stay on it. Never commit or push
+   directly to the default branch.
 
 3. **Apply record mutations** — profile-driven; each fires only when relevant. These
    produce content that must be committed, so they run **before staging**. Common kinds:
@@ -48,9 +47,11 @@ work never lands on the protected default.
    - prose-humanizer on touched user-facing prose (this is a *mutation*, not a gate).
 
 4. **Run validation gates** — profile-driven; each fires only when declared (tests,
-   preflight, lint). A failing gate blocks the commit: fix it or get explicit
-   acknowledgement first. Gates run *after* the mutations (so they check the final tree)
-   and *before* the commit (so they can still block it).
+   preflight, lint). A failing gate blocks the commit. Fix it. If you can't, then when
+   autonomy applies (core "Autonomy"), park it in `MANUAL-TASKS.md` and carry on with
+   other work; otherwise get explicit acknowledgement first. Gates run *after* the
+   mutations (so they check the final tree) and *before* the commit (so they can still
+   block it).
 
 5. **Stage selectively** — never `git add .` blindly, and always with explicit
    pathspecs. Group related changes into logical commits when several concerns were
@@ -64,7 +65,10 @@ work never lands on the protected default.
 7. **Push / PR.**
    - On a branch created in step 2 off the default: `git push -u origin <branch>` and
      open a PR with `gh pr create`. Report the URL.
-   - On a pre-existing feature branch: push; if no PR exists, offer to create one.
+   - On a pre-existing feature branch: push. If no PR exists, create one when autonomy
+     applies; otherwise offer to.
+   - When autonomy applies and the PR meets the core merge checklist, merge it and delete
+     its branch. Otherwise leave it open and list it in step 8.
    - Never `git push --force` without an explicit request.
 
 8. **Confirm** to the user: what was committed, which branch, the PR URL (if any), and

@@ -41,11 +41,13 @@ plan restrictions. Verifying them is not authorization to change them.
 - Don't ask about routine work. Commit to a task branch, push feature branches, open and
   update your own PRs, and merge a PR that meets the checklist below, then delete its branch.
 - Merge checklist:
+  - the work is finished, not a checkpoint;
   - the project's tests and lint pass on the PR's latest commit;
   - if the repo has CI, at least one check ran on that commit and every check passed, so
     leave `[skip ci]` off the last push;
   - the branch contains the current `main`;
-  - the latest Codex verdict on the PR is `ready to merge`, within 3 review rounds;
+  - Codex's verdict on the PR's latest commit is `ready to merge`, within 3 review rounds;
+    review again after every push;
   - nothing in the PR needs the user (next bullet).
 
   For playbook shared source, `pytest` must also pass, and a compose diff must show only
@@ -59,7 +61,8 @@ plan restrictions. Verifying them is not authorization to change them.
     a live site serves;
   - repo settings, secrets and credentials;
   - money, and messages to people;
-  - changes to guardrails, deploy workflows or signing;
+  - changes to guardrails (this section, permission settings, hooks), deploy workflows or
+    signing;
   - new dependencies;
   - material departures from the agreed request;
   - anything irreversible, such as discarding uncommitted work, deleting files you didn't

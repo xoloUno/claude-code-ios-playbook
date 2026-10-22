@@ -49,10 +49,14 @@ asks as before. The drift fixes below apply right away.
   - never commit or push the default branch;
   - a failing gate is parked under autonomy;
   - PRs are created and, if they pass the checklist, merged under autonomy.
-- `.claude/commands/status.md`, `upgrade.md`, `conform.md`, `curate.md`, `context-health.md`,
-  `plugin/commands/upgrade.md`: each step that asks now acts on its own recommendation
-  under autonomy, and asks as before otherwise, including when the core block has no
-  "Autonomy" section yet.
+- `.claude/commands/upgrade.md`, `conform.md`, `curate.md`, `plugin/commands/upgrade.md`:
+  each step that asks now acts on its own recommendation under autonomy. It asks as before
+  otherwise, including when the core block has no "Autonomy" section yet. `/curate` parks
+  any adoption that touches a guardrail.
+- `.claude/commands/context-health.md`: under autonomy, an unhealthy session commits and
+  pushes a checkpoint, without opening or merging a PR.
+- `.claude/commands/status.md`: unchecked `MANUAL-TASKS.md` items are listed first, and the
+  briefing recommends the next item. It still changes nothing.
 - Under autonomy only:
   - `packs/ios/command-profile.md`: `[skip ci]` stays off the last push before a merge.
   - `packs/ios/rules/metadata-translation.md`: translations are approved once, at the

@@ -10,8 +10,8 @@ Steps:
    - **Discard** — not useful, already covered, or too project-specific.
 4. When autonomy applies (core "Autonomy"; never without that section), act on your own
    recommendations on a task branch; adopted rule changes still need the merge checklist's
-   compose diff. Otherwise ask the user for their decision on each entry (or let them
-   batch: "adopt all", etc.)
+   compose diff, and any adoption that touches a guardrail is parked for the user. Otherwise
+   ask the user for their decision on each entry (or let them batch: "adopt all", etc.)
 5. For adopted entries:
    - Make the change to the appropriate file (playbook, CLAUDE-TEMPLATE.md,
      `.claude/rules/*.md`, `bootstrap.sh`, etc.)

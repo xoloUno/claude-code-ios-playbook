@@ -115,11 +115,12 @@
    surface drift but never overwrite.
 --- a/.claude/commands/context-health.md
 +++ b/.claude/commands/context-health.md
-@@ -49,2 +49,3 @@
+@@ -49,2 +49,4 @@
  
 -After showing the dashboard, if recommendation is not "Healthy", offer to run `/wrapup`.
-+After showing the dashboard, if recommendation is not "Healthy", run `/wrapup` when autonomy
-+applies (core "Autonomy"; never without that section); otherwise offer to.
++After showing the dashboard, if recommendation is not "Healthy": when autonomy applies (core
++"Autonomy"; never without that section), commit and push the task branch as a checkpoint,
++without opening or merging a PR; otherwise offer to run `/wrapup`.
 --- a/.claude/commands/deploy.md
 +++ b/.claude/commands/deploy.md
 @@ -5,3 +5,3 @@
@@ -209,12 +210,10 @@
 +7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them at the top of
 +   the briefing and ask whether any are now done.
  
-@@ -60,2 +61,4 @@
+@@ -60,2 +61,2 @@
  
 -After presenting, ask: "What would you like to work on?"
-+After presenting, recommend the next item. When autonomy applies (core "Autonomy"; never
-+without that section), start it unless it needs the user; otherwise ask: "What would you
-+like to work on?"
++After presenting, recommend the next item and ask: "What would you like to work on?"
 --- a/.claude/commands/upgrade.md
 +++ b/.claude/commands/upgrade.md
 @@ -14,3 +14,3 @@

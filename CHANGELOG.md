@@ -773,7 +773,8 @@ siblings of the playbook directory.
 > and into the prose-humanizer step of `packs/ios/command-profile.md`.
 >
 > **Partially superseded by:** 2026-10-22 — Autonomy policy. Under autonomy, translations are
-> written on the release branch and approved once, with the App Store Connect upload, instead
+> written on a task branch, merged before `/release`, and approved once, with the App Store
+> Connect upload, instead
 > of before writing. Without autonomy, approval before writing still applies.
 
 Codifies the multi-locale App Store metadata workflow into a new rule:

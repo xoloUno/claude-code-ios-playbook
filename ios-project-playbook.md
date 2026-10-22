@@ -1519,8 +1519,8 @@ This is a blocking error — no builds can be uploaded until the version is bump
 - Reply to the rejection in Resolution Center to provide context, but the resubmission
   is done through the normal submission flow (select new build on the version page)
 - In the App Review Information → Notes field, explain what changed since the last review
-- Bump the build number, merge it to main through a PR, wait for TestFlight processing,
-  then submit
+- Bump the build number, merge it to main through a PR, upload it with `/deploy` (or start
+  the TestFlight workflow by hand), wait for TestFlight processing, then submit
 
 ---
 

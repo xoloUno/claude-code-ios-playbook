@@ -105,9 +105,10 @@ locale directory under `fastlane/metadata/`:
 6. Write the new translation only after approval
 
 When autonomy applies (core "Autonomy"; never without that section), write
-the translations on the release branch instead, and ask once, with the App
-Store Connect upload approval, rather than per locale. Upload nothing until
-then.
+the translations on a task branch instead, and merge them through a PR before
+`/release`, which runs from `main`. Merging uploads nothing. Ask once, with
+the App Store Connect upload approval, rather than per locale, and upload
+nothing until then.
 
 ## ASC character limits
 

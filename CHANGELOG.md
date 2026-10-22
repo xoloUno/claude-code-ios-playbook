@@ -28,6 +28,35 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — New projects pin Xcode once, in `.xcode-version`
+
+`bootstrap.sh` now emits the lean Xcode pin piloted in flara-app #65. A new project names its
+Xcode in one file that CI reads at run time, instead of in each workflow.
+
+- **`.xcode-version`** (`27.1`) is the project's only Xcode pin. `bootstrap.sh` writes it and
+  `project.yml`'s `xcodeVersion` from the same `XCODE_VERSION` value.
+- **Workflows:** `build-check.yml`, `testflight.yml` and `release.yml` select
+  `/Applications/Xcode_<version>.app` from `.xcode-version` and print `xcodebuild -version`. A
+  runner without that Xcode fails the step and lists the Xcodes it has. The runner label
+  (`xcode-27`) stays written in each workflow, since it changes about once a year.
+- **Build Check** also fails when `project.yml`'s `xcodeVersion` differs from `.xcode-version`.
+  It strips whitespace, so a CRLF file passes, and compares fixed strings, so `2701` doesn't
+  match `27.1`.
+- **Bumping Xcode:** `ios-project-playbook.md` Appendix D ("When Xcode updates") now covers
+  moving an app's CI and bumping the bootstrap pin.
+- **`tests/test_compose_agents_md.py`** (51 tests):
+  - The pin test runs bootstrap's pin section and checks the file and `project.yml` it writes,
+    each workflow's runner label, and that no workflow names an Xcode version.
+  - A new test runs the workflows' own scripts. The pin check passes the emitted pin, with LF
+    or CRLF, and fails on `2701` and on a different version. Select Xcode fails, listing the
+    installed Xcodes, when the pinned one is missing.
+
+**In your project:** nothing to do. Only what `bootstrap.sh` creates changes; composed output
+is unchanged. flara-app already has the pin. teewye-app and broadsheet-app still pin Xcode 26.3
+in their workflows and adopt `.xcode-version` in their own PRs.
+
+---
+
 ## 2026-10-22 — Plugin `v1.2.3` — restore only fastlane's files
 
 A patch release that narrows 1.2.2. `git checkout -- .` would also discard tracked files

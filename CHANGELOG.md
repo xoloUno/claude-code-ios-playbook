@@ -28,6 +28,36 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Autonomy settings: exempt the commands the sandbox breaks
+
+The first canary run of the autonomy settings found three breaks inside Claude Code's
+sandbox:
+- `git push` couldn't authenticate, because the macOS keychain is unreachable;
+- `gh` couldn't read its own config;
+- `simctl` couldn't reach `CoreSimulatorService`, so iOS simulator builds and tests failed.
+- Python couldn't load packages from `~/Library/Python` (user installs such as pytest),
+  because the read fence covers the whole home folder.
+
+`settings/autonomy.json` now runs `git push`, `git fetch`, `git pull`, `gh`, `xcodebuild` and
+`xcrun simctl` outside the sandbox. The deny and ask rules and the guard hook still check
+them before they run, which matches how they ran before the settings existed. Sandboxed
+commands may also read `~/Library/Python`, `~/Library/Developer` and `~/Library/Caches`,
+which hold toolchains, not personal files.
+- `xcodebuild` builds run repo build scripts unsandboxed. That's the same exposure as the
+  Xcode MCP, which already runs outside the sandbox.
+- The Codex reviewer is exempt only when invoked exactly as
+  `~/.config/playbook/tools/codex-review.sh <prompt> <name>`, with no prefix or chain.
+  `codex-review.sh` now says so.
+
+**Files affected:** `settings/autonomy.json`; `tools/codex-review.sh` (header, plus a
+`CODEX_REVIEWS_DIR` output override for tests); `tests/test_install_autonomy.py`, which now
+passes inside the sandbox.
+
+**In your project:** nothing. The owner re-runs `tools/install-autonomy.py`, which adds the
+new entries to `~/.claude/settings.json`.
+
+---
+
 ## 2026-10-22 — Autonomy guardrails: settings template, guard hook, installer
 
 This adds the pieces the core "Autonomy" policy waits for. Installing them doesn't turn

@@ -28,7 +28,15 @@
     "enabled": true,
     "failIfUnavailable": true,
     "allowUnsandboxedCommands": false,
-    "excludedCommands": ["~/.config/playbook/tools/codex-review.sh *"],
+    "excludedCommands": [
+      "~/.config/playbook/tools/codex-review.sh *",
+      "git push *",
+      "git fetch *",
+      "git pull *",
+      "gh *",
+      "xcodebuild *",
+      "xcrun simctl *"
+    ],
     "filesystem": {
       "denyRead": [
         "~/Documents",
@@ -40,6 +48,7 @@
         "~/.ssh",
         "~/.aws"
       ],
+      "allowRead": ["~/Library/Python", "~/Library/Developer", "~/Library/Caches"],
       "allowWrite": ["~/Library/Developer", "~/Library/Caches"]
     },
     "network": {

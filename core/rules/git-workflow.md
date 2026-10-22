@@ -38,7 +38,8 @@ Rules: ≤72 char subject, present tense, no trailing period.
 At session end (the universal mechanics; the full sequence is driven by `/wrapup`):
 1. `git status` — review changes
 2. Stage selectively with explicit pathspecs (never `git add .` blindly)
-3. Conventional commit + `Co-Authored-By: Claude <noreply@anthropic.com>`
+3. Conventional commit, with attribution per the host's settings and the user's policy
+   (don't hardcode a co-author line)
 4. Push to a feature/fix branch, not `main`
 
 **Session-end record mutations** — updating a changelog or release notes, a `WORKLOG.md`,

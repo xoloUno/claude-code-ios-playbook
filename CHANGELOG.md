@@ -28,6 +28,60 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Autonomy policy: stop asking about routine, reversible work
+
+The core gains an "Autonomy" section. When it applies, sessions no longer ask before routine
+work. They commit to a task branch, push feature branches, open PRs, and merge a PR that
+passes a checklist: tests and lint, CI when the repo has it, current `main`, and Codex's
+`ready to merge`. A fixed list of actions still needs the user. Sessions park those in
+`MANUAL-TASKS.md`, keep working, and send one notification when nothing else is left. The
+autonomy steps stay off until the guard is installed (a later PR); until then every command
+asks as before. The drift fixes below apply right away.
+
+**Files affected:**
+- `core/agents-core.md`:
+  - a new "Autonomy" section: when it applies, the merge checklist, what always needs the
+    user, the public-repo text check, and never stopping on a question;
+  - checkpoints commit and push only under autonomy;
+  - `MANUAL-TASKS.md` now also holds approvals and decisions, each marked `approve`, `do`
+    or `decide`.
+- `.claude/commands/wrapup.md`:
+  - never commit or push the default branch;
+  - a failing gate is parked under autonomy;
+  - PRs are created and, if they pass the checklist, merged under autonomy.
+- `.claude/commands/upgrade.md`, `conform.md`, `curate.md`, `plugin/commands/upgrade.md`:
+  each step that asks now acts on its own recommendation under autonomy. It asks as before
+  otherwise, including when the core block has no "Autonomy" section yet. `/curate` parks
+  any adoption that touches a guardrail.
+- `.claude/commands/context-health.md`: under autonomy, an unhealthy session commits and
+  pushes a checkpoint, without opening or merging a PR.
+- `.claude/commands/status.md`: unchecked `MANUAL-TASKS.md` items are listed first, and the
+  briefing recommends the next item. It still changes nothing.
+- Under autonomy only:
+  - `packs/ios/command-profile.md`: `[skip ci]` stays off the last push before a merge.
+  - `packs/ios/rules/metadata-translation.md`: translations are approved once, at the
+    upload.
+- Drift fixes, in effect now:
+  - `packs/ios/commands/deploy.md`, `release.md`: no more pushing `main` after an upload.
+  - `packs/ios/commands/preflight.md`: the git check expects `main`, matching `/deploy` and
+    `/release`.
+  - `packs/python/command-profile.md`: a failing test gate follows `/wrapup` stage 4.
+  - `core/rules/git-workflow.md`: no hardcoded co-author line.
+  - `ios-project-playbook.md`: merges go through PRs and ship nothing; no hardcoded
+    co-author trailer; the `[skip ci]` note matches the pack.
+- `COMMANDS-ARCHITECTURE.md`: documents the `autonomy: off` fact.
+- `tests/`: the legacy compose fixture covers the new wording.
+
+**In your project:**
+- Opted-in projects: re-render the core block (`/upgrade`, or re-run `bridge-symlink.sh`
+  for non-iOS repos).
+- Composed iOS projects: recompose to pick up the command and pack changes.
+- Plugin installs pick it up at the next plugin version.
+- If merging to `main` deploys something live, add `autonomy: off` to `.claude/project.yml`,
+  or note which paths are live in `AGENTS.md`.
+
+---
+
 ## 2026-10-08 — New projects start in the `AGENTS.md` layout, on Xcode 27.1
 
 `bootstrap.sh` now creates new iOS projects in the layout all six existing projects moved to
@@ -717,6 +771,11 @@ siblings of the playbook directory.
 > per-kind command profiles. The `metadata-translation.md` rule is unchanged; only the
 > `/wrapup` locale-drift note moved — out of the deleted `.claude/templates/commands/wrapup.md`
 > and into the prose-humanizer step of `packs/ios/command-profile.md`.
+>
+> **Partially superseded by:** 2026-10-22 — Autonomy policy. Under autonomy, translations are
+> written on a task branch, merged before `/release`, and approved once, with the App Store
+> Connect upload, instead of before writing. Without autonomy, approval before writing
+> still applies.
 
 Codifies the multi-locale App Store metadata workflow into a new rule:
 **en-US is the source of truth, humanized continuously via `/wrapup`;

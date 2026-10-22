@@ -32,15 +32,19 @@ CORE_RULES = ["assertion-discipline.md", "git-workflow.md", "manual-tasks.md",
 ENV = {k: v for k, v in os.environ.items()
        if k not in ("XCODE_SCHEME", "PRIMARY_SIM", "PROVISIONING_PROFILES", "METADATA_LOCALES")}
 ENV["PLAYBOOK_HOME"] = "/fixture/playbook-home"
-# Composed files the canary changes on purpose for unmarked (legacy) projects too: the
-# instructions-file wording, the R3 attribution fix, the worklog format, and the
-# one-sentence ASC addition. Their exact contents are pinned by LEGACY_FIXTURE.
+# Composed files changed on purpose for unmarked (legacy) projects too: the canary's
+# instructions-file wording, R3 attribution fix, worklog format and one-sentence ASC
+# addition, and the 2026-10-22 autonomy policy. Their exact contents are pinned by
+# LEGACY_FIXTURE.
 INTENDED_LEGACY_CHANGES = {
     os.path.join(".claude", "commands", n) for n in (
         "wrapup.md", "status.md", "inbox.md", "upgrade.md", "conform.md",
-        "deploy.md", "feature.md", "release.md", "review.md")
-} | {os.path.join(".claude", "command-profile.md"),
-     os.path.join(".claude", "rules", "asc-troubleshooting.md")}
+        "context-health.md", "deploy.md", "feature.md", "preflight.md",
+        "release.md", "review.md")
+} | {os.path.join(".claude", "command-profile.md")} | {
+    os.path.join(".claude", "rules", n) for n in (
+        "asc-troubleshooting.md", "git-workflow.md", "metadata-translation.md")
+}
 
 PREFIX = b"# AGENTS.md \xe2\x80\x94 Fixture\n\nProject intro line.\n\n" + BEGIN + b"\n"
 SUFFIX = END + b"\n\n## Current State\n\nFixture state.\n"

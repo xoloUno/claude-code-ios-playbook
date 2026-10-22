@@ -142,7 +142,9 @@ Steps:
 
    If everything is aligned, present a single line: `✓ Project conforms to the playbook — no drift detected.` and stop.
 
-4. **Ask the user how to proceed.** Use `AskUserQuestion` with three options:
+4. **Choose how to proceed.** When autonomy applies (core "Autonomy"; never without that
+   section), take **Apply all auto-fixable** on a task branch without asking. Otherwise ask
+   the user with `AskUserQuestion`, offering three options:
    - **Apply all auto-fixable** — apply the HIGH-severity *auto-fixable* items (stale/missing
      rule files and playbook commands — Checks A and B) without per-item confirmation. Skip
      MEDIUM/LOW items, and skip Check G (HIGH but advisory — its fix touches the project-owned
@@ -198,7 +200,7 @@ Steps:
 
 Important:
 - This is a read-mostly command — only Check A and Check B writes are auto-applied, and only
-  with the user's explicit approval in step 4.
+  with the user's explicit approval in step 4, or under autonomy.
 - Treat project-specific files (`AGENTS.md` outside the playbook core markers, `CLAUDE.md`,
   fastlane/metadata, project.yml) as user-owned —
   surface drift but never overwrite.

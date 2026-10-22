@@ -3,7 +3,7 @@ Deploy the current state to TestFlight from this local machine.
 Prerequisites — abort if any fail:
 - This MUST be a local session (not cloud — cloud sessions cannot run fastlane)
 - `.env.fastlane` must exist in the project root
-- Must be on `main` branch (offer to merge dev/feature branch first if not)
+- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
 - Provisioning profiles must be installed locally (see check below)
 
 Steps:
@@ -18,7 +18,8 @@ Steps:
 3. Run SwiftLint: `/opt/homebrew/bin/swiftlint lint --strict --quiet`
 4. Run: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
 5. If upload succeeds, ask user if they want to tag this release
-6. Push main with `[skip ci]` to sync remote without triggering any workflows
+6. Never push `main`. If fastlane left commits on `main` (for example a build-number bump),
+   put them on a `chore/` branch and open a PR
 7. Update "Current State" with the deploy, in the project-owned part of the instructions file
    (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
 

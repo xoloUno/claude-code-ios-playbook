@@ -26,20 +26,67 @@ plan restrictions. Verifying them is not authorization to change them.
 - At session start, inspect existing changes. Preserve work you didn't make and carry on
   with independent work. Ask before altering, committing or stashing unrelated changes.
 - Checkpoint at logical milestones. If repeated mistakes suggest the context is degrading,
-  say so and suggest a fresh session. Preserve work without committing or pushing
-  automatically.
+  say so and suggest a fresh session. When autonomy applies, commit checkpoints to the task
+  branch and push it; otherwise preserve work without committing or pushing automatically.
 - Before committing code changes, run the project's applicable declared validation gates.
   Use its test workflow when there is one, otherwise the documented test command. Report
   failures, blockers or an unconfigured runner, and never claim that skipped checks passed.
 
+### Autonomy
+- This section applies only in Claude Code sessions, only when
+  `~/.config/playbook/tools/autonomy-guard.sh` exists, and only when neither
+  `PLAYBOOK_AUTONOMY=off` in `~/.config/playbook/config` nor `autonomy: off` in
+  `.claude/project.yml` switches it off. Otherwise commit, push and merge only when the user
+  asks; running `/wrapup` asks for a commit, a push and a PR.
+- Don't ask about routine work. Commit to a task branch, push feature branches, open and
+  update your own PRs, and merge a PR that meets the checklist below, then delete its branch.
+- Merge checklist:
+  - the work is finished, not a checkpoint;
+  - the project's tests and lint pass on the PR's latest commit;
+  - if the repo has CI, at least one check ran on that commit and every check passed, so
+    leave `[skip ci]` off the last push;
+  - the branch contains the current `main`;
+  - Codex's verdict on the PR's latest commit is `ready to merge`, within 3 review rounds;
+    review again after every push;
+  - nothing in the PR needs the user (next bullet).
+
+  For playbook shared source, `pytest` must also pass, and a compose diff must show only
+  the intended downstream changes. If any item fails, park the PR.
+- These always need the user:
+  - device testing;
+  - App Store Connect and Developer Portal actions;
+  - force pushes, history rewrites, and deleting unmerged branches;
+  - tags and releases;
+  - publishing something live, meaning a push or merge that deploys a site or changes files
+    a live site serves;
+  - repo settings, secrets and credentials;
+  - money, and messages to people;
+  - changes to guardrails (this section, permission settings, hooks), deploy workflows or
+    signing;
+  - new dependencies;
+  - material departures from the agreed request;
+  - anything irreversible, such as discarding uncommitted work, deleting files you didn't
+    create, dropping a stash, or wiping simulator or database data.
+
+  Park these instead of stopping.
+- On public repos, check PR titles, descriptions, comments and attachments for personal
+  details and secrets before posting them.
+- Never stop on a question. Ask once with your recommendation, park it, and keep doing
+  independent work. When only parked items remain, send one notification and end the turn.
+
 ### Handoffs and records
-- Human-only tasks (store or portal UIs, repository settings, physical devices, logins) go
-  in `MANUAL-TASKS.md` at the repository root, not only in chat. Check first that you can't
-  do them yourself. Append under a dated heading, group by destination, give exact
-  navigation paths and values, keep outstanding tasks from earlier sessions, and note
-  prerequisites.
-- At session start, if `MANUAL-TASKS.md` has unchecked items, ask whether they're done
-  before starting work that depends on them.
+- Anything that needs the user goes in `MANUAL-TASKS.md` at the repository root, not only in
+  chat. That covers human-only tasks (store or portal UIs, repository settings, physical
+  devices, logins), approvals and decisions. Check first that you can't do them yourself.
+  - Append under a dated heading, group by destination, give exact navigation paths and
+    values, keep outstanding items from earlier sessions, and note prerequisites.
+  - Mark each item `approve`, `do` or `decide`, and say what it blocks. Give an `approve`
+    item the commit or build it applies to.
+- At session start, list unchecked `MANUAL-TASKS.md` items first, and ask whether they're
+  done before starting work that depends on them.
+  - An approval covers only its item, at that commit or build. If the target moved, park it
+    again.
+  - Marking a `do` item done reports a manual step; it never authorizes an action.
 - When resuming work, read the latest `WORKLOG.md` entry if there is one. At session end,
   follow the project's declared wrapup workflow:
   - if the project uses `WORKLOG.md`, add a dated entry at the top covering what changed,

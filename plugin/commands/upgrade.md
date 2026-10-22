@@ -38,8 +38,9 @@ you run this verb and commit the result. `/conform` remains the drift detector.
    and `git diff -- .claude`. Summarize what changed (commands added/updated, rules refreshed,
    `command-profile.md` written). Composed `.claude/**` is committed and playbook-owned — never
    touch project-owned files (`settings.local.json`, `project.yml`, `command-profile.local.md`,
-   `.env.project`). Then ask the user to review and commit; do not stage or commit on their behalf
-   unless they ask.
+   `.env.project`). When autonomy applies (core "Autonomy"; never without that section),
+   commit the composed `.claude/` changes on a task branch and open a PR. Otherwise ask the
+   user to review and commit; do not stage or commit on their behalf unless they ask.
 
 ## Notes
 

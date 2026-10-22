@@ -31,8 +31,8 @@ If none are present, the universal steps stand alone.
    summarize it (last-updated date, what's in flight, next up). If it has no such
    section — e.g. a principles-only operating guide — skip it; don't invent one.
 6. If `WORKLOG.md` is present, read its latest entry — show the date and key points.
-7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them and ask
-   whether any are now done.
+7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them at the top of
+   the briefing and ask whether any are now done.
 
 Then fold in whatever `## /status` checks the profile files contributed.
 
@@ -59,4 +59,4 @@ inbox count, …):
 - ✓ Clean — no flags <if nothing to report>
 ```
 
-After presenting, ask: "What would you like to work on?"
+After presenting, recommend the next item and ask: "What would you like to work on?"

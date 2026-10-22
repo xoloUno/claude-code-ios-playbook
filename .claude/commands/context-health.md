@@ -47,4 +47,6 @@ Recommendation thresholds:
 - **Checkpoint now:** >8 uncommitted files OR >300 uncommitted lines OR uncommitted
   changes with no commits in >1 hour
 
-After showing the dashboard, if recommendation is not "Healthy", offer to run `/wrapup`.
+After showing the dashboard, if recommendation is not "Healthy": when autonomy applies (core
+"Autonomy"; never without that section), commit and push the task branch as a checkpoint,
+without opening or merging a PR; otherwise offer to run `/wrapup`.

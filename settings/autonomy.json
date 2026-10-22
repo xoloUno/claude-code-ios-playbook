@@ -1,0 +1,62 @@
+{
+  "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
+    "additionalDirectories": ["__PLAYBOOK_HOME__"],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * main)",
+      "Bash(git push * HEAD:main)",
+      "Bash(git push *--no-verify*)",
+      "Bash(gh repo delete *)",
+      "Edit(~/.config/playbook/**)"
+    ],
+    "ask": [
+      "Bash(fastlane *)",
+      "Bash(bundle exec fastlane *)",
+      "Bash(gh repo edit *)",
+      "Bash(gh secret *)",
+      "Bash(gh workflow run *)",
+      "Bash(gh release *)",
+      "Bash(xcrun simctl erase *)",
+      "Bash(xcrun simctl uninstall *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": ["~/.config/playbook/tools/codex-review.sh *"],
+    "filesystem": {
+      "denyRead": [
+        "~/Documents",
+        "~/Desktop",
+        "~/Downloads",
+        "~/Library/Mobile Documents",
+        "~/Library/Mail",
+        "~/Library/Messages",
+        "~/.ssh",
+        "~/.aws"
+      ],
+      "allowWrite": ["~/Library/Developer", "~/Library/Caches"]
+    },
+    "network": {
+      "allowedDomains": ["github.com", "*.github.com", "*.githubusercontent.com"]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -I \"$HOME/.config/playbook/tools/autonomy-guard.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

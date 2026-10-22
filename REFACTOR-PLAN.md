@@ -57,8 +57,9 @@
 > **Autonomy policy (2026-10-22):** the core gained an "Autonomy" section (#41 → `90fb81e`).
 > Routine, reversible work runs without per-step approval; a fixed list still goes to the user.
 > The sandbox, guard hook and installer from #43 and #44 were rolled back after the canary and
-> removed in the lean cleanup; autonomy now rests on auto mode, a few native rules and
-> `PLAYBOOK_AUTONOMY=on` (decision **Auto** in §2, steps in §9).
+> removed in the lean cleanup (#45 → `e3c04f0`); autonomy now rests on auto mode, a few native
+> rules and `PLAYBOOK_AUTONOMY=on`, and the owner switched it on the same day. It reaches each
+> project once its core block is re-rendered (decision **Auto** in §2, steps in §9).
 > **Next:** lift the lean Xcode pin (`.xcode-version`, piloted on Flara #65) into `bootstrap.sh`,
 > then M0/M1. See §9.
 
@@ -581,16 +582,17 @@ the workflow output (run `wf_e73fd29f-ed9`).
   - [x] PR 1, the policy text: #41 → `90fb81e`.
   - [x] PR 2 (#43 → `85a165d`) and sandbox exemptions (#44 → `26cf2ac`). The canary broke
     push, `gh`, `simctl` and pytest inside the sandbox, so the settings were rolled back.
-  - [x] Lean cleanup: the sandbox, guard, installer and word list are gone; `PLAYBOOK_AUTONOMY=on`
-    alone switches autonomy on; one GitHub Codex bot review per PR; `codex-review.sh` stays as
-    a second opinion during development.
-  - [ ] flara-web gets `autonomy: off`, and flara-app's `AGENTS.md` notes that Pages serves
-    `docs/`. Do this before switching on.
-  - [ ] Owner, once: merge `settings/autonomy.json` into `~/.claude/settings.json`; decide
-    whether to add an `autoMode.allow` entry for checklist merges (auto mode blocks merges no
-    human approved); remove the old copies in `~/.config/playbook/` (`autonomy-guard.py`,
-    `tools/codex-review.sh`, `pii-words.txt`); then set `PLAYBOOK_AUTONOMY=on`.
-  - [ ] Re-render the core block downstream, one PR per project.
+  - [x] Lean cleanup (#45 → `e3c04f0`): the sandbox, guard, installer and word list are gone;
+    `PLAYBOOK_AUTONOMY=on` alone switches autonomy on; one GitHub Codex bot review per PR;
+    `codex-review.sh` stays as a second opinion during development.
+  - [x] flara-web gets `autonomy: off` (flara-web #1); flara-app's `AGENTS.md` notes that
+    Pages serves `docs/` from `main` (flara-app #70).
+  - [x] Owner, once (2026-10-22): the `settings/autonomy.json` rules are in the user settings,
+    plus an `autoMode.allow` entry for checklist merges; dry-run pushes confirmed the force-push
+    deny rules block and ordinary pushes pass. The old `~/.config/playbook/` copies are deleted,
+    and `PLAYBOOK_AUTONOMY=on`.
+  - [ ] Re-render the core block downstream, one PR per project. Autonomy reaches a project
+    only after this, since older core blocks still require the deleted guard file.
   - [ ] Cleanup: drop the approval clauses from the memory notes, and shorten the starter
     prompts.
 - [ ] **Recommended near-term order:**

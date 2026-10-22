@@ -35,13 +35,13 @@ Steps:
    `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane upload_screenshots`
    Otherwise remind them to upload manually in App Store Connect.
 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
-9. Leave `main` clean, and never push it. fastlane sets the build number and signing at
-   archive time without committing them, so restore the project files it modified:
-   `git checkout -- *.xcodeproj`. The tree was clean before fastlane ran, so this discards
-   only fastlane's edits. If fastlane did leave commits on `main`, put them on a `chore/`
-   branch and open a PR
-10. Update "Current State" with the release, in the project-owned part of the instructions file
-    (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
+9. Restore fastlane's project edits. fastlane sets the build number and signing at archive
+   time without committing them, so run `git checkout -- *.xcodeproj`. The tree was clean
+   before fastlane ran, so this discards only fastlane's edits.
+10. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
+    release in the project-owned part of the instructions file (`AGENTS.md` when it carries
+    the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on
+    `main`, and open a PR
 
 Fallback if local build/upload fails:
 - Restore any project files modified by fastlane: `git checkout -- *.xcodeproj`

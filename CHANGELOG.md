@@ -39,7 +39,8 @@ of the teewye refresh PR found this.
 - After the upload, they restore fastlane's project edits with `git checkout -- *.xcodeproj`,
   the command their fallback already used. The build number comes from TestFlight on every
   run, so nothing is lost.
-- Commits fastlane does make on `main` still go through a `chore/` branch and a PR.
+- The "Current State" update then goes on a `chore/` branch and through a PR, together with
+  any commits fastlane made on `main`, so `main` is never committed to and stays clean.
 
 **Files affected:** `packs/ios/commands/deploy.md`, `packs/ios/commands/release.md`;
 `.claude-plugin/plugin.json` (`version` `1.2.0` → `1.2.1`); the legacy compose fixture.

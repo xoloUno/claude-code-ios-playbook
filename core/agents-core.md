@@ -21,11 +21,6 @@ plan restrictions. Verifying them is not authorization to change them.
 - Attribution follows the host's settings and the user's policy. Don't hardcode a
   co-author line.
 - Parallel agent sessions in one repository each get their own worktree.
-- Under the playbook's sandbox settings, run these as standalone commands from the
-  repository: `git push`, `fetch`, `pull`, `clone` and `ls-remote`, plus `gh`, `xcodebuild`,
-  `swift build`/`test`/`package`, `xcrun simctl` and `codex-review.sh`. That means no
-  `cd … &&`, no `git -C`, and no chains or pipes. Only a standalone command matches the sandbox exemption; otherwise it runs
-  sandboxed and can't authenticate or reach the simulator.
 
 ### Session hygiene
 - At session start, inspect existing changes. Preserve work you didn't make and carry on
@@ -38,11 +33,10 @@ plan restrictions. Verifying them is not authorization to change them.
   failures, blockers or an unconfigured runner, and never claim that skipped checks passed.
 
 ### Autonomy
-- This section applies only in Claude Code sessions, only when
-  `~/.config/playbook/tools/autonomy-guard.py` exists, and only when neither
-  `PLAYBOOK_AUTONOMY=off` in `~/.config/playbook/config` nor `autonomy: off` in
-  `.claude/project.yml` switches it off. Otherwise commit, push and merge only when the user
-  asks; running `/wrapup` asks for a commit, a push and a PR.
+- This section applies only in Claude Code sessions, and only when
+  `~/.config/playbook/config` sets `PLAYBOOK_AUTONOMY=on` and `.claude/project.yml` doesn't
+  set `autonomy: off`. Otherwise commit, push and merge only when the user asks; running
+  `/wrapup` asks for a commit, a push and a PR.
 - Don't ask about routine work. Commit to a task branch, push feature branches, open and
   update your own PRs, and merge a PR that meets the checklist below, then delete its branch.
 - Merge checklist:
@@ -51,8 +45,9 @@ plan restrictions. Verifying them is not authorization to change them.
   - if the repo has CI, at least one check ran on that commit and every check passed, so
     leave `[skip ci]` off the last push;
   - the branch contains the current `main`;
-  - Codex's verdict on the PR's latest commit is `ready to merge`, within 3 review rounds;
-    review again after every push;
+  - after one Codex review, no open finding meets the bar in "Code Review Rules". The
+    GitHub Codex bot reviews when a PR opens; if it hasn't, comment `@codex review` once.
+    Fix each finding that meets the bar, and don't ask for another review afterward;
   - nothing in the PR needs the user (next bullet).
 
   For playbook shared source, `pytest` must also pass, and a compose diff must show only
@@ -78,6 +73,13 @@ plan restrictions. Verifying them is not authorization to change them.
   details and secrets before posting them.
 - Never stop on a question. Ask once with your recommendation, park it, and keep doing
   independent work. When only parked items remain, send one notification and end the turn.
+
+### Second opinions
+- In Claude Code, get one local Codex review before building a plan with several moving
+  parts, and after two failed attempts at the same problem. Write the prompt to a temp file,
+  ask Codex to apply "Code Review Rules", and run
+  `"$PLAYBOOK_HOME"/tools/codex-review.sh <prompt-file> <name>` from the repo. One round;
+  its findings are inputs, not approvals, and not a merge checklist item.
 
 ### Handoffs and records
 - Anything that needs the user goes in `MANUAL-TASKS.md` at the repository root, not only in
@@ -110,3 +112,9 @@ from the environment or from `~/.config/playbook/config`, then append to its exi
 `inbox.md` with the date, project, Category, Context, Lesson and Suggested action. Leave out
 project-only details, lessons already documented, and one-off failures. If the directory or
 the inbox is missing, report it instead of creating a guessed destination.
+
+## Code Review Rules
+- Report only findings that could lose data, publish something private, do something
+  irreversible, or break a routine workflow (build, test, commit, push, PR, merge, release).
+- Leave out style, naming, wording, and risks that need an unlikely setup.
+- Suggest the smallest fix, and prefer removing code over adding machinery.

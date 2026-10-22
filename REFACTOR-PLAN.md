@@ -56,10 +56,11 @@
 > 2026-10-08. **Stage 1c is done**, with the caveats recorded in §4.
 > **Autonomy policy (2026-10-22):** the core gained an "Autonomy" section (#41 → `90fb81e`).
 > Routine, reversible work runs without per-step approval; a fixed list still goes to the user.
-> It's inert until the guard from PR 2 is installed and switched on after a canary (decision
-> **Auto** in §2, steps in §9).
+> The sandbox, guard hook and installer from #43 and #44 were rolled back after the canary and
+> removed in the lean cleanup; autonomy now rests on auto mode, a few native rules and
+> `PLAYBOOK_AUTONOMY=on` (decision **Auto** in §2, steps in §9).
 > **Next:** lift the lean Xcode pin (`.xcode-version`, piloted on Flara #65) into `bootstrap.sh`,
-> then autonomy PR 2 (it absorbs 3a, `codex-review.sh` as a playbook tool), then M0/M1. See §9.
+> then M0/M1. See §9.
 
 ---
 
@@ -88,7 +89,7 @@
 | **Pinning** | Version primitive | **Semver `version` + git release tag** for your own marketplace (controlled rollout). **SHA-pin** only for the vendored Hudson fork and for freezing a release-critical consumer. |
 | **Instr** (2026-10-01; symlink 2026-10-02) | Where project instructions live | **`AGENTS.md`**, holding project-owned text plus a generated "Shared workflow" block between `<!-- playbook:core:begin -->` / `<!-- playbook:core:end -->` markers. For opted-in projects the block replaces the six `core/rules/` copies. **`CLAUDE.md` is a relative symlink to `AGENTS.md`.** An `@AGENTS.md` import was rejected because it failed in fresh, unapproved headless test launches from a subdirectory. Compose accepts only that exact alias. |
 | **Fail** (2026-10-01) | Compose failure contract | Validate the layout and every required source (each pack's `required.txt`, the universal commands, core) **before writing anything**. A failure after writing begins is reported as possibly partial. No automatic restore and no undo promise. |
-| **Auto** (2026-10-22) | Approval friction | **Autonomy policy** in the core block (#41 → `90fb81e`). Routine, reversible work runs without per-step approval: commits, feature-branch pushes, PRs, and merges that pass a checklist (tests and lint, CI where it exists, current `main`, Codex `ready to merge` on the latest commit). A fixed list always goes to the user, parked in `MANUAL-TASKS.md`. Enforcement is native Claude Code settings plus one hook script; merges get a checklist because they can be reverted. No paid GitHub plan. Inert until the guard is installed and `PLAYBOOK_AUTONOMY` is switched on after a canary; `autonomy: off` opts a project out. |
+| **Auto** (2026-10-22) | Approval friction | **Autonomy policy** in the core block (#41 → `90fb81e`). Routine, reversible work runs without per-step approval: commits, feature-branch pushes, PRs, and merges that pass a checklist (tests and lint, CI where it exists, current `main`, and no open finding that meets the core "Code Review Rules" bar after one GitHub Codex bot review). A fixed list always goes to the user, parked in `MANUAL-TASKS.md`. Enforcement is Claude Code's auto mode plus the native rules in `settings/autonomy.json`: deny force pushes and explicit pushes to `main`, an auto-mode block on pushing `main` in any other form, and ask for fastlane lanes that reach App Store Connect; merges get a checklist because they can be reverted. No sandbox, hook, installer or word list: the 2026-10-22 canary showed the sandbox fenced the whole home folder and needed a growing exemption list. Claude keeps stock access to personal folders; any other local agent gets an OS-level read deny of them in its own config (`tools/codex-review.sh` shows the Codex profile). A local Codex review is an optional second opinion during development, never a merge item. `PLAYBOOK_AUTONOMY=on` switches it on; `autonomy: off` opts a project out. |
 
 ## 3. Target architecture — "skill-first, plugin-wrapped, MCP-backed"
 
@@ -575,27 +576,27 @@ the workflow output (run `wf_e73fd29f-ed9`).
   inline-comment / anchored-scratchpad *write* fix landed earlier (PR #18). Downstream-visible →
   CHANGELOG entry; byte-identical iOS compose except `conform.md`. Inbox entry retired.
 - [~] **Autonomy policy (2026-10-22), decision Auto in §2.** The aim is to stop per-step
-  approvals for routine, reversible work. The lean design uses native Claude Code settings, one
-  hook script and short core rules. The proposal stays local (`AUTONOMY-PROPOSAL-2026-10.md`,
-  untracked).
-  - [x] PR 1, the policy text: #41 → `90fb81e`. It's inert until the guard is installed.
-  - [ ] PR 2:
-    - the settings template;
-    - `tools/autonomy-guard.py` with tests;
-    - an installer that leaves `PLAYBOOK_AUTONOMY=off`;
-    - `codex-review.sh` lifted with argument checks and a read limit (absorbs 3a).
-  - [ ] Owner, once: run the installer, add rulesets to the 3 public repos, and write the private
-    word list.
-  - [ ] Canary on shotsmith and Flara. Settle `gh` and `xcodebuild` in the sandbox, and memory
-    access.
+  approvals for routine, reversible work, with auto mode, a few native rules and short core
+  rules. The proposal stays local (`AUTONOMY-PROPOSAL-2026-10.md`, untracked).
+  - [x] PR 1, the policy text: #41 → `90fb81e`.
+  - [x] PR 2 (#43 → `85a165d`) and sandbox exemptions (#44 → `26cf2ac`). The canary broke
+    push, `gh`, `simctl` and pytest inside the sandbox, so the settings were rolled back.
+  - [x] Lean cleanup: the sandbox, guard, installer and word list are gone; `PLAYBOOK_AUTONOMY=on`
+    alone switches autonomy on; one GitHub Codex bot review per PR; `codex-review.sh` stays as
+    a second opinion during development.
   - [ ] flara-web gets `autonomy: off`, and flara-app's `AGENTS.md` notes that Pages serves
-    `docs/`. Then switch autonomy on.
+    `docs/`. Do this before switching on.
+  - [ ] Owner, once: merge `settings/autonomy.json` into `~/.claude/settings.json`; decide
+    whether to add an `autoMode.allow` entry for checklist merges (auto mode blocks merges no
+    human approved); remove the old copies in `~/.config/playbook/` (`autonomy-guard.py`,
+    `tools/codex-review.sh`, `pii-words.txt`); then set `PLAYBOOK_AUTONOMY=on`.
+  - [ ] Re-render the core block downstream, one PR per project.
   - [ ] Cleanup: drop the approval clauses from the memory notes, and shorten the starter
     prompts.
 - [ ] **Recommended near-term order:**
   0. **Stage 1c — DONE (see §4).** All six projects and new bootstraps use `AGENTS.md`. Next, in
      order: lift `.xcode-version` into `bootstrap.sh` (and roll it out to teewye and broadsheet);
-     3a, `codex-review.sh` (now in autonomy PR 2) and `loadcheck.sh` as playbook tools; M0/M1,
+     3a, `loadcheck.sh` as a playbook tool (`codex-review.sh` landed with autonomy); M0/M1,
      the toolchain and iOS 27 fact refresh, including iPhone Duo; then inbox curation (2026-10-21 entries from Flara's
      v2.1.2).
   1. **Stage 1b — IN PROGRESS.** Phase 1 (marketplace plugin scaffolding + `/playbook:upgrade`)

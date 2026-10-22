@@ -28,7 +28,49 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Autonomy, lean: auto mode and native rules, no sandbox
+
+The sandbox from the two entries below fenced the whole home folder from shell commands. It
+needed a growing exemption list, kept Claude from editing its own settings, and prompted on
+routine steps. This entry removes it, along with the guard hook, the installer and the
+private word list. Autonomy now rests on Claude Code's auto mode, a few native rules and one
+switch.
+
+- **Switch:** the core "Autonomy" section applies when `~/.config/playbook/config` sets
+  `PLAYBOOK_AUTONOMY=on` and the project doesn't set `autonomy: off`. The guard file no
+  longer matters.
+- **Reviews:** a merge needs one Codex review with no open finding that meets the bar in a
+  new core `## Code Review Rules` section: data loss, publishing something private,
+  irreversible actions, or a broken routine workflow. The GitHub Codex bot reads that heading
+  from `AGENTS.md` and reviews once when a PR opens. "`ready to merge` within 3 rounds" is
+  gone.
+- **Second opinions:** a new core section runs `tools/codex-review.sh` once before building
+  a plan with several moving parts, and after two failed attempts at the same problem. Its
+  findings never gate a merge.
+- **Settings:** `settings/autonomy.json` keeps deny rules for force pushes (`+` refspecs
+  included) and explicit pushes to `main`. An auto-mode block covers pushing `main` in any
+  other form, such as a bare `git push` while it's checked out. Ask rules cover the fastlane
+  lanes that reach App Store Connect.
+- **Personal folders:** Claude Code keeps stock access. `codex-review.sh` still has the OS
+  deny Codex reads of personal folders, and now keeps a repo inside one of them readable.
+
+**Files affected:** `core/agents-core.md` (the sandbox Git bullet is gone; new Autonomy switch
+and checklist item; new "Second opinions" and "Code Review Rules"); `settings/autonomy.json`;
+`tools/codex-review.sh` (runs from `$PLAYBOOK_HOME`; sandbox notes and the prompt-path check
+removed; nested-repo carve-out); `tools/autonomy-guard.py`, `tools/install-autonomy.py` and
+their tests removed; `REFACTOR-PLAN.md`.
+
+**In your project:** re-render the core block (`/upgrade`, or re-run `bridge-symlink.sh` for
+non-iOS repos). If you installed the earlier settings, restore your `settings.json.bak-*`
+backup and merge `settings/autonomy.json` by hand. Delete `autonomy-guard.py`, the installed
+`codex-review.sh` copy and `pii-words.txt` from `~/.config/playbook/`.
+
+---
+
 ## 2026-10-22 — Autonomy settings: exempt the commands the sandbox breaks
+
+> **Superseded by:** 2026-10-22 — Autonomy, lean. The sandbox and its exemptions are gone;
+> ignore the standalone-command rule and the installer step.
 
 The first canary run of the autonomy settings found three breaks inside Claude Code's
 sandbox:
@@ -66,6 +108,9 @@ installer only adds entries. If you installed the earlier template, delete
 ---
 
 ## 2026-10-22 — Autonomy guardrails: settings template, guard hook, installer
+
+> **Superseded by:** 2026-10-22 — Autonomy, lean. The guard hook, installer and word list are
+> removed and the settings are trimmed; ignore the install steps.
 
 This adds the pieces the core "Autonomy" policy waits for. Installing them doesn't turn
 autonomy on: the installer writes `PLAYBOOK_AUTONOMY=off`, and the owner switches it on after
@@ -108,6 +153,10 @@ installer is a one-time, per-machine step run by the owner.
 ---
 
 ## 2026-10-22 — Autonomy policy: stop asking about routine, reversible work
+
+> **Partially superseded by:** 2026-10-22 — Autonomy, lean. `PLAYBOOK_AUTONOMY=on` alone
+> switches autonomy on, and a merge needs one Codex review with no finding over the "Code
+> Review Rules" bar instead of `ready to merge`.
 
 The core gains an "Autonomy" section. When it applies, sessions no longer ask before routine
 work. They commit to a task branch, push feature branches, open PRs, and merge a PR that

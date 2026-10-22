@@ -38,23 +38,26 @@ sandbox:
 - Python couldn't load packages from `~/Library/Python` (user installs such as pytest),
   because the read fence covers the whole home folder.
 
-`settings/autonomy.json` now runs `git push`, `git fetch`, `git pull`, `gh`, `xcodebuild` and
-`xcrun simctl` outside the sandbox. The deny and ask rules and the guard hook still check
+`settings/autonomy.json` now runs `git push`, `git fetch`, `git pull`, `git clone`,
+`git ls-remote`, `gh`, `xcodebuild` and `xcrun simctl` outside the sandbox. The deny and ask rules and the guard hook still check
 them before they run, which matches how they ran before the settings existed. Sandboxed
-commands may also read `~/Library/Python`, `~/Library/Developer` and `~/Library/Caches`,
-which hold toolchains, not personal files.
+commands may also read `~/Library/Python`, which holds user-installed Python packages.
+The broader `~/Library/Developer` and `~/Library/Caches` grants are gone, since
+`xcodebuild` runs outside the sandbox and other apps keep data in those folders.
+- An exemption matches only a standalone command, so the core "Git" rules now say to run
+  these commands on their own, with no `cd … &&`, `git -C`, chains or pipes.
 - `xcodebuild` builds run repo build scripts unsandboxed. That's the same exposure as the
   Xcode MCP, which already runs outside the sandbox.
 - The Codex reviewer is exempt only when invoked exactly as
   `~/.config/playbook/tools/codex-review.sh <prompt> <name>`, with no prefix or chain.
   `codex-review.sh` now says so.
 
-**Files affected:** `settings/autonomy.json`; `tools/codex-review.sh` (header, plus a
+**Files affected:** `settings/autonomy.json`; `core/agents-core.md` (one Git bullet); `tools/codex-review.sh` (header, plus a
 `CODEX_REVIEWS_DIR` output override for tests); `tests/test_install_autonomy.py`, which now
 passes inside the sandbox.
 
-**In your project:** nothing. The owner re-runs `tools/install-autonomy.py`, which adds the
-new entries to `~/.claude/settings.json`.
+**In your project:** re-render the core block (one new Git bullet). The owner re-runs
+`tools/install-autonomy.py`, which adds the new entries to `~/.claude/settings.json`.
 
 ---
 

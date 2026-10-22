@@ -33,6 +33,8 @@
       "git push *",
       "git fetch *",
       "git pull *",
+      "git clone *",
+      "git ls-remote *",
       "gh *",
       "xcodebuild *",
       "xcrun simctl *"
@@ -48,8 +50,7 @@
         "~/.ssh",
         "~/.aws"
       ],
-      "allowRead": ["~/Library/Python", "~/Library/Developer", "~/Library/Caches"],
-      "allowWrite": ["~/Library/Developer", "~/Library/Caches"]
+      "allowRead": ["~/Library/Python"]
     },
     "network": {
       "allowedDomains": ["github.com", "*.github.com", "*.githubusercontent.com"]

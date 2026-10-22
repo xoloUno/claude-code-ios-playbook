@@ -43,8 +43,8 @@
 > folded in (2026-06-10):** Xcode 27 beta (27A5194q) verified hands-on — new
 > `packs/ios/rules/wwdc26-ios27.md`, two-surface localization split in `metadata-translation.md`
 > (+ `TRANSLATION.md` glossary contract), Decision A amended (Apple first-party skills > Hudson
-> for the overlap; Hudson → SwiftData/Concurrency only), Xcode 27 facts in §7. **Next: Phase 3 —
-> broadsheet + teewye** (same recipe, one PR each).
+> for the overlap; Hudson → SwiftData/Concurrency only), Xcode 27 facts in §7. Phase 3 (broadsheet +
+> teewye) is now on contact; see §9.
 > **Modernization review + `AGENTS.md` canary (2026-10-01 → 03):** a Claude Code / Codex review of
 > what changed since June converged (decisions in §2). Approved and merged: project instructions
 > move to `AGENTS.md` with a generated core block, and `CLAUDE.md` becomes a relative symlink to it
@@ -63,7 +63,10 @@
 > at `playbook--v1.2.3` (decision **Auto** in §2, steps in §9).
 > **Xcode pin (2026-10-22, #53):** `bootstrap.sh` now gives new projects the lean Xcode pin
 > piloted on Flara #65: one `.xcode-version` that CI reads at run time.
-> **Next:** roll `.xcode-version` out to teewye and broadsheet, then 3a and M0/M1. See §9.
+> **Maintenance mode (2026-10-22):** the modernization is done, and the playbook is no longer a
+> project. Playbook work happens on contact: when a project hits a problem, or when a decision
+> has a date. §9 lists what's left as on contact or parked.
+> **Next:** project work (Flara, c3d-bridge-modeler, new projects).
 
 ---
 
@@ -216,7 +219,8 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         recompose from the installed plugin was **idempotent — byte-identical, 0-byte diff, clean
         tree**. Legacy gone: no `_playbook` submodule, no `.gitmodules`, no `.playbook-version` (the
         stale `442f469` pin is retired).
-  - [ ] **Phase 3 — broadsheet-app + teewye-app (NEXT)** — same recipe as Flara, one PR each.
+  - [ ] **Phase 3 — broadsheet-app + teewye-app (on contact, see §9)** — same recipe as Flara,
+        one PR each.
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
 - [x] **Stage 1c — Instruction layout (`AGENTS.md`). DONE (2026-10): the canary, Steps 0–4 (all
@@ -290,7 +294,8 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
             - the oversized-instructions fix: #63 → `c77ac24`, which took `CLAUDE.md` from
               141 KB to 22.8 KB, with detail moved to `spec/` and the archive to `history/`
             - Step 0(c)
-            - a release gap: v2.1.2 is open and not yet submitted
+            - a release gap: v2.1.2 was open and not yet submitted (it is live on the App
+              Store as of 2026-10-22)
           - The local folder was renamed to `flara-app` to match the repo, which left the
             plugin's project-scope install record pointing at the old path. The plugin was
             reinstalled at 1.1.0.
@@ -614,26 +619,36 @@ the workflow output (run `wf_e73fd29f-ed9`).
       `.claude/`, hooks, workflows and code needs no Codex review; publishing still needs
       the user." The rule goes by path, not by judgment, because instruction files change
       agent behavior even in small edits.
-  - [~] Cleanup: the memory notes are done; the owner still shortens the starter prompts.
-- [ ] **Recommended near-term order:**
-  0. **Stage 1c — DONE (see §4).** All six projects and new bootstraps use `AGENTS.md`. Next, in
-     order: roll `.xcode-version` out to teewye and broadsheet (`bootstrap.sh` has it since #53);
-     3a, `loadcheck.sh` as a playbook tool (`codex-review.sh` landed with autonomy); M0/M1,
-     the toolchain and iOS 27 fact refresh, including iPhone Duo; then inbox curation (2026-10-21 entries from Flara's
-     v2.1.2).
-  1. **Stage 1b — IN PROGRESS.** Phase 1 (marketplace plugin scaffolding + `/playbook:upgrade`)
-     landed on `main` (`ef631ed`, tag `playbook--v1.0.1`). Phase 2 (**Flara canary**) is **DONE
-     (2026-06-02)** — cold-start install + idempotent no-diff `/playbook:upgrade` verified on Flara
-     `main` (#56, `aebc758`). **Next:** Phase 3 — broadsheet + teewye (same recipe, one PR each),
-     then Phase 4 (retire composed `/upgrade`; teach `bootstrap.sh`; wire tag into `/wrapup`).
-     `/upgrade` is retired-as-primary in favor of `/playbook:upgrade`; `/conform` stays the
-     drift-check verb.
-  2. **Stage 2 (re-scoped 2026-06-10):** adopt Apple's exported Xcode 27 skills for the
-     overlapping ground; vendor Hudson SHA-pinned for SwiftData + Concurrency only; thin
-     overlapping Swift/iOS guidance only after the command/rule surface has settled.
-  3. **Stage 3:** Codex + MCP + bake-off harness when cross-agent tooling is the next priority.
-  4. **Stage 4:** spin out PlaybookLauncher + Keychain migration as its own mini-project, not
-     cleanup drift work.
+  - [x] Cleanup: the memory notes are done, and starter prompts carry only the task
+    (2026-10-22). The owner's communication preferences moved to a private user-level file
+    outside this repo.
+- [x] **Maintenance mode (2026-10-22).** The modernization is done. The six opted-in projects
+  live in `~/dev`, run on the shared core and packs in the `AGENTS.md` layout, and have
+  autonomy on; new projects start the same way (Stage 1c in §4, `.xcode-version` since #53). The playbook
+  is no longer a project: its work happens on contact, when a project hits a problem (inbox →
+  `/curate`) or a decision has a date. A new idea goes on the on-contact list as one line and
+  becomes work only when a project needs it.
+  - **On contact** (nothing to do until a project touches it):
+    - `.xcode-version` in teewye and broadsheet, which still pin Xcode 26.3 in their
+      workflows: copy flara-app #65 the next time either needs a new Xcode.
+    - Stage 1b Phase 3–4. teewye and broadsheet still use the pinned submodule; move each to
+      the plugin with Flara's recipe (#56) when it's next touched. Then Phase 4: retire the
+      composed `/upgrade`, teach `bootstrap.sh`, and wire the tag into `/wrapup`.
+      `/playbook:upgrade` is the primary upgrade verb; `/conform` stays the drift check.
+    - The two queued merge-checklist rules (Autonomy, above): with the next core change.
+    - M0/M1, the toolchain and iOS 27 fact refresh, including iPhone Duo: refresh what a
+      project's work needs, when it needs it.
+    - Inbox curation, including the 2026-10-21 entries from Flara's v2.1.2: run `/curate`
+      when the inbox gets in the way.
+    - 3a, `loadcheck.sh` as a playbook tool: the next time an instructions-loading check is
+      needed (`codex-review.sh` landed with autonomy).
+    - Phase C's `/context-health` and `/preflight`, as above.
+  - **Parked** (restart only with a reason):
+    - Stage 2 (re-scoped 2026-06-10): Apple's exported Xcode 27 skills for the overlapping
+      ground; Hudson, SHA-pinned, for SwiftData + Concurrency only.
+    - Stage 3: Codex + MCP + a bake-off harness. The coding-tool subscription bake-off runs
+      as a purchase decision inside project work, not as a playbook stage.
+    - Stage 4: the PlaybookLauncher spin-out and Keychain migration.
 
 ## 10. References
 

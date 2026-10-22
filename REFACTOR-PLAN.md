@@ -58,8 +58,9 @@
 > Routine, reversible work runs without per-step approval; a fixed list still goes to the user.
 > The sandbox, guard hook and installer from #43 and #44 were rolled back after the canary and
 > removed in the lean cleanup (#45 → `e3c04f0`); autonomy now rests on auto mode, a few native
-> rules and `PLAYBOOK_AUTONOMY=on`, and the owner switched it on the same day. It reaches each
-> project once its core block is re-rendered (decision **Auto** in §2, steps in §9).
+> rules and `PLAYBOOK_AUTONOMY=on`, and the owner switched it on the same day. All six opted-in
+> projects were re-rendered the same day, so autonomy now applies in each; plugin installs are
+> at `playbook--v1.2.3` (decision **Auto** in §2, steps in §9).
 > **Next:** lift the lean Xcode pin (`.xcode-version`, piloted on Flara #65) into `bootstrap.sh`,
 > then M0/M1. See §9.
 
@@ -591,10 +592,21 @@ the workflow output (run `wf_e73fd29f-ed9`).
     plus an `autoMode.allow` entry for checklist merges; dry-run pushes confirmed the force-push
     deny rules block and ordinary pushes pass. The old `~/.config/playbook/` copies are deleted,
     and `PLAYBOOK_AUTONOMY=on`.
-  - [ ] Re-render the core block downstream, one PR per project. Autonomy reaches a project
-    only after this, since older core blocks still require the deleted guard file.
-  - [ ] Cleanup: drop the approval clauses from the memory notes, and shorten the starter
-    prompts.
+  - [x] Re-render downstream (2026-10-22): shotsmith, devpulse and c3d-bridge-modeler through
+    `bridge-symlink.sh`; teewye-app, broadsheet-app (into `dev`) and flara-app through compose.
+    The Codex reviews of those PRs found four fixes, shipped as plugin releases:
+    - 1.2.0 (#47): "Second opinions" resolves `PLAYBOOK_HOME`, and `/conform` parks
+      STALE_CORE_BLOCK under autonomy;
+    - 1.2.1 (#48): `/deploy` and `/release` require a clean tree, restore fastlane's edits,
+      and record "Current State" through a `chore/` PR;
+    - 1.2.2 (#49) and 1.2.3 (#51): the restore covers only the `.pbxproj` and `Info.plist`
+      files fastlane changed, and stops and asks if anything else is still changed.
+  - [ ] With the next core change: add the review fallback to the merge checklist. If the
+    GitHub Codex review hasn't finished within about 15 minutes, one local `codex-review.sh`
+    review with the same bar counts as the merge review. Two bot reviews stalled for 20–30
+    minutes on 2026-10-22 while about ten ran at once; #49 and #51 already used the fallback,
+    and on #51 the local review caught a real bug.
+  - [~] Cleanup: the memory notes are done; the owner still shortens the starter prompts.
 - [ ] **Recommended near-term order:**
   0. **Stage 1c — DONE (see §4).** All six projects and new bootstraps use `AGENTS.md`. Next, in
      order: lift `.xcode-version` into `bootstrap.sh` (and roll it out to teewye and broadsheet);

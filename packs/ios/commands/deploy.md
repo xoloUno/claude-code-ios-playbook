@@ -20,15 +20,17 @@ Steps:
 4. Run: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
 5. If upload succeeds, ask user if they want to tag this release
 6. Restore fastlane's project edits. fastlane sets the build number and signing at archive
-   time without committing them, in the project and sometimes in `Info.plist`, so run
-   `git checkout -- .`. The tree was clean before fastlane ran, so this discards only
-   fastlane's edits.
+   time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
+   restore just the ones that changed:
+   `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.
+   If `git status --porcelain` still lists changes, they aren't fastlane's: stop and ask
+   the user.
 7. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
    deploy in the project-owned part of the instructions file (`AGENTS.md` when it carries
    the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on
    `main`, and open a PR
 
 Fallback if local build/upload fails:
-- Restore the files fastlane modified (the tree was clean before it ran): `git checkout -- .`
+- Restore fastlane's edits as in step 6
 - Trigger the GitHub Actions workflow: `gh workflow run testflight.yml`
 - Monitor: `gh run list --workflow=testflight.yml --limit 1`

@@ -3,8 +3,9 @@
 #
 # Installed by tools/install-autonomy.py to ~/.config/playbook/tools/, and run from there as
 #   ~/.config/playbook/tools/codex-review.sh <prompt-file> <name>
-# That exact path is the one command the playbook's Claude Code settings exempt from the
-# sandbox, so the script guards itself:
+# written exactly like that, with nothing before it (no VAR=value prefix, no `&&` chain), or
+# the playbook's Claude Code settings won't exempt it from the sandbox. Because it runs
+# outside the sandbox, the script guards itself:
 #   - <name> must match [a-z0-9-]+, and <prompt-file> must be a regular file inside the
 #     current git repo or a temp directory.
 #   - Codex runs under a permissions profile built from the ":workspace" built-in: it writes
@@ -13,7 +14,7 @@
 # Its final message lands in /private/tmp/codex-reviews/<name>-<time>/review.md; the caller
 # appends it verbatim to the review log. Verdicts are inputs, not approvals.
 #
-# Overrides: CODEX_BIN, CODEX_MODEL, CODEX_EFFORT, CODEX_TIER.
+# Overrides: CODEX_BIN, CODEX_MODEL, CODEX_EFFORT, CODEX_TIER, CODEX_REVIEWS_DIR (output root).
 set -euo pipefail
 CODEX="${CODEX_BIN:-/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex}"
 MODEL="${CODEX_MODEL:-gpt-6.1-sol}"
@@ -40,7 +41,7 @@ for root in "${ALLOWED[@]}"; do [[ "$PROMPT_REAL" == "$root"/* ]] && ok=1; done
 deny=""
 for p in "${DENY_READ[@]}"; do deny+="${deny:+, }\"$p\"=\"deny\""; done
 
-OUT="/private/tmp/codex-reviews/$NAME-$(date +%Y%m%d-%H%M%S)"
+OUT="${CODEX_REVIEWS_DIR:-/private/tmp/codex-reviews}/$NAME-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT/work"
 cp "$PROMPT_REAL" "$OUT/prompt.md"
 

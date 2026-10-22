@@ -46,8 +46,14 @@ class InstallTest(unittest.TestCase):
         hook = settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
         self.assertIn("/.config/playbook/tools/autonomy-guard.py", hook)
         self.assertFalse(settings["sandbox"]["allowUnsandboxedCommands"])
-        self.assertEqual(settings["sandbox"]["excludedCommands"],
-                         ["~/.config/playbook/tools/codex-review.sh *"])
+        # Only commands the sandbox breaks (keychain, CoreSimulator) or that sandbox themselves.
+        self.assertEqual(settings["sandbox"]["excludedCommands"], [
+            "~/.config/playbook/tools/codex-review.sh *", "git push *", "git fetch *",
+            "git pull *", "git clone *", "git ls-remote *", "gh *", "xcodebuild *",
+            "swift build *", "swift test *", "swift package *", "xcrun simctl *"])
+        # Read grants stay narrow: other apps keep data in ~/Library/Caches and Developer.
+        self.assertEqual(settings["sandbox"]["filesystem"]["allowRead"], ["~/Library/Python"])
+        self.assertNotIn("allowWrite", settings["sandbox"]["filesystem"])
 
     def test_dry_run_writes_nothing(self):
         out = self.install("--dry-run")
@@ -136,7 +142,7 @@ class InstallTest(unittest.TestCase):
 
 class CodexWrapperTest(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.mkdtemp(prefix="codex-wrapper-test-", dir="/private/tmp")
+        self.tmp = tempfile.mkdtemp(prefix="codex-wrapper-test-")  # $TMPDIR: a root the wrapper allows
         self.stub = os.path.join(self.tmp, "codex")
         self.args = os.path.join(self.tmp, "args.txt")
         with open(self.stub, "w") as f:
@@ -153,7 +159,7 @@ class CodexWrapperTest(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     def run_wrapper(self, *args):
-        env = dict(os.environ, CODEX_BIN=self.stub)
+        env = dict(os.environ, CODEX_BIN=self.stub, CODEX_REVIEWS_DIR=self.tmp)
         return subprocess.run(["bash", WRAPPER, *args], env=env, capture_output=True,
                               text=True, cwd=self.tmp)
 

@@ -21,6 +21,11 @@ plan restrictions. Verifying them is not authorization to change them.
 - Attribution follows the host's settings and the user's policy. Don't hardcode a
   co-author line.
 - Parallel agent sessions in one repository each get their own worktree.
+- Under the playbook's sandbox settings, run these as standalone commands from the
+  repository: `git push`, `fetch`, `pull`, `clone` and `ls-remote`, plus `gh`, `xcodebuild`,
+  `swift build`/`test`/`package`, `xcrun simctl` and `codex-review.sh`. That means no
+  `cd … &&`, no `git -C`, and no chains or pipes. Only a standalone command matches the sandbox exemption; otherwise it runs
+  sandboxed and can't authenticate or reach the simulator.
 
 ### Session hygiene
 - At session start, inspect existing changes. Preserve work you didn't make and carry on

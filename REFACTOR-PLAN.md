@@ -60,7 +60,7 @@
 > removed in the lean cleanup (#45 → `e3c04f0`); autonomy now rests on auto mode, a few native
 > rules and `PLAYBOOK_AUTONOMY=on`, and the owner switched it on the same day. All six opted-in
 > projects were re-rendered the same day, so autonomy now applies in each; plugin installs are
-> at `playbook--v1.2.2` (decision **Auto** in §2, steps in §9).
+> at `playbook--v1.2.3` (decision **Auto** in §2, steps in §9).
 > **Next:** lift the lean Xcode pin (`.xcode-version`, piloted on Flara #65) into `bootstrap.sh`,
 > then M0/M1. See §9.
 
@@ -599,11 +599,13 @@ the workflow output (run `wf_e73fd29f-ed9`).
       STALE_CORE_BLOCK under autonomy;
     - 1.2.1 (#48): `/deploy` and `/release` require a clean tree, restore fastlane's edits,
       and record "Current State" through a `chore/` PR;
-    - 1.2.2 (#49): that restore covers every file fastlane edits (`git checkout -- .`).
+    - 1.2.2 (#49) and 1.2.3 (#51): the restore covers only the `.pbxproj` and `Info.plist`
+      files fastlane changed, and stops and asks if anything else is still changed.
   - [ ] With the next core change: add the review fallback to the merge checklist. If the
     GitHub Codex review hasn't finished within about 15 minutes, one local `codex-review.sh`
     review with the same bar counts as the merge review. Two bot reviews stalled for 20–30
-    minutes on 2026-10-22 while about ten ran at once; #49 already used the fallback.
+    minutes on 2026-10-22 while about ten ran at once; #49 and #51 already used the fallback,
+    and on #51 the local review caught a real bug.
   - [~] Cleanup: the memory notes are done; the owner still shortens the starter prompts.
 - [ ] **Recommended near-term order:**
   0. **Stage 1c — DONE (see §4).** All six projects and new bootstraps use `AGENTS.md`. Next, in

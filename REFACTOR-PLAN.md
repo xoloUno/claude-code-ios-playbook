@@ -581,7 +581,7 @@ the workflow output (run `wf_e73fd29f-ed9`).
   - [x] PR 1, the policy text: #41 → `90fb81e`. It's inert until the guard is installed.
   - [ ] PR 2:
     - the settings template;
-    - `tools/autonomy-guard.sh` with tests;
+    - `tools/autonomy-guard.py` with tests;
     - an installer that leaves `PLAYBOOK_AUTONOMY=off`;
     - `codex-review.sh` lifted with argument checks and a read limit (absorbs 3a).
   - [ ] Owner, once: run the installer, add rulesets to the 3 public repos, and write the private

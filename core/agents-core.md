@@ -34,7 +34,7 @@ plan restrictions. Verifying them is not authorization to change them.
 
 ### Autonomy
 - This section applies only in Claude Code sessions, only when
-  `~/.config/playbook/tools/autonomy-guard.sh` exists, and only when neither
+  `~/.config/playbook/tools/autonomy-guard.py` exists, and only when neither
   `PLAYBOOK_AUTONOMY=off` in `~/.config/playbook/config` nor `autonomy: off` in
   `.claude/project.yml` switches it off. Otherwise commit, push and merge only when the user
   asks; running `/wrapup` asks for a commit, a push and a PR.

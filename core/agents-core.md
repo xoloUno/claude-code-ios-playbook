@@ -77,9 +77,10 @@ plan restrictions. Verifying them is not authorization to change them.
 ### Second opinions
 - In Claude Code, get one local Codex review before building a plan with several moving
   parts, and after two failed attempts at the same problem. Write the prompt to a temp file,
-  ask Codex to apply "Code Review Rules", and run
-  `"$PLAYBOOK_HOME"/tools/codex-review.sh <prompt-file> <name>` from the repo. One round;
-  its findings are inputs, not approvals, and not a merge checklist item.
+  ask Codex to apply "Code Review Rules", then, from the repo, run
+  `"$PLAYBOOK_HOME"/tools/codex-review.sh <prompt-file> <name>`, resolving `PLAYBOOK_HOME`
+  as "Playbook lessons" says. One round; its findings are inputs, not approvals, and not a
+  merge checklist item.
 
 ### Handoffs and records
 - Anything that needs the user goes in `MANUAL-TASKS.md` at the repository root, not only in

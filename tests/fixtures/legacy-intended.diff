@@ -124,19 +124,23 @@
 +without opening or merging a PR; otherwise offer to run `/wrapup`.
 --- a/.claude/commands/deploy.md
 +++ b/.claude/commands/deploy.md
-@@ -5,3 +5,3 @@
+@@ -5,3 +5,4 @@
  - `.env.fastlane` must exist in the project root
 -- Must be on `main` branch (offer to merge dev/feature branch first if not)
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
++- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -20,4 +20,6 @@
+@@ -20,4 +21,9 @@
  5. If upload succeeds, ask user if they want to tag this release
 -6. Push main with `[skip ci]` to sync remote without triggering any workflows
 -7. Update "Current State" in CLAUDE.md with the deploy
-+6. Never push `main`. If fastlane left commits on `main` (for example a build-number bump),
-+   put them on a `chore/` branch and open a PR
-+7. Update "Current State" with the deploy, in the project-owned part of the instructions file
-+   (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
++6. Restore fastlane's project edits. fastlane sets the build number and signing at archive
++   time without committing them, so run `git checkout -- *.xcodeproj`. The tree was clean
++   before fastlane ran, so this discards only fastlane's edits.
++7. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
++   deploy in the project-owned part of the instructions file (`AGENTS.md` when it carries
++   the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on
++   `main`, and open a PR
  
 --- a/.claude/commands/feature.md
 +++ b/.claude/commands/feature.md
@@ -174,19 +178,23 @@
     - Branch should be pushed and up-to-date with origin
 --- a/.claude/commands/release.md
 +++ b/.claude/commands/release.md
-@@ -5,3 +5,3 @@
+@@ -5,3 +5,4 @@
  - `.env.fastlane` must exist in the project root
 -- Must be on `main` branch (offer to merge dev/feature branch first if not)
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
++- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -36,4 +36,6 @@
+@@ -36,4 +37,9 @@
  8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 -9. Push main with `[skip ci]` to sync remote without triggering any workflows
 -10. Update "Current State" in CLAUDE.md with the release
-+9. Never push `main`. If fastlane left commits on `main` (for example a build-number bump),
-+   put them on a `chore/` branch and open a PR
-+10. Update "Current State" with the release, in the project-owned part of the instructions file
-+    (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
++9. Restore fastlane's project edits. fastlane sets the build number and signing at archive
++   time without committing them, so run `git checkout -- *.xcodeproj`. The tree was clean
++   before fastlane ran, so this discards only fastlane's edits.
++10. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
++    release in the project-owned part of the instructions file (`AGENTS.md` when it carries
++    the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on
++    `main`, and open a PR
  
 --- a/.claude/commands/review.md
 +++ b/.claude/commands/review.md

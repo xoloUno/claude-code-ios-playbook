@@ -219,7 +219,8 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
         recompose from the installed plugin was **idempotent — byte-identical, 0-byte diff, clean
         tree**. Legacy gone: no `_playbook` submodule, no `.gitmodules`, no `.playbook-version` (the
         stale `442f469` pin is retired).
-  - [ ] **Phase 3 — broadsheet-app + teewye-app (NEXT)** — same recipe as Flara, one PR each.
+  - [ ] **Phase 3 — broadsheet-app + teewye-app (on contact, see §9)** — same recipe as Flara,
+        one PR each.
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
 - [x] **Stage 1c — Instruction layout (`AGENTS.md`). DONE (2026-10): the canary, Steps 0–4 (all

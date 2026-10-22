@@ -37,9 +37,10 @@ Steps:
 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 9. Restore fastlane's project edits. fastlane sets the build number and signing at archive
    time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
-   restore just those: `git checkout -- '*.pbxproj' '*Info.plist'`. If
-   `git status --porcelain` still lists changes, they aren't fastlane's: stop and ask the
-   user.
+   restore just the ones that changed:
+   `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.
+   If `git status --porcelain` still lists changes, they aren't fastlane's: stop and ask
+   the user.
 10. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
     release in the project-owned part of the instructions file (`AGENTS.md` when it carries
     the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on

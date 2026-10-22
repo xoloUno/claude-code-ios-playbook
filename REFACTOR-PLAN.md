@@ -52,8 +52,10 @@
 > **Stage 1c rollout (2026-10-05 → 07):** Steps 0(a,b) and 1–3 are done, one PR per project with
 > Erik's approval. broadsheet, devpulse, shotsmith and c3d-bridge-modeler now use `AGENTS.md`. The
 > three non-iOS repos had been running without the shared rules on desktop Claude Code; the
-> generated block fixed that. **Next: Step 4, Flara** (housekeeping, the `CLAUDE.md` slim-down,
-> then the Step 0(c) plugin bump), then Step 5 (bootstrap). See §4 Stage 1c.
+> generated block fixed that. Step 4 (Flara) followed on 2026-10-07, and Step 5 (bootstrap) on
+> 2026-10-08. **Stage 1c is done**, with the caveats recorded in §4.
+> **Next:** lift the lean Xcode pin (`.xcode-version`, piloted on Flara #65) into `bootstrap.sh`,
+> then 3a (`codex-review.sh` as a playbook tool), then M0/M1. See §9.
 
 ---
 
@@ -208,8 +210,8 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   - [ ] **Phase 3 — broadsheet-app + teewye-app (NEXT)** — same recipe as Flara, one PR each.
   - [ ] **Phase 4 — retire legacy** (composed `/upgrade`; teach `bootstrap.sh` to birth new apps on
         the marketplace; wire version-bump + tag into the playbook's `/wrapup` contract).
-- [~] **Stage 1c — Instruction layout (`AGENTS.md`). Canary DONE; rollout IN PROGRESS, Steps
-  0–4 DONE (2026-10), all six projects migrated; Step 5 next**
+- [x] **Stage 1c — Instruction layout (`AGENTS.md`). DONE (2026-10): the canary, Steps 0–4 (all
+  six projects migrated) and Step 5 (new projects start in the layout). Caveats below.**
   - [x] Modernization review converged (Claude Code + Codex, 2026-10-01).
   - [x] **Generator and validation, playbook #32 → `0b51f99`:**
         - `core/agents-core.md`
@@ -293,10 +295,18 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
           - `/conform` Checks A–G, reproduced by hand: no core, rule or command drift. Check F
             flags the Flara-only `media-handling.md`; Check D shows the same two advisory gaps
             as before.
-        - **Step 5, new projects. NEXT.** `bootstrap.sh` and `CLAUDE-TEMPLATE.md` emit the
-          `AGENTS.md` layout. `bootstrap.sh` also still pins Xcode 26.3 in `project.yml` and the
-          CI `xcode-select` (`xcodeVersion: "26.3"` and two `Xcode_26.3.app` lines). Fix that no
-          later than this step, so new projects don't start on an old Xcode.
+        - **Step 5, new projects. DONE 2026-10-08, #39 → `211cf22`.**
+          - Before compose runs, `bootstrap.sh` writes `AGENTS.md` from `CLAUDE-TEMPLATE.md`
+            (empty core markers) and makes `CLAUDE.md` the relative symlink. Compose then renders
+            the block and copies only the ios pack's rules. A missing template stops bootstrap.
+          - New projects pin Xcode 27.1, which iPhone Duo needs, on GitHub's `xcode-27` runner,
+            because `macos-26` has no Xcode 27. Build-check builds for a generic simulator.
+          - Validation: two new tests (39 in all), and a full bootstrap dry run with `gh`
+            stubbed. Codex: "ready to commit" on round 2.
+          - **Follow-up:** the Xcode pins are still written into each workflow. Flara #65 piloted
+            a leaner pattern: one `.xcode-version` per app that CI reads at run time, checked
+            against `project.yml`. It passed on its first CI run. Lift it into `bootstrap.sh` next
+            (inbox, 2026-10-21). teewye and broadsheet still pin Xcode 26.3.
         - **Per-project acceptance:**
           - **Preservation.** Compare project text and history against the approved edits.
             Preserve substitutions, local profiles and customized rules. Remove only verified
@@ -560,9 +570,11 @@ the workflow output (run `wf_e73fd29f-ed9`).
   inline-comment / anchored-scratchpad *write* fix landed earlier (PR #18). Downstream-visible →
   CHANGELOG entry; byte-identical iOS compose except `conform.md`. Inbox entry retired.
 - [ ] **Recommended near-term order:**
-  0. **Stage 1c rollout (in progress, see §4).** Steps 0(a,b)–3 are done, so teewye and
-     broadsheet are on `AGENTS.md` ahead of their Stage 1b Phase 3 plugin move. Next: Step 4
-     (Flara), then Step 5 (bootstrap).
+  0. **Stage 1c — DONE (see §4).** All six projects and new bootstraps use `AGENTS.md`. Next, in
+     order: lift `.xcode-version` into `bootstrap.sh` (and roll it out to teewye and broadsheet);
+     3a, `codex-review.sh` and `loadcheck.sh` as playbook tools; M0/M1, the toolchain and iOS 27
+     fact refresh, including iPhone Duo; then inbox curation (2026-10-21 entries from Flara's
+     v2.1.2).
   1. **Stage 1b — IN PROGRESS.** Phase 1 (marketplace plugin scaffolding + `/playbook:upgrade`)
      landed on `main` (`ef631ed`, tag `playbook--v1.0.1`). Phase 2 (**Flara canary**) is **DONE
      (2026-06-02)** — cold-start install + idempotent no-diff `/playbook:upgrade` verified on Flara

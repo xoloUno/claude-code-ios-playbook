@@ -37,6 +37,9 @@
       "git ls-remote *",
       "gh *",
       "xcodebuild *",
+      "swift build *",
+      "swift test *",
+      "swift package *",
       "xcrun simctl *"
     ],
     "filesystem": {

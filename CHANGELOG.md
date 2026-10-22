@@ -39,14 +39,15 @@ sandbox:
   because the read fence covers the whole home folder.
 
 `settings/autonomy.json` now runs `git push`, `git fetch`, `git pull`, `git clone`,
-`git ls-remote`, `gh`, `xcodebuild` and `xcrun simctl` outside the sandbox. The deny and ask rules and the guard hook still check
+`git ls-remote`, `gh`, `xcodebuild`, `swift build`/`test`/`package` and `xcrun simctl` outside
+the sandbox. The deny and ask rules and the guard hook still check
 them before they run, which matches how they ran before the settings existed. Sandboxed
 commands may also read `~/Library/Python`, which holds user-installed Python packages.
 The broader `~/Library/Developer` and `~/Library/Caches` grants are gone, since
 `xcodebuild` runs outside the sandbox and other apps keep data in those folders.
 - An exemption matches only a standalone command, so the core "Git" rules now say to run
   these commands on their own, with no `cd … &&`, `git -C`, chains or pipes.
-- `xcodebuild` builds run repo build scripts unsandboxed. That's the same exposure as the
+- `xcodebuild` and SwiftPM builds run repo build scripts and plugins unsandboxed. That's the same exposure as the
   Xcode MCP, which already runs outside the sandbox.
 - The Codex reviewer is exempt only when invoked exactly as
   `~/.config/playbook/tools/codex-review.sh <prompt> <name>`, with no prefix or chain.
@@ -57,7 +58,10 @@ The broader `~/Library/Developer` and `~/Library/Caches` grants are gone, since
 passes inside the sandbox.
 
 **In your project:** re-render the core block (one new Git bullet). The owner re-runs
-`tools/install-autonomy.py`, which adds the new entries to `~/.claude/settings.json`.
+`tools/install-autonomy.py`, which adds the new entries to `~/.claude/settings.json`. The
+installer only adds entries. If you installed the earlier template, delete
+`sandbox.filesystem.allowWrite` and the `~/Library/Developer` and `~/Library/Caches`
+`allowRead` entries by hand, or restore the `settings.json.bak-*` backup first.
 
 ---
 

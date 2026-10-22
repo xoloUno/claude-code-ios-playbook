@@ -50,7 +50,7 @@ class InstallTest(unittest.TestCase):
         self.assertEqual(settings["sandbox"]["excludedCommands"], [
             "~/.config/playbook/tools/codex-review.sh *", "git push *", "git fetch *",
             "git pull *", "git clone *", "git ls-remote *", "gh *", "xcodebuild *",
-            "xcrun simctl *"])
+            "swift build *", "swift test *", "swift package *", "xcrun simctl *"])
         # Read grants stay narrow: other apps keep data in ~/Library/Caches and Developer.
         self.assertEqual(settings["sandbox"]["filesystem"]["allowRead"], ["~/Library/Python"])
         self.assertNotIn("allowWrite", settings["sandbox"]["filesystem"])

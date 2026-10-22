@@ -31,7 +31,11 @@ PROTECTED = {"main", "master"}
 SEPARATORS = {"&&", "||", ";", "|", "&", "|&", "(", ")"}
 WRAPPERS = {"env", "command", "exec", "time", "nohup", "builtin"}
 GIT_OPTS_WITH_ARG = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
-PUSH_OPTS_WITH_ARG = {"--repo", "--receive-pack", "--exec", "-o", "--push-option"}
+PUSH_OPTS_WITH_ARG = {"--receive-pack", "--exec", "--push-option"}
+GH_OPTS_WITH_ARG = {"-R", "--repo", "--hostname"}
+GH_API_OPTS_WITH_ARG = {"-H", "--header", "-p", "--preview", "-q", "--jq", "-t", "--template",
+                        "--cache", "--hostname", "--input"}
+BRANCH_SWITCHERS = {"checkout", "switch"}
 FILE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 
 
@@ -176,35 +180,60 @@ def scan_outgoing(repo, remote, sources):
                             f"--log-opts={spec}"], capture_output=True, text=True, timeout=120)
         if r.returncode == 1:
             decide("deny", "gitleaks found a secret in the outgoing commits")
+        if r.returncode != 0:
+            first = (r.stderr.strip().splitlines() or ["no output"])[-1][:200]
+            decide("ask", f"gitleaks couldn't scan the outgoing commits ({first})")
 
 
-def check_push(repo, args, off):
-    flags, positional, i = [], [], 0
+def check_push(repo, args, off, branch_may_change=False):
+    flags, positional, remote, i = set(), [], None, 0
     while i < len(args):
         a = args[i]
-        if a in PUSH_OPTS_WITH_ARG:
+        if a == "--repo" and i + 1 < len(args):
+            remote = args[i + 1]
             i += 2
             continue
-        (flags if a.startswith("-") else positional).append(a)
+        if a.startswith("--repo="):
+            remote = a.split("=", 1)[1]
+        elif a in PUSH_OPTS_WITH_ARG:
+            i += 1
+        elif a.startswith("--"):
+            flags.add(a)
+        elif a.startswith("-") and len(a) > 1:  # short flags may be bundled: -uf, -uo <opt>
+            letters = a[1:].split("o", 1)
+            flags.update("-" + c for c in letters[0])
+            if len(letters) == 2 and not letters[1]:
+                i += 1
+        else:
+            positional.append(a)
         i += 1
-    if any(f in ("--dry-run", "-n") for f in flags):
+    if flags & {"--dry-run", "-n"}:
         return
-    if any(f in ("--force", "-f") or f.startswith(("--force-with-lease", "--force-if-includes"))
-           for f in flags):
+    if flags & {"--force", "-f"} or any(f.startswith(("--force-with-lease", "--force-if-includes"))
+                                        for f in flags):
         decide("deny", "force pushes always need the user")
-    if any(f in ("--mirror", "--all", "--branches") for f in flags):
+    if flags & {"--mirror", "--all", "--branches"}:
         decide("deny", "this push would include the default branch")
     if "--no-verify" in flags:
         decide("deny", "--no-verify skips the push guards")
-    remote = positional[0] if positional else (git(repo, "config", "--get",
-              f"branch.{current_branch(repo)}.remote") or "origin")
-    refspecs = positional[1:]
+
+    def head():
+        if branch_may_change:
+            decide("ask", "an earlier command may change the branch or folder; push separately")
+        return current_branch(repo)
+
+    if remote:  # with --repo, every positional word is a refspec
+        refspecs = positional
+    else:
+        remote = positional[0] if positional else (git(repo, "config", "--get",
+                  f"branch.{current_branch(repo)}.remote") or "origin")
+        refspecs = positional[1:]
     protected = protected_names(repo, remote)
-    deleting = any(f in ("--delete", "-d") for f in flags)
-    tags = any(f in ("--tags", "--follow-tags") for f in flags)
+    deleting = bool(flags & {"--delete", "-d"})
+    tags = bool(flags & {"--tags", "--follow-tags"})
     sources = []
     if not refspecs:
-        branch = current_branch(repo)
+        branch = head()
         if branch in protected:
             decide("deny", f"pushing '{branch}' directly; open a PR instead")
         if branch:
@@ -216,9 +245,9 @@ def check_push(repo, args, off):
         if not _:
             dst = src
         if src == "HEAD":
-            src = current_branch(repo) or "HEAD"
+            src = head() or "HEAD"
         if dst == "HEAD":
-            dst = current_branch(repo) or "HEAD"
+            dst = head() or "HEAD"
         name = dst[len("refs/heads/"):] if dst.startswith("refs/heads/") else dst
         if deleting or (_ and not src):
             if name in protected:
@@ -244,30 +273,42 @@ def check_push(repo, args, off):
 
 def check_gh(words, off):
     words = strip_wrappers(words)
-    if not words or os.path.basename(words[0]) != "gh" or len(words) < 2:
+    if not words or os.path.basename(words[0]) != "gh":
         return
-    sub = words[1:3]
-    if sub[:2] in (["pr", "merge"], ["pr", "create"]) and off:
-        decide("ask", f"autonomy is off: approve 'gh {' '.join(sub)}'")
-    if sub[0] != "api":
+    pos, i = [], 1  # the first two words that aren't flags: "pr merge", "api <endpoint>"
+    while i < len(words) and len(pos) < 2:
+        if words[i] in GH_OPTS_WITH_ARG:
+            i += 2
+            continue
+        if not words[i].startswith("-"):
+            pos.append(words[i])
+        i += 1
+    if pos in (["pr", "merge"], ["pr", "create"]) and off:
+        decide("ask", f"autonomy is off: approve 'gh {' '.join(pos)}'")
+    if not pos or pos[0] != "api":
         return
-    args = words[2:]
-    method, fields, endpoint = None, [], None
-    i = 0
+    args = words[words.index("api") + 1:]
+    method, fields, endpoint, i = None, [], None, 0
     while i < len(args):
-        a = args[i]
-        if a in ("-X", "--method") and i + 1 < len(args):
-            method = args[i + 1].upper()
+        a, nxt = args[i], args[i + 1] if i + 1 < len(args) else ""
+        if a in ("-X", "--method"):
+            method, i = nxt.upper(), i + 2
+            continue
+        if a in ("-f", "-F", "--field", "--raw-field"):
+            fields.append(nxt)
+            i += 2
+            continue
+        if a == "--input":
+            fields.append("<input>")
+        if a in GH_API_OPTS_WITH_ARG:
             i += 2
             continue
         if a.startswith("--method="):
             method = a.split("=", 1)[1].upper()
-        elif a in ("-f", "-F", "--field", "--raw-field") and i + 1 < len(args):
-            fields.append(args[i + 1])
-            i += 2
-            continue
-        elif a == "--input":
-            fields.append("<input>")
+        elif a.startswith("-X"):
+            method = a[2:].upper()
+        elif a.startswith(("--field=", "--raw-field=", "--input=", "-f", "-F")):
+            fields.append(a.split("=", 1)[-1] if a.startswith("--") else a[2:])
         elif not a.startswith("-") and endpoint is None:
             endpoint = a
         i += 1
@@ -280,10 +321,13 @@ def check_gh(words, off):
 
 
 def check_bash(cmd, cwd, depth=0):
-    off = autonomy_off(cwd)
-    found_push = False
+    found_push, switched = False, False
     for words in commands(cmd):
         inner = strip_wrappers(words)
+        if inner and inner[0] in ("cd", "pushd") and len(inner) > 1:
+            cwd = os.path.join(cwd, os.path.expanduser(inner[1]))
+            switched = switched or "$" in inner[1] or "`" in inner[1]
+            continue
         if depth < 3 and inner and os.path.basename(inner[0]) in ("sh", "bash", "zsh") \
                 and "-c" in inner[1:-1]:
             check_bash(inner[inner.index("-c", 1) + 1], cwd, depth + 1)
@@ -294,10 +338,12 @@ def check_bash(cmd, cwd, depth=0):
             repo, sub, args = parsed
             if sub == "push":
                 found_push = True
-                check_push(repo, args, off)
-            elif sub == "commit" and off:
+                check_push(repo, args, autonomy_off(repo), switched)
+            elif sub == "commit" and autonomy_off(repo):
                 decide("ask", "autonomy is off: approve this commit")
-        check_gh(words, off)
+            elif sub in BRANCH_SWITCHERS:
+                switched = True
+        check_gh(words, autonomy_off(cwd))
     if not found_push and re.search(r"(\$\(|`)[^)`]*\bgit\b[^)`]*\bpush\b", cmd):
         decide("ask", "a git push inside a command substitution can't be checked")
 

@@ -114,6 +114,34 @@ class GuardTest(unittest.TestCase):
     def test_push_hidden_in_substitution_asks(self):
         self.assertEqual(self.bash('echo "$(git push origin feature)"'), "ask")
 
+    def test_repo_option_and_bundled_flags(self):
+        for cmd in ("git push --repo origin feature:main", "git push --repo=origin :main",
+                    "git push -uf origin feature", "git push -fu origin feature"):
+            self.assertEqual(self.bash(cmd), "deny", cmd)
+        self.assertIsNone(self.bash("git push -u origin feature"))
+        self.assertIsNone(self.bash("git push -o ci.skip origin feature"))
+
+    def test_branch_switch_earlier_in_the_command_asks(self):
+        self.assertEqual(self.bash("git switch main && git push origin HEAD"), "ask")
+        self.assertEqual(self.bash("git checkout main; git push"), "ask")
+        self.assertEqual(self.bash("cd $SOMEWHERE && git push"), "ask")
+        self.assertIsNone(self.bash("git switch -c other && git push -u origin other"))
+
+    def test_cd_into_another_repo_is_followed(self):
+        other = os.path.join(self.tmp, "other")
+        sh(self.tmp, "git", "clone", "-q", os.path.join(self.tmp, "remote.git"), other)
+        sh(other, "git", "config", "playbook.public", "false")
+        self.assertEqual(self.bash("cd ../other && git push"), "deny")
+
+    def test_off_switch_follows_git_dash_c(self):
+        other = os.path.join(self.tmp, "other")
+        sh(self.tmp, "git", "clone", "-q", os.path.join(self.tmp, "remote.git"), other)
+        os.makedirs(os.path.join(other, ".claude"))
+        with open(os.path.join(other, ".claude", "project.yml"), "w") as f:
+            f.write("autonomy: off\n")
+        self.assertEqual(self.bash("git -C ../other commit -m x"), "ask")
+        self.assertIsNone(self.bash("git commit -m x"))
+
     # --- autonomy off ---------------------------------------------------------------------
     def test_autonomy_off_asks_for_routine_steps(self):
         self.set_autonomy("off")
@@ -141,8 +169,18 @@ class GuardTest(unittest.TestCase):
         for cmd in ("gh api -X PATCH repos/o/r -f delete_branch_on_merge=true",
                     "gh api repos/o/r/pulls/1/comments -f body=hi",
                     "gh api --method=PUT repos/o/r/branches/main/protection",
-                    "gh api graphql -f query='mutation { resolveReviewThread }'"):
+                    "gh api graphql -f query='mutation { resolveReviewThread }'",
+                    "gh api -XDELETE repos/o/r/git/refs/heads/x",
+                    "gh api repos/o/r -fdescription=hello"):
             self.assertEqual(self.bash(cmd), "ask", cmd)
+        self.assertIsNone(self.bash("gh api -XGET repos/o/r/pulls -f state=open"))
+        self.assertIsNone(self.bash(
+            "gh api -H 'Accept: application/json' graphql -f query='query { viewer { login } }'"))
+
+    def test_gh_repo_flag_before_the_subcommand(self):
+        self.set_autonomy("off")
+        self.assertEqual(self.bash("gh -R o/r pr merge 43 --merge"), "ask")
+        self.assertIsNone(self.bash("gh -R o/r pr view 43"))
 
     # --- public repos ---------------------------------------------------------------------
     def test_public_push_needs_a_word_list(self):
@@ -163,6 +201,22 @@ class GuardTest(unittest.TestCase):
         self.set_autonomy("on", words=["secret-codename"])
         self.commit("a.txt", "a\n", "feat: ship secret-codename")
         self.assertEqual(self.bash("git push origin feature"), "deny")
+
+    def test_scanner_failure_asks(self):
+        sh(self.repo, "git", "config", "playbook.public", "true")
+        self.set_autonomy("on", words=["Jane Example"])
+        stub = os.path.join(self.tmp, "bin")
+        os.makedirs(stub)
+        with open(os.path.join(stub, "gitleaks"), "w") as f:
+            f.write("#!/bin/sh\necho 'config error' >&2\nexit 2\n")
+        os.chmod(os.path.join(stub, "gitleaks"), 0o755)
+        env_path = stub + os.pathsep + os.environ.get("PATH", "")
+        old = os.environ.get("PATH")
+        os.environ["PATH"] = env_path
+        try:
+            self.assertEqual(self.bash("git push origin feature"), "ask")
+        finally:
+            os.environ["PATH"] = old
 
     def test_private_push_skips_the_scan(self):
         self.set_autonomy("on", words=["Jane Example"])

@@ -16,6 +16,7 @@ import difflib
 import json
 import os
 import shutil
+import stat
 import sys
 import time
 
@@ -106,6 +107,8 @@ def apply(changes):
         tmp = f"{path}.tmp-{stamp}"
         with open(tmp, "w") as f:
             f.write(new)
+        if mode is None and old is not None:  # keep the existing file's permissions
+            mode = stat.S_IMODE(os.stat(path).st_mode)
         if mode is not None:
             os.chmod(tmp, mode)
         os.replace(tmp, path)

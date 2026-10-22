@@ -98,6 +98,17 @@ class InstallTest(unittest.TestCase):
         for p, text in first.items():
             self.assertEqual(self.read(*p), text)
 
+    def test_existing_file_permissions_are_kept(self):
+        os.makedirs(self.path(".claude"))
+        os.makedirs(self.path(".config", "playbook"))
+        for p in ((".claude", "settings.json"), (".config", "playbook", "config")):
+            with open(self.path(*p), "w") as f:
+                f.write("{}\n" if p[-1].endswith(".json") else "# config\n")
+            os.chmod(self.path(*p), 0o600)
+        self.install("--yes")
+        for p in ((".claude", "settings.json"), (".config", "playbook", "config")):
+            self.assertEqual(stat.S_IMODE(os.stat(self.path(*p)).st_mode), 0o600, p)
+
     def test_existing_switch_and_word_list_are_kept(self):
         os.makedirs(self.path(".config", "playbook"))
         with open(self.path(".config", "playbook", "config"), "w") as f:

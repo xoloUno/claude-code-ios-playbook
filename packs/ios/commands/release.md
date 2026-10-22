@@ -4,6 +4,7 @@ Prerequisites — abort if any fail:
 - This MUST be a local session (not cloud — cloud sessions cannot run fastlane)
 - `.env.fastlane` must exist in the project root
 - Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
+- The working tree must be clean (`git status --porcelain` prints nothing)
 - Provisioning profiles must be installed locally (see check below)
 
 Steps:
@@ -34,8 +35,11 @@ Steps:
    `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane upload_screenshots`
    Otherwise remind them to upload manually in App Store Connect.
 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
-9. Never push `main`. If fastlane left commits on `main` (for example a build-number bump),
-   put them on a `chore/` branch and open a PR
+9. Leave `main` clean, and never push it. fastlane sets the build number and signing at
+   archive time without committing them, so restore the project files it modified:
+   `git checkout -- *.xcodeproj`. The tree was clean before fastlane ran, so this discards
+   only fastlane's edits. If fastlane did leave commits on `main`, put them on a `chore/`
+   branch and open a PR
 10. Update "Current State" with the release, in the project-owned part of the instructions file
     (`AGENTS.md` when it carries the playbook core markers, otherwise `CLAUDE.md`)
 

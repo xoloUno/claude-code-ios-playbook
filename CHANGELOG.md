@@ -28,6 +28,28 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Plugin `v1.2.1` — `/deploy` and `/release` leave `main` clean
+
+A patch release. The `beta` and `release` lanes set the build number and signing in the
+Xcode project without committing them. `/deploy` and `/release` never handled those edits, so
+`main` was left dirty and the next `/preflight` failed its clean-tree check. The Codex review
+of the teewye refresh PR found this.
+
+- Both commands now require a clean working tree before they start.
+- After the upload, they restore fastlane's project edits with `git checkout -- *.xcodeproj`,
+  the command their fallback already used. The build number comes from TestFlight on every
+  run, so nothing is lost.
+- Commits fastlane does make on `main` still go through a `chore/` branch and a PR.
+
+**Files affected:** `packs/ios/commands/deploy.md`, `packs/ios/commands/release.md`;
+`.claude-plugin/plugin.json` (`version` `1.2.0` → `1.2.1`); the legacy compose fixture.
+After this merges, the merge commit gets the tag `playbook--v1.2.1`.
+
+**What to do in your project:** iOS apps recompose (`/playbook:upgrade` on the plugin, or
+compose from the bumped submodule). Non-iOS repos aren't affected.
+
+---
+
 ## 2026-10-22 — Plugin `v1.2.0` — contract minor tag
 
 Bumps `.claude-plugin/plugin.json` from `1.1.0` to `1.2.0`. After this merges, the merge

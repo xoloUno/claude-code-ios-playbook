@@ -28,6 +28,23 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-22 — Plugin `v1.2.2` — restore every file fastlane edits
+
+A patch release. `increment_build_number` also writes `CFBundleVersion` into an `Info.plist`
+that holds a literal build number, so restoring only `*.xcodeproj` (1.2.1) could still leave
+`main` dirty and block the next run. `/deploy` and `/release` now restore with
+`git checkout -- .`, in the step after the upload and in the fallback. Both commands require a
+clean tree before fastlane runs, so this discards only fastlane's edits. The Codex review of
+the broadsheet follow-up PR found this.
+
+**Files affected:** `packs/ios/commands/deploy.md`, `packs/ios/commands/release.md`;
+`.claude-plugin/plugin.json` (`version` `1.2.1` → `1.2.2`); the legacy compose fixture.
+After this merges, the merge commit gets the tag `playbook--v1.2.2`.
+
+**What to do in your project:** iOS apps recompose. Non-iOS repos aren't affected.
+
+---
+
 ## 2026-10-22 — Plugin `v1.2.1` — `/deploy` and `/release` leave `main` clean
 
 A patch release. The `beta` and `release` lanes set the build number and signing in the

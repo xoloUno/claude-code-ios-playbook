@@ -121,6 +121,15 @@ class GuardTest(unittest.TestCase):
         self.assertIsNone(self.bash("git push -u origin feature"))
         self.assertIsNone(self.bash("git push -o ci.skip origin feature"))
 
+    def test_shell_syntax_does_not_hide_commands(self):
+        for cmd in ("# tidy up first\ngit -C . push --force-with-lease origin feature",
+                    "git status  # check\ngit push origin main",
+                    "if git diff --quiet; then git -C . push --force-with-lease origin feature; fi",
+                    "for b in x; do git push origin :main; done",
+                    "true || { git push origin main; }"):
+            self.assertEqual(self.bash(cmd), "deny", cmd)
+        self.assertIsNone(self.bash("# just a note\ngit status"))
+
     def test_shell_wrappers_with_bundled_flags(self):
         for cmd in ("bash -lc 'git push --force origin feature'",
                     'zsh -ic "git push origin main"', "sh -c 'git push origin :main'"):
@@ -187,7 +196,8 @@ class GuardTest(unittest.TestCase):
                     "gh api repos/o/r/issues --field=title=x",
                     "gh api repos/o/r/issues --raw-field=body=x",
                     "gh api graphql -F query=@/tmp/q.graphql",
-                    "gh api graphql --input /tmp/payload.json"):
+                    "gh api graphql --input /tmp/payload.json",
+                    "gh api graphql --input=/tmp/payload.json"):
             self.assertEqual(self.bash(cmd), "ask", cmd)
         self.assertIsNone(self.bash("gh api -XGET repos/o/r/pulls -f state=open"))
         self.assertIsNone(self.bash(

@@ -30,7 +30,8 @@ CONFIG = os.path.join(HOME, ".config", "playbook", "config")
 WORDS = os.path.join(HOME, ".config", "playbook", "pii-words.txt")
 PROTECTED = {"main", "master"}
 SEPARATORS = {"&&", "||", ";", "|", "&", "|&", "(", ")"}
-WRAPPERS = {"env", "command", "exec", "time", "nohup", "builtin"}
+WRAPPERS = {"env", "command", "exec", "time", "nohup", "builtin",
+            "if", "then", "elif", "else", "while", "until", "do", "!", "{"}  # and shell keywords
 GIT_OPTS_WITH_ARG = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
 PUSH_OPTS_WITH_ARG = {"--receive-pack", "--exec", "--push-option"}
 GH_OPTS_WITH_ARG = {"-R", "--repo", "--hostname"}
@@ -81,20 +82,24 @@ def autonomy_off(cwd):
 
 
 def commands(text):
-    """Split a shell command line into simple commands (lists of words)."""
-    lex = shlex.shlex(text.replace("\n", ";"), posix=True, punctuation_chars=True)
-    lex.whitespace_split = True
-    out, cur = [], []
-    try:
-        for tok in lex:
-            if tok in SEPARATORS:
-                out.append(cur)
-                cur = []
-            else:
-                cur.append(tok)
-    except ValueError:  # unbalanced quotes: fall back to plain splitting
-        return [text.split()]
-    return [c for c in out + [cur] if c]
+    """Split a shell script into simple commands (lists of words), one line at a time so a
+    `#` comment ends at its line instead of swallowing the rest of the script."""
+    out = []
+    for line in text.splitlines():
+        lex = shlex.shlex(line, posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        cur = []
+        try:
+            for tok in lex:
+                if tok in SEPARATORS:
+                    out.append(cur)
+                    cur = []
+                else:
+                    cur.append(tok)
+        except ValueError:  # unbalanced quotes (a multi-line string): plain splitting
+            cur = line.split()
+        out.append(cur)
+    return [c for c in out if c]
 
 
 def strip_wrappers(words):
@@ -314,7 +319,9 @@ def check_gh(words, off):
             method = a.split("=", 1)[1].upper()
         elif a.startswith("-X"):
             method = a[2:].upper()
-        elif a.startswith(("--field=", "--raw-field=", "--input=", "-f", "-F")):
+        elif a.startswith("--input="):
+            fields.append("<input>")
+        elif a.startswith(("--field=", "--raw-field=", "-f", "-F")):
             fields.append(a.split("=", 1)[-1] if a.startswith("--") else a[2:])
         elif not a.startswith("-") and endpoint is None:
             endpoint = a

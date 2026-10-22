@@ -774,8 +774,8 @@ siblings of the playbook directory.
 >
 > **Partially superseded by:** 2026-10-22 — Autonomy policy. Under autonomy, translations are
 > written on a task branch, merged before `/release`, and approved once, with the App Store
-> Connect upload, instead
-> of before writing. Without autonomy, approval before writing still applies.
+> Connect upload, instead of before writing. Without autonomy, approval before writing
+> still applies.
 
 Codifies the multi-locale App Store metadata workflow into a new rule:
 **en-US is the source of truth, humanized continuously via `/wrapup`;

@@ -48,10 +48,10 @@ work never lands on the protected default.
 
 4. **Run validation gates** — profile-driven; each fires only when declared (tests,
    preflight, lint). A failing gate blocks the commit. Fix it. If you can't, then when
-   autonomy applies (core "Autonomy"), park it in `MANUAL-TASKS.md` and carry on with
-   other work; otherwise get explicit acknowledgement first. Gates run *after* the
-   mutations (so they check the final tree) and *before* the commit (so they can still
-   block it).
+   autonomy applies (core "Autonomy"; never without that section), park it in
+   `MANUAL-TASKS.md` and carry on with other work; otherwise get explicit acknowledgement
+   first. Gates run *after* the mutations (so they check the final tree) and *before* the
+   commit (so they can still block it).
 
 5. **Stage selectively** — never `git add .` blindly, and always with explicit
    pathspecs. Group related changes into logical commits when several concerns were

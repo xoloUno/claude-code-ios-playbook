@@ -48,4 +48,4 @@ Recommendation thresholds:
   changes with no commits in >1 hour
 
 After showing the dashboard, if recommendation is not "Healthy", run `/wrapup` when autonomy
-applies (core "Autonomy"); otherwise offer to.
+applies (core "Autonomy"; never without that section); otherwise offer to.

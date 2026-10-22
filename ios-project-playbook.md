@@ -155,7 +155,8 @@ profile secrets change per app. Use GitHub Organization secrets for the shared o
 **Local sessions deploy locally.** Use the `/deploy` slash command to build, sign, and
 upload to TestFlight from your machine. This is faster than CI and costs zero GitHub
 Actions credits. Local sessions should include `[skip ci]` in commit messages to skip
-all workflows (they verify builds locally and deploy locally).
+all workflows (they verify builds locally and deploy locally). Under the core "Autonomy"
+rules, leave it off the last push before a merge, so CI checks the PR's final commit.
 
 **Cloud sessions rely on Build Check.** Cloud sessions cannot build or deploy. They
 must NOT include `[skip ci]` — the Build Check workflow is their only compilation
@@ -453,10 +454,12 @@ Format: `type(scope): short description`
 
 Types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `ui`
 
-Rules: subject ≤72 chars, present tense, no trailing period, `Co-Authored-By: Claude <noreply@anthropic.com>` trailer.
+Rules: subject ≤72 chars, present tense, no trailing period, attribution per the host's
+settings and your policy (don't hardcode a co-author trailer).
 
 **Local sessions:** Include `[skip ci]` in commit message to skip all CI workflows.
 Local sessions verify builds via XcodeBuildMCP and deploy via `/deploy` — no CI needed.
+Under the core "Autonomy" rules, leave it off the last push before a merge.
 **Cloud sessions:** Do NOT include `[skip ci]` — Build Check must verify their code compiles.
 
 **Gotcha — 72 char limit includes `[skip ci]`:** The Lefthook conventional commit regex

@@ -35,7 +35,8 @@ work. They commit to a task branch, push feature branches, open PRs, and merge a
 passes a checklist: tests and lint, CI when the repo has it, current `main`, and Codex's
 `ready to merge`. A fixed list of actions still needs the user. Sessions park those in
 `MANUAL-TASKS.md`, keep working, and send one notification when nothing else is left. The
-policy is inert until the guard is installed (a later PR); until then nothing changes.
+autonomy steps stay off until the guard is installed (a later PR); until then every command
+asks as before. The drift fixes below apply right away.
 
 **Files affected:**
 - `core/agents-core.md`:
@@ -50,15 +51,20 @@ policy is inert until the guard is installed (a later PR); until then nothing ch
   - PRs are created and, if they pass the checklist, merged under autonomy.
 - `.claude/commands/status.md`, `upgrade.md`, `conform.md`, `curate.md`, `context-health.md`,
   `plugin/commands/upgrade.md`: each step that asks now acts on its own recommendation
-  under autonomy, and asks as before otherwise.
-- `packs/ios/commands/deploy.md`, `release.md`: no more pushing `main` after an upload.
-- `packs/ios/commands/preflight.md`: the git check expects `main`, matching `/deploy` and
-  `/release`.
-- `packs/ios/command-profile.md`: `[skip ci]` stays off the last push before a merge.
-- `packs/ios/rules/metadata-translation.md`: translations are approved once, at the upload.
-- `packs/python/command-profile.md`: a failing test gate follows `/wrapup` stage 4.
-- `core/rules/git-workflow.md`: no hardcoded co-author line.
-- `ios-project-playbook.md`: merges go through PRs and ship nothing.
+  under autonomy, and asks as before otherwise, including when the core block has no
+  "Autonomy" section yet.
+- Under autonomy only:
+  - `packs/ios/command-profile.md`: `[skip ci]` stays off the last push before a merge.
+  - `packs/ios/rules/metadata-translation.md`: translations are approved once, at the
+    upload.
+- Drift fixes, in effect now:
+  - `packs/ios/commands/deploy.md`, `release.md`: no more pushing `main` after an upload.
+  - `packs/ios/commands/preflight.md`: the git check expects `main`, matching `/deploy` and
+    `/release`.
+  - `packs/python/command-profile.md`: a failing test gate follows `/wrapup` stage 4.
+  - `core/rules/git-workflow.md`: no hardcoded co-author line.
+  - `ios-project-playbook.md`: merges go through PRs and ship nothing; no hardcoded
+    co-author trailer; the `[skip ci]` note matches the pack.
 - `COMMANDS-ARCHITECTURE.md`: documents the `autonomy: off` fact.
 - `tests/`: the legacy compose fixture covers the new wording.
 
@@ -761,6 +767,10 @@ siblings of the playbook directory.
 > per-kind command profiles. The `metadata-translation.md` rule is unchanged; only the
 > `/wrapup` locale-drift note moved — out of the deleted `.claude/templates/commands/wrapup.md`
 > and into the prose-humanizer step of `packs/ios/command-profile.md`.
+>
+> **Partially superseded by:** 2026-10-22 — Autonomy policy. Under autonomy, translations are
+> written on the release branch and approved once, with the App Store Connect upload, instead
+> of before writing. Without autonomy, approval before writing still applies.
 
 Codifies the multi-locale App Store metadata workflow into a new rule:
 **en-US is the source of truth, humanized continuously via `/wrapup`;

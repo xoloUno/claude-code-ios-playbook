@@ -59,5 +59,6 @@ inbox count, …):
 - ✓ Clean — no flags <if nothing to report>
 ```
 
-After presenting, recommend the next item. When autonomy applies (core "Autonomy"), start
-it unless it needs the user; otherwise ask: "What would you like to work on?"
+After presenting, recommend the next item. When autonomy applies (core "Autonomy"; never
+without that section), start it unless it needs the user; otherwise ask: "What would you
+like to work on?"

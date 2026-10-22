@@ -23,11 +23,10 @@
 @@ -62,3 +65,5 @@
  - **`[skip ci]`.** On a **local** session, append `[skip ci]` to the commit subject unless
 -  the user says otherwise. On a **cloud** session, do **not** — let CI run. (This is the
--  iOS-specific rule the universal skeleton deliberately stays silent about.)
-+  the user says otherwise. On a **cloud** session, do **not** — let CI run. Either way,
-+  leave it off the last push before a merge, so CI checks the PR's final commit (core
-+  merge checklist). (This is the iOS-specific rule the universal skeleton deliberately
-+  stays silent about.)
++  the user says otherwise. On a **cloud** session, do **not** — let CI run. When autonomy
++  applies (core "Autonomy"; never without that section), leave it off the last push before
++  a merge, so CI checks the PR's final commit (core merge checklist). (This is the
+   iOS-specific rule the universal skeleton deliberately stays silent about.)
 --- a/.claude/commands/conform.md
 +++ b/.claude/commands/conform.md
 @@ -25,3 +25,4 @@
@@ -80,9 +79,9 @@
 @@ -124,3 +144,5 @@
  
 -4. **Ask the user how to proceed.** Use `AskUserQuestion` with three options:
-+4. **Choose how to proceed.** When autonomy applies (core "Autonomy"), take **Apply all
-+   auto-fixable** on a task branch without asking. Otherwise ask the user with
-+   `AskUserQuestion`, offering three options:
++4. **Choose how to proceed.** When autonomy applies (core "Autonomy"; never without that
++   section), take **Apply all auto-fixable** on a task branch without asking. Otherwise ask
++   the user with `AskUserQuestion`, offering three options:
     - **Apply all auto-fixable** — apply the HIGH-severity *auto-fixable* items (stale/missing
 @@ -140,2 +162,10 @@
         with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
@@ -120,7 +119,7 @@
  
 -After showing the dashboard, if recommendation is not "Healthy", offer to run `/wrapup`.
 +After showing the dashboard, if recommendation is not "Healthy", run `/wrapup` when autonomy
-+applies (core "Autonomy"); otherwise offer to.
++applies (core "Autonomy"; never without that section); otherwise offer to.
 --- a/.claude/commands/deploy.md
 +++ b/.claude/commands/deploy.md
 @@ -5,3 +5,3 @@
@@ -210,11 +209,12 @@
 +7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them at the top of
 +   the briefing and ask whether any are now done.
  
-@@ -60,2 +61,3 @@
+@@ -60,2 +61,4 @@
  
 -After presenting, ask: "What would you like to work on?"
-+After presenting, recommend the next item. When autonomy applies (core "Autonomy"), start
-+it unless it needs the user; otherwise ask: "What would you like to work on?"
++After presenting, recommend the next item. When autonomy applies (core "Autonomy"; never
++without that section), start it unless it needs the user; otherwise ask: "What would you
++like to work on?"
 --- a/.claude/commands/upgrade.md
 +++ b/.claude/commands/upgrade.md
 @@ -14,3 +14,3 @@
@@ -225,9 +225,9 @@
 @@ -25,3 +25,5 @@
       to this project), or **manual** (needs human action)
 -6. Ask the user which entries to apply
-+6. When autonomy applies (core "Autonomy"), apply the entries you recommend on a task
-+   branch and park the **manual** ones in `MANUAL-TASKS.md`. Otherwise ask the user which
-+   entries to apply.
++6. When autonomy applies (core "Autonomy"; never without that section), apply the entries
++   you recommend on a task branch and park the **manual** ones in `MANUAL-TASKS.md`.
++   Otherwise ask the user which entries to apply.
  7. For each applied entry:
 @@ -30,3 +32,5 @@
       `packs/<pack>/rules/` directory (rules were reorganized into core + packs),
@@ -271,10 +271,10 @@
 -   acknowledgement first. Gates run *after* the mutations (so they check the final tree)
 -   and *before* the commit (so they can still block it).
 +   preflight, lint). A failing gate blocks the commit. Fix it. If you can't, then when
-+   autonomy applies (core "Autonomy"), park it in `MANUAL-TASKS.md` and carry on with
-+   other work; otherwise get explicit acknowledgement first. Gates run *after* the
-+   mutations (so they check the final tree) and *before* the commit (so they can still
-+   block it).
++   autonomy applies (core "Autonomy"; never without that section), park it in
++   `MANUAL-TASKS.md` and carry on with other work; otherwise get explicit acknowledgement
++   first. Gates run *after* the mutations (so they check the final tree) and *before* the
++   commit (so they can still block it).
  
 @@ -54,5 +60,5 @@
  6. **Commit.** Conventional message: `type(scope): short description`
@@ -312,18 +312,11 @@
  4. Push to a feature/fix branch, not `main`
 --- a/.claude/rules/metadata-translation.md
 +++ b/.claude/rules/metadata-translation.md
-@@ -100,7 +100,10 @@
-      terms, do-not-translate list, regional variants)
--4. Show a diff (old locale file vs. proposed new translation)
--5. Ask for approval before writing — translations are high-stakes
-+4. Write the new translation and show a diff (old locale file vs. new
-+   translation)
-+5. Get approval before any metadata upload — translations are high-stakes
-    (App Store rejection risk for bad translations; cultural missteps are
--   not reversible without a new submission)
--6. Write the new translation only after approval
-+   not reversible without a new submission). The App Store Connect upload
-+   already needs the user's yes, so ask once there, not per locale
-+6. Upload nothing until that approval; unapproved translations stay on the
-+   branch
+@@ -106,2 +106,7 @@
  
++When autonomy applies (core "Autonomy"; never without that section), write
++the translations on the release branch instead, and ask once, with the App
++Store Connect upload approval, rather than per locale. Upload nothing until
++then.
++
+ ## ASC character limits

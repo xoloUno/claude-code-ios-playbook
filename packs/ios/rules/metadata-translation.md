@@ -98,14 +98,16 @@ locale directory under `fastlane/metadata/`:
      register, locale-specific marketing phrasing)
    - Honors the project's `TRANSLATION.md` glossary if present (chosen
      terms, do-not-translate list, regional variants)
-4. Write the new translation and show a diff (old locale file vs. new
-   translation)
-5. Get approval before any metadata upload — translations are high-stakes
+4. Show a diff (old locale file vs. proposed new translation)
+5. Ask for approval before writing — translations are high-stakes
    (App Store rejection risk for bad translations; cultural missteps are
-   not reversible without a new submission). The App Store Connect upload
-   already needs the user's yes, so ask once there, not per locale
-6. Upload nothing until that approval; unapproved translations stay on the
-   branch
+   not reversible without a new submission)
+6. Write the new translation only after approval
+
+When autonomy applies (core "Autonomy"; never without that section), write
+the translations on the release branch instead, and ask once, with the App
+Store Connect upload approval, rather than per locale. Upload nothing until
+then.
 
 ## ASC character limits
 

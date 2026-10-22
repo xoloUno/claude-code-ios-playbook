@@ -23,9 +23,9 @@ Steps:
    - The "How to upgrade your project" steps
    - Your recommendation: **apply** (you can make this change now), **skip** (not relevant
      to this project), or **manual** (needs human action)
-6. When autonomy applies (core "Autonomy"), apply the entries you recommend on a task
-   branch and park the **manual** ones in `MANUAL-TASKS.md`. Otherwise ask the user which
-   entries to apply.
+6. When autonomy applies (core "Autonomy"; never without that section), apply the entries
+   you recommend on a task branch and park the **manual** ones in `MANUAL-TASKS.md`.
+   Otherwise ask the user which entries to apply.
 7. For each applied entry:
    - Make the changes described in the upgrade steps
    - For rule file updates: copy the latest version from the playbook's `core/rules/` or

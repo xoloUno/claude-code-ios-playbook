@@ -142,9 +142,9 @@ Steps:
 
    If everything is aligned, present a single line: `✓ Project conforms to the playbook — no drift detected.` and stop.
 
-4. **Choose how to proceed.** When autonomy applies (core "Autonomy"), take **Apply all
-   auto-fixable** on a task branch without asking. Otherwise ask the user with
-   `AskUserQuestion`, offering three options:
+4. **Choose how to proceed.** When autonomy applies (core "Autonomy"; never without that
+   section), take **Apply all auto-fixable** on a task branch without asking. Otherwise ask
+   the user with `AskUserQuestion`, offering three options:
    - **Apply all auto-fixable** — apply the HIGH-severity *auto-fixable* items (stale/missing
      rule files and playbook commands — Checks A and B) without per-item confirmation. Skip
      MEDIUM/LOW items, and skip Check G (HIGH but advisory — its fix touches the project-owned

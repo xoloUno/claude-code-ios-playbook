@@ -48,7 +48,8 @@ a canary run.
     from the owner's private list;
   - it asks for tag pushes, `gh api` writes, and, while autonomy is off, commits, pushes,
     PR creation and merges;
-  - it denies Edit/Write into the playbook from other projects, except `inbox.md`.
+  - it denies Edit/Write into the playbook from other projects, except Edits that append
+    to `inbox.md`.
 - `tools/install-autonomy.py` (new), the installer. It shows a diff, then:
   - merges the settings (extending lists) after backing up `settings.json`;
   - copies the guard and `codex-review.sh` to `~/.config/playbook/tools/`;
@@ -62,7 +63,7 @@ a canary run.
     personal folders, which the OS enforces;
   - model, effort and tier can be overridden.
 - `core/agents-core.md`: the guard file is `autonomy-guard.py`, not `.sh`.
-- `tests/test_autonomy_guard.py`, `tests/test_install_autonomy.py` (new): 36 tests.
+- `tests/test_autonomy_guard.py`, `tests/test_install_autonomy.py` (new): 38 tests.
 
 **In your project:** re-render the core block (one filename changed). Nothing else; the
 installer is a one-time, per-machine step run by the owner.

@@ -63,26 +63,28 @@ def read(path):
 
 
 def plan():
-    """Return [(path, old_text_or_None, new_text, mode)] for every file that would change."""
+    """Return [(path, old_text_or_None, new_text, mode)] for every file that would change.
+    Order matters: the off switch is written first and the guard last, because the guard's
+    presence is what enables autonomy, so a failure partway through leaves it off."""
     changes = []
-    old = read(SETTINGS)
-    current = json.loads(old) if old and old.strip() else {}
-    new = json.dumps(merge(current, template()), indent=2) + "\n"
-    if json.loads(new) != current:
-        changes.append((SETTINGS, old, new, None))
-    for name in COPIES:
-        dst = os.path.join(TOOLS, name)
-        src_text = read(os.path.join(PLAYBOOK, "tools", name))
-        if read(dst) != src_text:
-            changes.append((dst, read(dst), src_text, 0o755))
-    if read(WORDS) is None:
-        changes.append((WORDS, None, WORDS_TEMPLATE, 0o600))
     cfg = read(CONFIG) or ""
     if not re.search(r"^\s*(export\s+)?PLAYBOOK_AUTONOMY=", cfg, re.M):
         line = ("\n# Core \"Autonomy\" policy: keep off until the canary passes, then set to on.\n"
                 "export PLAYBOOK_AUTONOMY=off\n")
         changes.append((CONFIG, read(CONFIG), cfg.rstrip("\n") + "\n" + line if cfg else
                         line.lstrip("\n"), None))
+    if read(WORDS) is None:
+        changes.append((WORDS, None, WORDS_TEMPLATE, 0o600))
+    old = read(SETTINGS)
+    current = json.loads(old) if old and old.strip() else {}
+    new = json.dumps(merge(current, template()), indent=2) + "\n"
+    if json.loads(new) != current:
+        changes.append((SETTINGS, old, new, None))
+    for name in reversed(COPIES):  # autonomy-guard.py last
+        dst = os.path.join(TOOLS, name)
+        src_text = read(os.path.join(PLAYBOOK, "tools", name))
+        if read(dst) != src_text:
+            changes.append((dst, read(dst), src_text, 0o755))
     return changes
 
 

@@ -54,6 +54,13 @@ class InstallTest(unittest.TestCase):
         self.assertIn("settings.json", out)
         self.assertEqual(os.listdir(self.home), [])
 
+    def test_off_switch_is_written_before_the_guard(self):
+        out = self.install("--dry-run")
+        guard = out.index("--- create ~/.config/playbook/tools/autonomy-guard.py")
+        self.assertLess(out.index("--- create ~/.config/playbook/config"), guard)
+        self.assertLess(out.index("--- create ~/.claude/settings.json"), guard)
+        self.assertNotIn("--- create", out[guard + 1:])
+
     def test_no_answer_writes_nothing(self):
         out = self.install()
         self.assertIn("Nothing written.", out)

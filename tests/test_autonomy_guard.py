@@ -2,7 +2,7 @@
 """Tests for tools/autonomy-guard.py, the PreToolUse hook behind the core "Autonomy" policy.
 Run from anywhere:  python3 tests/test_autonomy_guard.py
 Each test builds a throwaway repo with a local bare remote, so nothing touches GitHub; the
-repo's visibility is pinned through the guard's own `playbook.public` cache.
+remote's visibility is pinned through the guard's own `remote.<name>.playbook-public` cache.
 """
 import json
 import os
@@ -30,11 +30,11 @@ class GuardTest(unittest.TestCase):
         sh(self.tmp, "git", "init", "-q", "--bare", "-b", "main", remote)
         sh(self.tmp, "git", "init", "-q", "-b", "main", self.repo)
         for k, v in (("user.name", "Test User"), ("user.email", "test@example.invalid"),
-                     ("commit.gpgsign", "false"), ("tag.gpgsign", "false"),
-                     ("playbook.public", "false")):
+                     ("commit.gpgsign", "false"), ("tag.gpgsign", "false")):
             sh(self.repo, "git", "config", k, v)
         self.commit("README.md", "hello\n", "init")
         sh(self.repo, "git", "remote", "add", "origin", remote)
+        sh(self.repo, "git", "config", "remote.origin.playbook-public", "false")
         sh(self.repo, "git", "push", "-q", "-u", "origin", "main")
         sh(self.repo, "git", "remote", "set-head", "origin", "main")
         sh(self.repo, "git", "switch", "-q", "-c", "feature")
@@ -129,7 +129,7 @@ class GuardTest(unittest.TestCase):
     def test_commit_then_push_to_public_repo_asks(self):
         self.set_autonomy("on", words=["Jane Example"])
         self.assertIsNone(self.bash("git commit -am x && git push origin feature"))
-        sh(self.repo, "git", "config", "playbook.public", "true")
+        sh(self.repo, "git", "config", "remote.origin.playbook-public", "true")
         self.assertEqual(self.bash("git commit -am x && git push origin feature"), "ask")
         self.assertIsNone(self.bash("git push origin feature"))
 
@@ -142,7 +142,7 @@ class GuardTest(unittest.TestCase):
     def test_cd_into_another_repo_is_followed(self):
         other = os.path.join(self.tmp, "other")
         sh(self.tmp, "git", "clone", "-q", os.path.join(self.tmp, "remote.git"), other)
-        sh(other, "git", "config", "playbook.public", "false")
+        sh(other, "git", "config", "remote.origin.playbook-public", "false")
         self.assertEqual(self.bash("cd ../other && git push"), "deny")
 
     def test_off_switch_follows_git_dash_c(self):
@@ -184,6 +184,8 @@ class GuardTest(unittest.TestCase):
                     "gh api graphql -f query='mutation { resolveReviewThread }'",
                     "gh api -XDELETE repos/o/r/git/refs/heads/x",
                     "gh api repos/o/r -fdescription=hello",
+                    "gh api repos/o/r/issues --field=title=x",
+                    "gh api repos/o/r/issues --raw-field=body=x",
                     "gh api graphql -F query=@/tmp/q.graphql",
                     "gh api graphql --input /tmp/payload.json"):
             self.assertEqual(self.bash(cmd), "ask", cmd)
@@ -198,11 +200,11 @@ class GuardTest(unittest.TestCase):
 
     # --- public repos ---------------------------------------------------------------------
     def test_public_push_needs_a_word_list(self):
-        sh(self.repo, "git", "config", "playbook.public", "true")
+        sh(self.repo, "git", "config", "remote.origin.playbook-public", "true")
         self.assertEqual(self.bash("git push origin feature"), "ask")
 
     def test_public_push_denied_on_personal_word(self):
-        sh(self.repo, "git", "config", "playbook.public", "true")
+        sh(self.repo, "git", "config", "remote.origin.playbook-public", "true")
         self.set_autonomy("on", words=["Jane Example"])
         self.assertIsNone(self.bash("git push origin feature"))
         self.commit("notes.md", "Thanks to jane example for the idea\n", "docs: notes")
@@ -211,13 +213,13 @@ class GuardTest(unittest.TestCase):
         self.assertIn("Jane Example", decision[1])
 
     def test_public_push_denied_on_word_in_message_or_author(self):
-        sh(self.repo, "git", "config", "playbook.public", "true")
+        sh(self.repo, "git", "config", "remote.origin.playbook-public", "true")
         self.set_autonomy("on", words=["secret-codename"])
         self.commit("a.txt", "a\n", "feat: ship secret-codename")
         self.assertEqual(self.bash("git push origin feature"), "deny")
 
     def test_scanner_failure_asks(self):
-        sh(self.repo, "git", "config", "playbook.public", "true")
+        sh(self.repo, "git", "config", "remote.origin.playbook-public", "true")
         self.set_autonomy("on", words=["Jane Example"])
         stub = os.path.join(self.tmp, "bin")
         os.makedirs(stub)
@@ -241,11 +243,29 @@ class GuardTest(unittest.TestCase):
     def test_playbook_edits_from_other_projects(self):
         pb = os.path.join(self.tmp, "playbook")
         os.makedirs(os.path.join(pb, "core"))
-        edit = lambda path, cwd: self.run_guard("Edit", {"file_path": path}, cwd)[0]
+        inbox = os.path.join(pb, "inbox.md")
+        append = {"old_string": "## Entries\n", "new_string": "## Entries\n\n### new lesson\n"}
+        edit = lambda path, cwd, **kw: self.run_guard(
+            "Edit", dict({"file_path": path}, **(kw or append)), cwd)[0]
         self.assertEqual(edit(os.path.join(pb, "core", "agents-core.md"), self.repo), "deny")
-        self.assertIsNone(edit(os.path.join(pb, "inbox.md"), self.repo))
+        self.assertIsNone(edit(inbox, self.repo))
+        self.assertEqual(edit(inbox, self.repo, old_string="### old\n", new_string=""), "deny")
+        self.assertEqual(self.run_guard("Write", {"file_path": inbox, "content": "x"},
+                                        self.repo)[0], "deny")
+        self.assertIsNone(self.run_guard("MultiEdit", {"file_path": inbox, "edits": [append]},
+                                         self.repo)[0])
         self.assertIsNone(edit(os.path.join(pb, "core", "agents-core.md"), pb))
         self.assertIsNone(edit(os.path.join(self.repo, "README.md"), self.repo))
+
+    def test_visibility_is_cached_per_remote(self):
+        pub = os.path.join(self.tmp, "public.git")
+        sh(self.tmp, "git", "init", "-q", "--bare", "-b", "main", pub)
+        sh(self.repo, "git", "remote", "add", "pub", pub)
+        sh(self.repo, "git", "config", "remote.pub.playbook-public", "true")
+        self.set_autonomy("on", words=["Jane Example"])
+        self.commit("notes.md", "Jane Example\n", "docs: notes")
+        self.assertIsNone(self.bash("git push origin feature"))
+        self.assertEqual(self.bash("git push pub feature"), "deny")
 
     # --- robustness -----------------------------------------------------------------------
     def test_other_tools_and_bad_input_are_ignored(self):

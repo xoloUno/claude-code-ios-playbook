@@ -10,7 +10,8 @@ and Claude Code's own permission rules still apply.
         --no-verify, and deleting a protected branch, in any spelling (git -C, -c, refspecs)
   deny  a push to a public repo whose outgoing commits contain a secret (gitleaks) or a word
         from ~/.config/playbook/pii-words.txt (contents, messages, author and committer)
-  deny  Edit/Write into the playbook checkout from another project (inbox.md excepted)
+  deny  Edit/Write into the playbook checkout from another project, except appending
+        to inbox.md with Edit
   ask   tag pushes, other branch deletions, gh api writes, and a public push with no word list
   ask   commits, pushes, PR creation and merges while autonomy is off
 
@@ -134,7 +135,8 @@ def protected_names(repo, remote):
 
 
 def is_public(repo, remote):
-    cached = git(repo, "config", "--get", "playbook.public")
+    key = f"remote.{remote}.playbook-public"  # per remote: a fork can mix private and public
+    cached = git(repo, "config", "--get", key)
     if cached in ("true", "false"):
         return cached == "true"
     url = git(repo, "remote", "get-url", remote)
@@ -145,7 +147,7 @@ def is_public(repo, remote):
     except (OSError, subprocess.TimeoutExpired):
         vis = ""
     if vis in ("PUBLIC", "PRIVATE", "INTERNAL"):
-        git(repo, "config", "playbook.public", "true" if vis == "PUBLIC" else "false")
+        git(repo, "config", key, "true" if vis == "PUBLIC" else "false")
         return vis == "PUBLIC"
     return True  # unknown visibility: scan as if public
 
@@ -374,9 +376,14 @@ def check_file_tool(tool_input, cwd):
     target = os.path.realpath(os.path.join(cwd, os.path.expanduser(path)))
     here = os.path.realpath(cwd)
     inside = lambda p: p == pb or p.startswith(pb + os.sep)
-    if inside(target) and not inside(here) and target != os.path.join(pb, "inbox.md"):
+    if not inside(target) or inside(here):
+        return
+    edits = tool_input.get("edits") or [tool_input]  # MultiEdit or Edit
+    appends = target == os.path.join(pb, "inbox.md") and "old_string" in edits[0] and all(
+        e.get("new_string", "").startswith(e.get("old_string", "")) for e in edits)
+    if not appends:
         decide("deny", "edit the playbook from its own checkout and a PR; other projects may "
-                       "only append to inbox.md")
+                       "only append to inbox.md, with Edit")
 
 
 def main():

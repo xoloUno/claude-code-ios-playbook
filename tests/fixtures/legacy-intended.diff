@@ -130,14 +130,16 @@
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
 +- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -20,7 +21,13 @@
+@@ -20,7 +21,15 @@
  5. If upload succeeds, ask user if they want to tag this release
 -6. Push main with `[skip ci]` to sync remote without triggering any workflows
 -7. Update "Current State" in CLAUDE.md with the deploy
 +6. Restore fastlane's project edits. fastlane sets the build number and signing at archive
-+   time without committing them, in the project and sometimes in `Info.plist`, so run
-+   `git checkout -- .`. The tree was clean before fastlane ran, so this discards only
-+   fastlane's edits.
++   time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
++   restore just the ones that changed:
++   `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.
++   If `git status --porcelain` still lists changes, they aren't fastlane's: stop and ask
++   the user.
 +7. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
 +   deploy in the project-owned part of the instructions file (`AGENTS.md` when it carries
 +   the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on
@@ -145,7 +147,7 @@
  
  Fallback if local build/upload fails:
 -- Restore any project files modified by fastlane: `git checkout -- *.xcodeproj`
-+- Restore the files fastlane modified (the tree was clean before it ran): `git checkout -- .`
++- Restore fastlane's edits as in step 6
  - Trigger the GitHub Actions workflow: `gh workflow run testflight.yml`
 --- a/.claude/commands/feature.md
 +++ b/.claude/commands/feature.md
@@ -189,14 +191,16 @@
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
 +- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -36,7 +37,13 @@
+@@ -36,7 +37,15 @@
  8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 -9. Push main with `[skip ci]` to sync remote without triggering any workflows
 -10. Update "Current State" in CLAUDE.md with the release
 +9. Restore fastlane's project edits. fastlane sets the build number and signing at archive
-+   time without committing them, in the project and sometimes in `Info.plist`, so run
-+   `git checkout -- .`. The tree was clean before fastlane ran, so this discards only
-+   fastlane's edits.
++   time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
++   restore just the ones that changed:
++   `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.
++   If `git status --porcelain` still lists changes, they aren't fastlane's: stop and ask
++   the user.
 +10. Never commit to or push `main`. On a `chore/` branch, update "Current State" with the
 +    release in the project-owned part of the instructions file (`AGENTS.md` when it carries
 +    the playbook core markers, otherwise `CLAUDE.md`), add any commits fastlane left on
@@ -204,7 +208,7 @@
  
  Fallback if local build/upload fails:
 -- Restore any project files modified by fastlane: `git checkout -- *.xcodeproj`
-+- Restore the files fastlane modified (the tree was clean before it ran): `git checkout -- .`
++- Restore fastlane's edits as in step 9
  - Trigger the GitHub Actions workflow: `gh workflow run release.yml`
 --- a/.claude/commands/review.md
 +++ b/.claude/commands/review.md

@@ -47,8 +47,10 @@ switch.
 - **Second opinions:** a new core section runs `tools/codex-review.sh` once before building
   a plan with several moving parts, and after two failed attempts at the same problem. Its
   findings never gate a merge.
-- **Settings:** `settings/autonomy.json` keeps only the deny rules for force pushes and
-  pushes to `main`, plus ask rules for the fastlane lanes that reach App Store Connect.
+- **Settings:** `settings/autonomy.json` keeps deny rules for force pushes (`+` refspecs
+  included) and explicit pushes to `main`. An auto-mode block covers pushing `main` in any
+  other form, such as a bare `git push` while it's checked out. Ask rules cover the fastlane
+  lanes that reach App Store Connect.
 - **Personal folders:** Claude Code keeps stock access. `codex-review.sh` still has the OS
   deny Codex reads of personal folders, and now keeps a repo inside one of them readable.
 

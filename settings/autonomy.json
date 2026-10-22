@@ -5,6 +5,7 @@
       "Bash(git push -f*)",
       "Bash(git push * --force*)",
       "Bash(git push * -f*)",
+      "Bash(git push * +*)",
       "Bash(git push * main)",
       "Bash(git push * HEAD:main)"
     ],
@@ -13,6 +14,12 @@
       "Bash(*fastlane release*)",
       "Bash(*fastlane upload_*)",
       "Bash(*fastlane submit_for_review*)"
+    ]
+  },
+  "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Pushing the default branch (main or master) in any form needs the user: a bare `git push` or `git push origin` while it is checked out, `HEAD` as the refspec while on it, or any `<src>:main` refspec"
     ]
   }
 }

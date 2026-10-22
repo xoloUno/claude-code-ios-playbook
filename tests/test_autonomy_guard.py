@@ -121,6 +121,18 @@ class GuardTest(unittest.TestCase):
         self.assertIsNone(self.bash("git push -u origin feature"))
         self.assertIsNone(self.bash("git push -o ci.skip origin feature"))
 
+    def test_shell_wrappers_with_bundled_flags(self):
+        for cmd in ("bash -lc 'git push --force origin feature'",
+                    'zsh -ic "git push origin main"', "sh -c 'git push origin :main'"):
+            self.assertEqual(self.bash(cmd), "deny", cmd)
+
+    def test_commit_then_push_to_public_repo_asks(self):
+        self.set_autonomy("on", words=["Jane Example"])
+        self.assertIsNone(self.bash("git commit -am x && git push origin feature"))
+        sh(self.repo, "git", "config", "playbook.public", "true")
+        self.assertEqual(self.bash("git commit -am x && git push origin feature"), "ask")
+        self.assertIsNone(self.bash("git push origin feature"))
+
     def test_branch_switch_earlier_in_the_command_asks(self):
         self.assertEqual(self.bash("git switch main && git push origin HEAD"), "ask")
         self.assertEqual(self.bash("git checkout main; git push"), "ask")
@@ -171,7 +183,9 @@ class GuardTest(unittest.TestCase):
                     "gh api --method=PUT repos/o/r/branches/main/protection",
                     "gh api graphql -f query='mutation { resolveReviewThread }'",
                     "gh api -XDELETE repos/o/r/git/refs/heads/x",
-                    "gh api repos/o/r -fdescription=hello"):
+                    "gh api repos/o/r -fdescription=hello",
+                    "gh api graphql -F query=@/tmp/q.graphql",
+                    "gh api graphql --input /tmp/payload.json"):
             self.assertEqual(self.bash(cmd), "ask", cmd)
         self.assertIsNone(self.bash("gh api -XGET repos/o/r/pulls -f state=open"))
         self.assertIsNone(self.bash(

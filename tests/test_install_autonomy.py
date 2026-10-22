@@ -98,6 +98,13 @@ class InstallTest(unittest.TestCase):
         for p, text in first.items():
             self.assertEqual(self.read(*p), text)
 
+    def test_commented_switch_does_not_count(self):
+        os.makedirs(self.path(".config", "playbook"))
+        with open(self.path(".config", "playbook", "config"), "w") as f:
+            f.write("# export PLAYBOOK_AUTONOMY=off\n")
+        self.install("--yes")
+        self.assertIn("\nexport PLAYBOOK_AUTONOMY=off\n", self.read(".config", "playbook", "config"))
+
     def test_existing_file_permissions_are_kept(self):
         os.makedirs(self.path(".claude"))
         os.makedirs(self.path(".config", "playbook"))

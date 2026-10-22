@@ -62,7 +62,7 @@ a canary run.
     personal folders, which the OS enforces;
   - model, effort and tier can be overridden.
 - `core/agents-core.md`: the guard file is `autonomy-guard.py`, not `.sh`.
-- `tests/test_autonomy_guard.py`, `tests/test_install_autonomy.py` (new): 33 tests.
+- `tests/test_autonomy_guard.py`, `tests/test_install_autonomy.py` (new): 36 tests.
 
 **In your project:** re-render the core block (one filename changed). Nothing else; the
 installer is a one-time, per-machine step run by the owner.

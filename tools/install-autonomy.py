@@ -15,6 +15,7 @@ import copy
 import difflib
 import json
 import os
+import re
 import shutil
 import stat
 import sys
@@ -77,7 +78,7 @@ def plan():
     if read(WORDS) is None:
         changes.append((WORDS, None, WORDS_TEMPLATE, 0o600))
     cfg = read(CONFIG) or ""
-    if "PLAYBOOK_AUTONOMY=" not in cfg:
+    if not re.search(r"^\s*(export\s+)?PLAYBOOK_AUTONOMY=", cfg, re.M):
         line = ("\n# Core \"Autonomy\" policy: keep off until the canary passes, then set to on.\n"
                 "export PLAYBOOK_AUTONOMY=off\n")
         changes.append((CONFIG, read(CONFIG), cfg.rstrip("\n") + "\n" + line if cfg else

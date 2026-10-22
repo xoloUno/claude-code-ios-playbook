@@ -36,6 +36,8 @@ GH_OPTS_WITH_ARG = {"-R", "--repo", "--hostname"}
 GH_API_OPTS_WITH_ARG = {"-H", "--header", "-p", "--preview", "-q", "--jq", "-t", "--template",
                         "--cache", "--hostname", "--input"}
 BRANCH_SWITCHERS = {"checkout", "switch"}
+HISTORY_WRITERS = {"commit", "merge", "rebase", "cherry-pick", "revert", "am", "pull", "reset"}
+SHELLS = {"sh", "bash", "zsh"}
 FILE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 
 
@@ -185,7 +187,7 @@ def scan_outgoing(repo, remote, sources):
             decide("ask", f"gitleaks couldn't scan the outgoing commits ({first})")
 
 
-def check_push(repo, args, off, branch_may_change=False):
+def check_push(repo, args, off, branch_may_change=False, history_changed=False):
     flags, positional, remote, i = set(), [], None, 0
     while i < len(args):
         a = args[i]
@@ -266,6 +268,9 @@ def check_push(repo, args, off, branch_may_change=False):
     if tags:
         decide("ask", "tag pushes always need the user")
     if is_public(repo, remote):
+        if history_changed:
+            decide("ask", "new commits are made earlier in this command, so they can't be "
+                          "scanned yet; push to the public repo in a separate command")
         scan_outgoing(repo, remote, sources)
     if off:
         decide("ask", "autonomy is off: approve this push")
@@ -313,24 +318,34 @@ def check_gh(words, off):
             endpoint = a
         i += 1
     if endpoint == "graphql":
-        if any("mutation" in f for f in fields):
+        if any("mutation" in f or "@" in f or f == "<input>" for f in fields):
             decide("ask", "GitHub GraphQL mutation (repo settings or data)")
         return
     if (method or ("POST" if fields else "GET")) != "GET":
         decide("ask", "gh api write (repo settings or data)")
 
 
+def shell_script(words):
+    """The command string of `sh|bash|zsh ... -c <script>`, including bundled flags (-lc)."""
+    if not words or os.path.basename(words[0]) not in SHELLS:
+        return None
+    for i, w in enumerate(words[1:-1], 1):
+        if w.startswith("-") and not w.startswith("--") and "c" in w:
+            return words[i + 1]
+    return None
+
+
 def check_bash(cmd, cwd, depth=0):
-    found_push, switched = False, False
+    found_push, switched, wrote = False, False, False
     for words in commands(cmd):
         inner = strip_wrappers(words)
         if inner and inner[0] in ("cd", "pushd") and len(inner) > 1:
             cwd = os.path.join(cwd, os.path.expanduser(inner[1]))
             switched = switched or "$" in inner[1] or "`" in inner[1]
             continue
-        if depth < 3 and inner and os.path.basename(inner[0]) in ("sh", "bash", "zsh") \
-                and "-c" in inner[1:-1]:
-            check_bash(inner[inner.index("-c", 1) + 1], cwd, depth + 1)
+        script = shell_script(inner)
+        if depth < 3 and script is not None:
+            check_bash(script, cwd, depth + 1)
         elif depth < 3 and inner and inner[0] == "eval":
             check_bash(" ".join(inner[1:]), cwd, depth + 1)
         parsed = parse_git(words, cwd)
@@ -338,11 +353,13 @@ def check_bash(cmd, cwd, depth=0):
             repo, sub, args = parsed
             if sub == "push":
                 found_push = True
-                check_push(repo, args, autonomy_off(repo), switched)
+                check_push(repo, args, autonomy_off(repo), switched, wrote)
             elif sub == "commit" and autonomy_off(repo):
                 decide("ask", "autonomy is off: approve this commit")
             elif sub in BRANCH_SWITCHERS:
                 switched = True
+            if sub in HISTORY_WRITERS:
+                wrote = True
         check_gh(words, autonomy_off(cwd))
     if not found_push and re.search(r"(\$\(|`)[^)`]*\bgit\b[^)`]*\bpush\b", cmd):
         decide("ask", "a git push inside a command substitution can't be checked")

@@ -1,7 +1,8 @@
 Review and process the playbook inbox.
 
 Steps:
-1. Read `inbox.md` in this directory
+1. Read `inbox.md` in this directory, then number and sort its entries as its header's
+   curation process describes
 2. If empty (no entries below the header), say "Inbox is empty — nothing to curate" and stop
 3. For each entry, present it to the user with a recommendation:
    - **Adopt** — the lesson is worth adding to the playbook, a template, or a rule file.
@@ -26,6 +27,7 @@ Steps:
 
 Important:
 - Read each referenced file before modifying it
+- Keep entry numbers and the header's next entry number; never renumber or reuse an ID
 - Keep changes minimal and consistent with existing style
 - If an entry suggests a change that conflicts with existing playbook guidance, flag
   the conflict to the user rather than silently overriding

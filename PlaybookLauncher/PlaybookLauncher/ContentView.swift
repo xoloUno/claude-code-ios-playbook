@@ -115,7 +115,7 @@ struct ContentView: View {
     private var completedIdentitySummary: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Label(viewModel.identity.developerName, systemImage: "checkmark.circle.fill")
+                Label(viewModel.identity.org, systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                     .font(.subheadline)
                 Spacer()
@@ -123,7 +123,7 @@ struct ContentView: View {
                     editingIdentity = true
                 }
             }
-            Text("\(viewModel.identity.org) \u{2022} \(viewModel.identity.developerDomain)")
+            Text("Team \(viewModel.identity.teamID) \u{2022} \(viewModel.identity.developerDomain)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -136,11 +136,7 @@ struct ContentView: View {
         Group {
             FormField("Team ID", text: $viewModel.identity.teamID, prompt: "10-char alphanumeric")
             FormField("GitHub Org / Username", text: $viewModel.identity.org, prompt: "xoloUno")
-            FormField("Developer Name", text: $viewModel.identity.developerName, prompt: "Your Name")
-            FormField("Developer Email", text: $viewModel.identity.developerEmail, prompt: "you@example.com")
-            FormField("Developer Domain", text: $viewModel.identity.developerDomain, prompt: "example.com")
-            FormField("ASC Key ID", text: $viewModel.identity.ascKeyID, prompt: "From App Store Connect → Integrations")
-            FormField("ASC Issuer ID", text: $viewModel.identity.ascIssuerID, prompt: "From App Store Connect → Integrations")
+            FormField("Developer Domain", text: $viewModel.identity.developerDomain, prompt: "example.com (sets the bundle ID prefix)")
 
             if editingIdentity && viewModel.identity.isComplete {
                 HStack {

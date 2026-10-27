@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import Synchronization
 
 @Observable
 @MainActor
@@ -39,7 +40,7 @@ final class LauncherViewModel {
 
     // MARK: - Picker options
 
-    static let minimumIOSOptions = ["26.0", "18.0", "17.0", "16.0"]
+    static let minimumIOSOptions = ["27.0", "26.0", "18.0", "17.0", "16.0"]
 
     var availableSimulators: [String] = []
 
@@ -98,6 +99,8 @@ final class LauncherViewModel {
             return
         }
         identity = saved
+        // Re-save so fields older versions stored (the ASC IDs among them) don't linger.
+        saveIdentity()
     }
 
     func saveIdentity() {
@@ -113,11 +116,7 @@ final class LauncherViewModel {
         let pairs = parseEnvFile(contents)
         if let v = pairs["TEAM_ID"], v != "YOUR_TEAM_ID" { identity.teamID = v }
         if let v = pairs["ORG"], v != "YourGitHubOrg" { identity.org = v }
-        if let v = pairs["DEVELOPER_NAME"], v != "Your Name" { identity.developerName = v }
-        if let v = pairs["DEVELOPER_EMAIL"], v != "you@example.com" { identity.developerEmail = v }
         if let v = pairs["DEVELOPER_DOMAIN"], v != "example.com" { identity.developerDomain = v }
-        if let v = pairs["ASC_KEY_ID"], v != "YOUR_ASC_KEY_ID" { identity.ascKeyID = v }
-        if let v = pairs["ASC_ISSUER_ID"], v != "YOUR_ASC_ISSUER_ID" { identity.ascIssuerID = v }
 
         if identity != IdentityConfig() {
             saveIdentity()
@@ -269,26 +268,28 @@ final class LauncherViewModel {
         }
     }
 
+    /// Only the identity values bootstrap.sh reads. The ASC IDs come from each project's
+    /// `.env.fastlane` and GitHub Secrets, so the launcher doesn't collect them.
     private func buildEnvPlaybook() -> String {
         """
-        TEAM_ID="\(identity.teamID)"
-        ORG="\(identity.org)"
-        DEVELOPER_NAME="\(identity.developerName)"
-        DEVELOPER_EMAIL="\(identity.developerEmail)"
-        DEVELOPER_DOMAIN="\(identity.developerDomain)"
-        ASC_KEY_ID="\(identity.ascKeyID)"
-        ASC_ISSUER_ID="\(identity.ascIssuerID)"
+        TEAM_ID=\(Self.shellQuoted(identity.teamID))
+        ORG=\(Self.shellQuoted(identity.org))
         """
     }
 
     private func buildEnvProject() -> String {
         """
-        APP_NAME="\(project.appName)"
-        BUNDLE_ID="\(fullBundleID)"
-        REPO_NAME="\(project.repoName)"
-        MINIMUM_IOS="\(project.minimumIOS)"
-        PRIMARY_SIM="\(project.primarySim)"
+        APP_NAME=\(Self.shellQuoted(project.appName))
+        BUNDLE_ID=\(Self.shellQuoted(fullBundleID))
+        REPO_NAME=\(Self.shellQuoted(project.repoName))
+        MINIMUM_IOS=\(Self.shellQuoted(project.minimumIOS))
+        PRIMARY_SIM=\(Self.shellQuoted(project.primarySim))
         """
+    }
+
+    /// Single-quotes a value for a file bash `source`s, so `"`, `$` and backticks stay literal.
+    private static func shellQuoted(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: #"'\''"#) + "'"
     }
 
     private func executeBootstrap(
@@ -297,28 +298,28 @@ final class LauncherViewModel {
         envPlaybook: String,
         envProject: String
     ) async {
-        // Write temporary env files
         let envPlaybookPath = playbookDir + "/.env.playbook"
         let envProjectPath = playbookDir + "/.env.project"
 
-        // Preserve existing .env.playbook if present
-        let hadExistingPlaybookEnv = FileManager.default.fileExists(atPath: envPlaybookPath)
-        let existingPlaybookBackup = hadExistingPlaybookEnv
-            ? try? String(contentsOfFile: envPlaybookPath, encoding: .utf8)
-            : nil
-
-        let hadExistingProjectEnv = FileManager.default.fileExists(atPath: envProjectPath)
+        // Snapshot both env files so the run leaves them as it found them: restored if they
+        // existed, removed if they didn't.
+        let playbookBackup = try? String(contentsOfFile: envPlaybookPath, encoding: .utf8)
+        let projectBackup = try? String(contentsOfFile: envProjectPath, encoding: .utf8)
+        for (path, backup) in [(envPlaybookPath, playbookBackup), (envProjectPath, projectBackup)]
+        where backup == nil && FileManager.default.fileExists(atPath: path) {
+            finish(success: false, log: "Can't read the existing \(path), so it was left untouched.\n")
+            return
+        }
+        defer {
+            Self.restore(envPlaybookPath, to: playbookBackup)
+            Self.restore(envProjectPath, to: projectBackup)
+        }
 
         do {
             try envPlaybook.write(toFile: envPlaybookPath, atomically: true, encoding: .utf8)
             try envProject.write(toFile: envProjectPath, atomically: true, encoding: .utf8)
         } catch {
-            await MainActor.run {
-                logOutput += "Failed to write env files: \(error.localizedDescription)\n"
-                isRunning = false
-                didFinish = true
-                didSucceed = false
-            }
+            finish(success: false, log: "Failed to write env files: \(error.localizedDescription)\n")
             return
         }
 
@@ -338,39 +339,84 @@ final class LauncherViewModel {
         process.standardOutput = pipe
         process.standardError = pipe
 
-        pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+        // Output arrives in arbitrary chunks, so LineBuffer holds back a partial line (and any
+        // emoji split between chunks) until it's complete. The stream ends at EOF, once the
+        // script and everything it started have closed the pipe, so no tail is lost.
+        let (output, outputContinuation) = AsyncStream<String>.makeStream()
+        let lines = LineBuffer()
+        pipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
-            guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
-            Task { @MainActor [weak self] in
-                self?.logOutput += text
+            if data.isEmpty {
+                handle.readabilityHandler = nil
+                if let rest = lines.flush() { outputContinuation.yield(rest) }
+                outputContinuation.finish()
+            } else if let text = lines.append(data) {
+                outputContinuation.yield(text)
             }
+        }
+
+        // Await the exit instead of blocking the main thread in waitUntilExit().
+        let (exitStatus, exitContinuation) = AsyncStream<Int32>.makeStream()
+        process.terminationHandler = { finished in
+            exitContinuation.yield(finished.terminationStatus)
+            exitContinuation.finish()
         }
 
         do {
             try process.run()
-            process.waitUntilExit()
         } catch {
-            await MainActor.run {
-                logOutput += "Failed to launch bootstrap.sh: \(error.localizedDescription)\n"
-            }
+            // Never launched: there's no output to wait for and no exit status to read.
+            pipe.fileHandleForReading.readabilityHandler = nil
+            finish(success: false, log: "Failed to launch bootstrap.sh: \(error.localizedDescription)\n")
+            return
         }
 
-        pipe.fileHandleForReading.readabilityHandler = nil
-
-        let success = process.terminationStatus == 0
-
-        // Restore or clean up env files
-        if let backup = existingPlaybookBackup {
-            try? backup.write(toFile: envPlaybookPath, atomically: true, encoding: .utf8)
+        for await text in output {
+            logOutput += text
         }
-        if !hadExistingProjectEnv {
-            try? FileManager.default.removeItem(atPath: envProjectPath)
-        }
+        var exit = exitStatus.makeAsyncIterator()
+        let status = await exit.next()
+        finish(success: status == 0)
+    }
 
-        await MainActor.run {
-            isRunning = false
-            didFinish = true
-            didSucceed = success
+    private func finish(success: Bool, log: String = "") {
+        logOutput += log
+        isRunning = false
+        didFinish = true
+        didSucceed = success
+    }
+
+    private static func restore(_ path: String, to backup: String?) {
+        if let backup {
+            try? backup.write(toFile: path, atomically: true, encoding: .utf8)
+        } else {
+            try? FileManager.default.removeItem(atPath: path)
+        }
+    }
+}
+
+/// Collects a process's output and releases it a whole line at a time, so a multi-byte
+/// character split across two reads is decoded once it's complete instead of dropped.
+private final class LineBuffer: Sendable {
+    private let pending = Mutex(Data())
+
+    /// Adds `data` and returns every complete line so far, or nil if there's none yet.
+    func append(_ data: Data) -> String? {
+        pending.withLock { buffer in
+            buffer.append(data)
+            guard let newline = buffer.lastIndex(of: UInt8(ascii: "\n")) else { return nil }
+            let text = String(decoding: buffer[...newline], as: UTF8.self)
+            buffer.removeSubrange(...newline)
+            return text
+        }
+    }
+
+    /// Returns what's left after the last newline, or nil if nothing is.
+    func flush() -> String? {
+        pending.withLock { buffer in
+            guard !buffer.isEmpty else { return nil }
+            defer { buffer.removeAll() }
+            return String(decoding: buffer, as: UTF8.self)
         }
     }
 }

@@ -49,9 +49,10 @@ Steps:
    a. Look up the gesture for the current surface in the gesture inventory in
       `.claude/rules/screenshot-pipeline.md`. Tell the user the **exact** gesture in chat.
       Examples (verify against the rule, do not invent):
-      - `LockScreen_LiveActivity` — "Press Cmd+L in the Simulator to lock the device. Confirm
+      - `LockScreen_LiveActivity` — "Press Cmd+L in Device Hub to lock the device. Confirm
         the Live Activity is visible on the lock screen, then type `ready`."
-      - `HomeScreen_Widget` — "Return to home screen (Cmd+Shift+H), confirm the widget is
+      - `HomeScreen_Widget` — "Return to the Home Screen: each Cmd+Shift+H is one swipe up,
+        so from the lock screen press it twice (app, then home). Confirm the widget is
         visible, then type `ready`."
       - `ControlCenter` — "Open Control Center (drag from top-right corner of the simulated
         device), confirm the Control Widget is visible, then type `ready`."

@@ -240,7 +240,7 @@ performs for each. Add new surfaces with the next available `9X_` prefix.
 | Surface | Filename | Gesture user performs |
 |---|---|---|
 | Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Device Hub), then verify the Live Activity is rendering on the lock screen. |
-| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock (Cmd+Shift+H twice, or swipe up), then navigate to the Home Screen page that contains the widget. |
+| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock with Cmd+Shift+H in Device Hub, which acts as one swipe up: from the lock screen the first press reveals the open app and the second goes home. Then navigate to the Home Screen page that contains the widget. |
 | Control Center (with Control Widget) | `92_ControlCenter.png` | From any non-app screen, swipe down from the top-right corner of the simulator to invoke Control Center. |
 
 The agent's chat prompt at step (e) should name the surface and read the

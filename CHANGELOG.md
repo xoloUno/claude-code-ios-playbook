@@ -31,7 +31,7 @@ signal during multi-version skips.
 ## 2026-10-27 — iOS pack: 13 curated lessons, Device Hub, StoreKit samples that finish
 
 The 21-entry inbox was checked against Xcode 27.1, Swift 6.4, fastlane 2.232, Apple's docs and
-frames-cli's changelog, then curated: 13 lessons adopted in trimmed form, 8 discarded. Xcode 27
+frames-cli's changelog, then curated: 13 lessons adopted in trimmed form, 7 discarded, 1 deferred. Xcode 27
 removed Simulator.app, so every `open -a Simulator` now opens the selected Xcode's Device Hub.
 The StoreKit 2 samples now finish verified transactions, and the iOS 27 rule no longer says
 iOS 27 is in beta.

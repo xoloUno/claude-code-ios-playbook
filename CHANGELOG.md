@@ -28,6 +28,33 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-27 — Plugin `v1.3.0` — curated iOS lessons and Device Hub
+
+Bumps `.claude-plugin/plugin.json` from `1.2.3` to `1.3.0`. After this merges, the merge
+commit gets the tag `playbook--v1.3.0`; tag and manifest versions stay equal. Cached plugin
+installs refresh only when the manifest version changes, so until then `/playbook:upgrade`
+keeps composing the 1.2.3 source. It's a minor release: composed rules gain guidance, and
+`open -a Simulator` becomes Device Hub.
+
+**What a 1.2.3 consumer gets** (the entry below has the details):
+- **iOS pack rules:** pin one sim by UDID, Device Hub instead of Simulator.app, the
+  `sync_screenshots` flag, XcodeGen regeneration before merge, two Swift Testing traps, where
+  App Shortcuts surface, translation heading case and Siri phrases, the new required
+  age-rating answers, and a refreshed `wwdc26-ios27.md`.
+- **Commands:** the iOS `/wrapup` also humanizes `fastlane/metadata/en-US/release_notes.txt`;
+  `/capture-manual-surfaces` opens Device Hub; `/conform` runs Check D only for iOS projects.
+- Since 1.2.3, the `.xcode-version` pin (`bootstrap.sh`) and the StoreKit samples
+  (`ios-project-playbook.md`) changed too; they reach new projects and readers, not composed
+  output.
+
+**Files affected:** `.claude-plugin/plugin.json` (`version` `1.2.3` → `1.3.0`).
+
+**What to do in your project:** iOS apps on the plugin run `/playbook:upgrade` to recompose.
+teewye-app and broadsheet-app, still on the pinned submodule, get it when they move to the
+plugin. Non-iOS repos need nothing; their live links already serve the change.
+
+---
+
 ## 2026-10-27 — iOS pack: 13 curated lessons, Device Hub, StoreKit samples that finish
 
 The 21-entry inbox was checked against Xcode 27.1, Swift 6.4, fastlane 2.232, Apple's docs and

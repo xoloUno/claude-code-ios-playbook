@@ -1202,8 +1202,7 @@ shots, use the `widget_screenshots` lane (bootstrap.sh installs it and a compani
    Activity in a deterministic state (wire this launch-arg check in your
    `@main` app struct — start an `ActivityKit` activity with canned demo data).
 3. Locks the simulator via Cmd+L (an AppleScript keystroke to Device Hub, which
-   replaced Simulator.app in Xcode 27; check once that Device Hub honors it),
-   captures the lock screen — the Live Activity is visible.
+   replaced Simulator.app in Xcode 27 and honors it), captures the lock screen — the Live Activity is visible.
 4. Unlocks, goes home, captures the home screen with your widget.
 5. Optionally chains `frame_screenshots` to apply Apple Frames.
 

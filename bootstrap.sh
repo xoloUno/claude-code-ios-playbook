@@ -291,8 +291,11 @@ cat > fastlane/capture_widgets.sh << 'CAPTUREWIDGETS'
 #     lane first, or `xcodebuild build -destination` into the sim).
 #   • The home-screen widget must be placed ONCE manually on the simulator — this
 #     persists in simulator state across boots. (Device Hub → long-press → add widget.)
-#   • Xcode 27 replaced Simulator.app with Device Hub. The Cmd+L / Cmd+Shift+H
-#     keystrokes below are unverified there; check them once by hand.
+#   • Xcode 27 replaced Simulator.app with Device Hub. Cmd+L locks the sim there, and
+#     each Cmd+Shift+H acts as one swipe up from the home indicator: from the lock
+#     screen the first reveals the app that was open, the second goes to the Home
+#     Screen (checked by hand on Xcode 27.1). The script sends them through System
+#     Events, so the terminal needs Accessibility permission.
 #   • App should honor launch arg -WIDGET_DEMO_MODE YES to auto-start a
 #     deterministic Live Activity for capture.
 #
@@ -337,7 +340,7 @@ LOCK_PNG="$OUTPUT_DIR/90_LockScreen_LiveActivity.png"
 echo "📸 Capturing lock screen → $LOCK_PNG"
 xcrun simctl io "$DEVICE" screenshot "$LOCK_PNG"
 
-echo "🔓 Unlocking (Cmd+Shift+H twice → home)…"
+echo "🔓 Unlocking (Cmd+Shift+H twice: reveal the app, then home)…"
 open "$DEVICE_HUB"
 osascript <<'APPLESCRIPT'
 delay 0.3

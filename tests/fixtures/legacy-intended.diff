@@ -47,6 +47,15 @@
 +      then `open "$(xcode-select -p)/../Applications/DeviceHub.app"` (Xcode 27 replaced
 +      Simulator.app with Device Hub).
  
+@@ -50,5 +51,6 @@
+       Examples (verify against the rule, do not invent):
+-      - `LockScreen_LiveActivity` — "Press Cmd+L in the Simulator to lock the device. Confirm
++      - `LockScreen_LiveActivity` — "Press Cmd+L in Device Hub to lock the device. Confirm
+         the Live Activity is visible on the lock screen, then type `ready`."
+-      - `HomeScreen_Widget` — "Return to home screen (Cmd+Shift+H), confirm the widget is
++      - `HomeScreen_Widget` — "Return to the Home Screen: each Cmd+Shift+H is one swipe up,
++        so from the lock screen press it twice (app, then home). Confirm the widget is
+         visible, then type `ready`."
 --- a/.claude/commands/conform.md
 +++ b/.claude/commands/conform.md
 @@ -25,3 +25,4 @@
@@ -451,11 +460,13 @@
 +drawing the old one. Refresh it by installing over the existing app, never by
 +uninstalling (see [`simulator.md`](simulator.md)).
  
-@@ -236,3 +241,3 @@
+@@ -236,4 +241,4 @@
  |---|---|---|
 -| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Simulator), then verify the Live Activity is rendering on the lock screen. |
+-| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock (Cmd+Shift+H twice, or swipe up), then navigate to the Home Screen page that contains the widget. |
 +| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Device Hub), then verify the Live Activity is rendering on the lock screen. |
- | Home Screen widget | `91_HomeScreen_Widget.png` | Unlock (Cmd+Shift+H twice, or swipe up), then navigate to the Home Screen page that contains the widget. |
++| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock with Cmd+Shift+H in Device Hub, which acts as one swipe up: from the lock screen the first press reveals the open app and the second goes home. Then navigate to the Home Screen page that contains the widget. |
+ | Control Center (with Control Widget) | `92_ControlCenter.png` | From any non-app screen, swipe down from the top-right corner of the simulator to invoke Control Center. |
 @@ -281,3 +286,3 @@
  xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 -open -a Simulator

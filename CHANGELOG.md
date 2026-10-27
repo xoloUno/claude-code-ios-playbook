@@ -28,6 +28,25 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-27 — Device Hub keystrokes checked
+
+The owner checked the widget-capture keystrokes by hand in Device Hub on Xcode 27.1. Cmd+L
+locks the simulator. Each Cmd+Shift+H acts as one swipe up from the home indicator: from the
+lock screen the first press reveals the app that was open, the second goes to the Home Screen,
+and on a later Home Screen page another press goes to the first page. The generated
+`capture_widgets.sh` already pressed it twice, which is right; the docs now explain why and
+drop their "unverified" notes.
+
+**Files affected:** `bootstrap.sh` (`capture_widgets.sh` comments only);
+`packs/ios/rules/screenshot-pipeline.md` (the Home Screen widget row);
+`.claude/commands/capture-manual-surfaces.md` (the Cmd+L and Home Screen prompts);
+`ios-project-playbook.md`; the legacy compose fixture.
+
+**What to do in your project:** nothing now; the rule and command text ride the next plugin
+release.
+
+---
+
 ## 2026-10-27 — Plugin `v1.3.0` — curated iOS lessons and Device Hub
 
 Bumps `.claude-plugin/plugin.json` from `1.2.3` to `1.3.0`. After this merges, the merge

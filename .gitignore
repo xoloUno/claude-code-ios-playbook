@@ -9,6 +9,9 @@
 .env.playbook
 .env.project
 
+# Codex CLI log (carries the ChatGPT account ID; this repo is public)
+error.log
+
 # macOS
 .DS_Store
 ._*

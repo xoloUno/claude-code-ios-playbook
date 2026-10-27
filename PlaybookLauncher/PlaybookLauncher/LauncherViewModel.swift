@@ -327,8 +327,10 @@ final class LauncherViewModel {
         process.arguments = [scriptPath]
         process.currentDirectoryURL = URL(fileURLWithPath: playbookDir)
 
-        // Inherit PATH so xcodegen, gh, etc. are found
+        // A GUI app inherits launchd's minimal PATH, not the shell's, so add Homebrew's
+        // prefixes (Apple silicon, then Intel) where xcodegen and gh live.
         var env = ProcessInfo.processInfo.environment
+        env["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin")
         env["TERM"] = "dumb"
         process.environment = env
 

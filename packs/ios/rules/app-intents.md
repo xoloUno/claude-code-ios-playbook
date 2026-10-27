@@ -1,12 +1,12 @@
 ---
-description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap and unreliable simulator dispatch
+description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap, unreliable simulator dispatch, and where shortcuts actually surface
 globs: **/*Intent*.swift, **/*Shortcut*.swift, **/*AppShortcuts*.swift
 ---
 
 # App Intents & App Shortcuts
 
-Two empirically-verified traps when working with `AppShortcutsProvider` / App Intents. Both cost
-real debugging time because neither surfaces where you'd first look.
+Empirically-verified traps when working with `AppShortcutsProvider` / App Intents. Each costs
+real debugging time because it doesn't surface where you'd first look.
 
 ## `AppShortcutsProvider` is hard-capped at 10 entries
 
@@ -57,5 +57,14 @@ simulator-only dispatch failure, not an app bug.
   produced — they catch build-time issues (wrong icon, missing phrase), not runtime dispatch.
 - Mixing pre-baked and parameterized variants of the same intent type may not coexist cleanly;
   verify on a real device before relying on it.
+
+## Where App Shortcuts surface — and their phrases per locale
+
+App Shortcuts appear in **Spotlight, the Shortcuts app and Siri**. They do **not** appear on the
+app icon's long-press menu, which shows Home Screen quick actions (`UIApplicationShortcutItem`),
+a separate API. Write device test steps for the real surfaces.
+
+If a localized app exposes App Shortcuts, give it an `AppShortcuts.xcstrings` with phrases for
+each locale. Without one, the Siri phrases exist only in the development language.
 
 See [`simulator.md`](simulator.md) for the broader "the simulator lies" gotchas.

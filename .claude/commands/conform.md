@@ -75,6 +75,9 @@ Steps:
      markers from `.env.project`) restores them.
 
    **Check D — Instructions-file template gaps (severity: LOW, advisory only)**
+   - **Pack-gated, like Check C:** `CLAUDE-TEMPLATE.md` is an iOS app template, so only run
+     this check for iOS projects (`.claude/rules/build-deploy.md` is present). For non-iOS
+     projects, skip Check D; its sections would all come back as false gaps.
    - Read `<playbook>/CLAUDE-TEMPLATE.md` and extract H2 section titles (`## ...`).
    - Read the project's instructions file and extract H2 section titles. The instructions
      file is `AGENTS.md` when it carries the playbook core markers; otherwise it's

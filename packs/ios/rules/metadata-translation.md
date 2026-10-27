@@ -98,6 +98,12 @@ locale directory under `fastlane/metadata/`:
      register, locale-specific marketing phrasing)
    - Honors the project's `TRANSLATION.md` glossary if present (chosen
      terms, do-not-translate list, regional variants)
+   - Uses title case for section headings and keeps brand casing — no
+     ALL-CAPS headings (the en-US source follows this too)
+   - Doesn't quote a Siri / App Shortcut phrase unless the app's
+     `AppShortcuts.xcstrings` has that locale; otherwise describe the
+     shortcut by its translated title, so the notes don't promise a voice
+     command that doesn't exist in that language
 4. Show a diff (old locale file vs. proposed new translation)
 5. Ask for approval before writing — translations are high-stakes
    (App Store rejection risk for bad translations; cultural missteps are

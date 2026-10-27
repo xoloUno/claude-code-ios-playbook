@@ -620,6 +620,11 @@ the workflow output (run `wf_e73fd29f-ed9`).
       `.claude/`, hooks, workflows and code needs no Codex review; publishing still needs
       the user." The rule goes by path, not by judgment, because instruction files change
       agent behavior even in small edits.
+    - **Ride-alongs (2026-10-27 curation):** word the prose-only rule's excluded paths to
+      also cover the playbook's `core/` and `packs/` sources, which become downstream
+      instructions; and give the inbox entry format one home, the `inbox.md` header, with the
+      capture rule, `/inbox` and the core block pointing to it. Captures stay unnumbered
+      (`/curate` numbers them), so today's copies of the format still agree.
   - [x] Cleanup: the memory notes are done, and starter prompts carry only the task
     (2026-10-22). The owner's communication preferences moved to a private user-level file
     outside this repo.
@@ -639,8 +644,9 @@ the workflow output (run `wf_e73fd29f-ed9`).
     - The two queued merge-checklist rules (Autonomy, above): with the next core change.
     - M0/M1, the toolchain and iOS 27 fact refresh, including iPhone Duo: refresh what a
       project's work needs, when it needs it.
-    - Inbox curation, including the 2026-10-21 entries from Flara's v2.1.2: run `/curate`
-      when the inbox gets in the way.
+    - Inbox curation: done 2026-10-27 (21 entries: 13 adopted, 7 discarded). #21, the Grok
+      hand-off of App Store Connect steps, stays deferred until the next hand-off is captured
+      too. Run `/curate` when the inbox gets in the way again.
     - 3a, `loadcheck.sh` as a playbook tool: the next time an instructions-loading check is
       needed (`codex-review.sh` landed with autonomy).
     - Phase C's `/context-health` and `/preflight`, as above.

@@ -290,7 +290,9 @@ cat > fastlane/capture_widgets.sh << 'CAPTUREWIDGETS'
 #   • App must be built and installed on the target simulator (run beta/release
 #     lane first, or `xcodebuild build -destination` into the sim).
 #   • The home-screen widget must be placed ONCE manually on the simulator — this
-#     persists in simulator state across boots. (Simulator → long-press → add widget.)
+#     persists in simulator state across boots. (Device Hub → long-press → add widget.)
+#   • Xcode 27 replaced Simulator.app with Device Hub. The Cmd+L / Cmd+Shift+H
+#     keystrokes below are unverified there; check them once by hand.
 #   • App should honor launch arg -WIDGET_DEMO_MODE YES to auto-start a
 #     deterministic Live Activity for capture.
 #
@@ -301,12 +303,13 @@ set -euo pipefail
 DEVICE="${1:?device name required (e.g. 'iPhone 17 Pro Max')}"
 BUNDLE_ID="${2:?bundle identifier required}"
 OUTPUT_DIR="${3:?output directory required}"
+DEVICE_HUB="$(xcode-select -p)/../Applications/DeviceHub.app"  # the selected Xcode's copy
 
 mkdir -p "$OUTPUT_DIR"
 
 echo "📱 Booting $DEVICE…"
 xcrun simctl boot "$DEVICE" 2>/dev/null || true
-open -a Simulator
+open "$DEVICE_HUB"
 xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 
 echo "🕘 Overriding status bar (9:41, full signal, charged, no carrier/5G)…"
@@ -322,9 +325,9 @@ echo "🚀 Launching $BUNDLE_ID with -WIDGET_DEMO_MODE YES…"
 xcrun simctl launch "$DEVICE" "$BUNDLE_ID" -WIDGET_DEMO_MODE YES -FASTLANE_SNAPSHOT YES >/dev/null
 sleep 4  # let Live Activity start + render
 
-echo "🔒 Locking screen (Cmd+L in Simulator)…"
+echo "🔒 Locking screen (Cmd+L in Device Hub)…"
+open "$DEVICE_HUB"
 osascript <<'APPLESCRIPT'
-tell application "Simulator" to activate
 delay 0.4
 tell application "System Events" to keystroke "l" using command down
 APPLESCRIPT
@@ -335,8 +338,8 @@ echo "📸 Capturing lock screen → $LOCK_PNG"
 xcrun simctl io "$DEVICE" screenshot "$LOCK_PNG"
 
 echo "🔓 Unlocking (Cmd+Shift+H twice → home)…"
+open "$DEVICE_HUB"
 osascript <<'APPLESCRIPT'
-tell application "Simulator" to activate
 delay 0.3
 tell application "System Events"
   keystroke "h" using {command down, shift down}

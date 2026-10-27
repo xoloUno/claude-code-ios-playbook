@@ -40,10 +40,12 @@ INTENDED_LEGACY_CHANGES = {
     os.path.join(".claude", "commands", n) for n in (
         "wrapup.md", "status.md", "inbox.md", "upgrade.md", "conform.md",
         "context-health.md", "deploy.md", "feature.md", "preflight.md",
-        "release.md", "review.md")
+        "release.md", "review.md", "capture-manual-surfaces.md")
 } | {os.path.join(".claude", "command-profile.md")} | {
     os.path.join(".claude", "rules", n) for n in (
-        "asc-troubleshooting.md", "git-workflow.md", "metadata-translation.md")
+        "asc-troubleshooting.md", "git-workflow.md", "metadata-translation.md",
+        "app-intents.md", "build-deploy.md", "screenshot-pipeline.md", "simulator.md",
+        "testing.md", "wwdc26-ios27.md")
 }
 
 PREFIX = b"# AGENTS.md \xe2\x80\x94 Fixture\n\nProject intro line.\n\n" + BEGIN + b"\n"

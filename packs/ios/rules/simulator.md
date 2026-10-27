@@ -1,13 +1,13 @@
 ---
-description: Simulator build/run hygiene — install over (don't uninstall), and never strip entitlements via signing overrides
+description: Simulator build/run hygiene — install over (don't uninstall), pin one sim by UDID, and never strip entitlements via signing overrides
 globs: **/*
 ---
 
 # Simulator build & run hygiene
 
-Two traps when building or running an app on a booted simulator for verification. Both are
-correctness-critical: one silently destroys hand-built sim state, the other crashes the app at
-launch.
+Three traps when building or running an app on a booted simulator for verification. All are
+correctness-critical: one silently destroys hand-built sim state, one splits your work across two
+sims, and one crashes the app at launch.
 
 ## Install over the existing build — never uninstall to redeploy
 
@@ -28,6 +28,15 @@ state.
   surgically `rm <container>/Library/Preferences/<bundle-id>.plist`, not `simctl uninstall`.
 - A true cold-install test is rare — ask first.
 - Same rule for watchOS / iPadOS sims, not just iPhone.
+
+## Pin one simulator by UDID when names repeat
+
+The same device name can exist on several installed runtimes (an "iPhone 17 Pro Max" on both
+iOS 26.5 and 27.0, say). Name lookups then resolve per tool: `simctl … | head -1` and
+`xcodebuild -destination 'platform=iOS Simulator,name=…'` can land on different sims, so you
+prep one and build, install or capture on the other. Resolve the UDID once and use it
+everywhere: `simctl` takes a UDID wherever it takes a name, and `xcodebuild` takes
+`-destination 'platform=iOS Simulator,id=<UDID>'`.
 
 ## Don't strip entitlements via signing overrides on entitlement-gated apps
 

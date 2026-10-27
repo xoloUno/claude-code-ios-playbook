@@ -74,6 +74,11 @@ bundle exec fastlane release             # Build + upload binary with metadata
 
 Metadata lives in `fastlane/metadata/<locale>/`. Edit those files before running `/release`.
 
+A lane that passes `sync_screenshots: true` to `deliver` fails unless
+`FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS=1` is set (still beta-gated in fastlane 2.232).
+Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
+when invoking.
+
 **Screenshots — Shotsmith is the standard pipeline** (Flara's): it composes captioned + gradient
 ASC images and wraps frames-cli internally for bezels; bootstrap emits a `compose_screenshots`
 lane for it. A project's *capture* lanes depend on its surfaces, so read the exact names from
@@ -114,6 +119,11 @@ new TestFlight builds will be rejected until the version is incremented. See
 **Cannot:** Run `xcodebuild`, `fastlane`, test on Simulator, modify `.pbxproj`.
 **Should not:** Push to `main` — local sessions handle merges and deploys.
 **Can:** Edit Swift files, commit/push to `dev` or feature branches, plan, write features.
+
+**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
+`project.pbxproj`, and CI that runs `xcodegen generate` first will hide a stale one. Regenerate
+and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
+`MANUAL-TASKS.md` so a local session does it before merging.
 
 ## Available Plugins & MCP Servers
 

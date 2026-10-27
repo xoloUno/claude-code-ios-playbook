@@ -28,6 +28,46 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-27 — iOS pack: 13 curated lessons, Device Hub, StoreKit samples that finish
+
+The 21-entry inbox was checked against Xcode 27.1, Swift 6.4, fastlane 2.232, Apple's docs and
+frames-cli's changelog, then curated: 13 lessons adopted in trimmed form, 8 discarded. Xcode 27
+removed Simulator.app, so every `open -a Simulator` now opens the selected Xcode's Device Hub.
+The StoreKit 2 samples now finish verified transactions, and the iOS 27 rule no longer says
+iOS 27 is in beta.
+
+**Files affected:**
+- `packs/ios/rules/simulator.md` — pin one sim by UDID when a device name repeats across runtimes.
+- `packs/ios/rules/screenshot-pipeline.md` — Device Hub instead of Simulator.app; confirm a
+  changed surface's new UI before capturing.
+- `packs/ios/rules/build-deploy.md` — `sync_screenshots` needs
+  `FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS=1`; in XcodeGen projects, regenerate and commit
+  `project.pbxproj` before merge, or hand that to a local session.
+- `packs/ios/rules/testing.md` — two Swift Testing compile traps.
+- `packs/ios/rules/app-intents.md` — where App Shortcuts surface; `AppShortcuts.xcstrings` for
+  localized apps that expose them.
+- `packs/ios/rules/metadata-translation.md` — title-case headings; don't quote a Siri phrase a
+  locale doesn't have.
+- `packs/ios/rules/asc-troubleshooting.md` — the new required age-rating answers (`socialMedia`)
+  and the query that finds them.
+- `packs/ios/rules/wwdc26-ios27.md` — shipped state; use the Xcode MCP server's own tool names;
+  optional headless `mcp-server`; a short iPhone Duo section.
+- `packs/ios/command-profile.md` — `/wrapup` also humanizes `fastlane/metadata/en-US/release_notes.txt`.
+- `.claude/commands/conform.md` — Check D runs only for iOS projects.
+- `.claude/commands/capture-manual-surfaces.md`, `bootstrap.sh` (`capture_widgets.sh`) — Device
+  Hub; its Cmd+L / Cmd+Shift+H keystrokes are unverified there.
+- `ios-project-playbook.md` — StoreKit samples finish verified transactions (listener, launch
+  drain, paywall handler) and compile in Swift 6 mode; StoreKit pitfalls; frames-cli 1.5.0 note.
+- `tests/test_compose_agents_md.py`, `tests/fixtures/legacy-intended.diff` — the reviewed
+  compose diff.
+
+**What to do in your project:** iOS apps recompose, or take the next plugin release. A project
+bootstrapped earlier keeps its own `fastlane/capture_widgets.sh`: replace its
+`open -a Simulator` and `tell application "Simulator"` lines the next time you capture widgets.
+Non-iOS repos need nothing; their live links pick up the `/conform` change.
+
+---
+
 ## 2026-10-22 — New projects pin Xcode once, in `.xcode-version`
 
 `bootstrap.sh` now emits the lean Xcode pin piloted in flara-app #65. A new project names its

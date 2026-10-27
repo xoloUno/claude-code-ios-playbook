@@ -32,7 +32,8 @@ Steps:
 3. **Outer loop — for each locale in `locales`:**
 
    a. Boot `$PRIMARY_SIM` if not already booted (`xcrun simctl bootstatus -b "$PRIMARY_SIM"`),
-      then `open -a Simulator`.
+      then `open "$(xcode-select -p)/../Applications/DeviceHub.app"` (Xcode 27 replaced
+      Simulator.app with Device Hub).
 
    b. Switch the simulator's device language for this locale if it isn't already set.
       Use `xcrun simctl spawn "$PRIMARY_SIM" defaults write -g AppleLanguages -array <code>`

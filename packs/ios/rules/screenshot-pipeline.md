@@ -166,7 +166,7 @@ canonical contract for that flow is below. This is what the
 ```bash
 xcrun simctl boot "$DEVICE" 2>/dev/null || true
 xcrun simctl bootstatus "$DEVICE" -b >/dev/null
-open -a Simulator
+open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
 ```
 
 **Step b — Locale switch (only when changing locales).**
@@ -198,6 +198,11 @@ The launch arguments depend on the project. The two above are the common pair
 for getting deterministic widget content + suppressing first-run UI. Sleep
 briefly (3–5s) afterward so the Live Activity has time to register and the
 widget has time to refresh.
+
+If the surface's UI changed since the last capture, ask the user to confirm the
+new UI is rendering before capturing: a stale app extension on the sim keeps
+drawing the old one. Refresh it by installing over the existing app, never by
+uninstalling (see [`simulator.md`](simulator.md)).
 
 **Step e — Pause and prompt the user.**
 
@@ -234,7 +239,7 @@ performs for each. Add new surfaces with the next available `9X_` prefix.
 
 | Surface | Filename | Gesture user performs |
 |---|---|---|
-| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Simulator), then verify the Live Activity is rendering on the lock screen. |
+| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Device Hub), then verify the Live Activity is rendering on the lock screen. |
 | Home Screen widget | `91_HomeScreen_Widget.png` | Unlock (Cmd+Shift+H twice, or swipe up), then navigate to the Home Screen page that contains the widget. |
 | Control Center (with Control Widget) | `92_ControlCenter.png` | From any non-app screen, swipe down from the top-right corner of the simulator to invoke Control Center. |
 
@@ -279,7 +284,7 @@ mkdir -p "$(dirname "$OUTPUT")"
 echo "Booting $DEVICE…"
 xcrun simctl boot "$DEVICE" 2>/dev/null || true
 xcrun simctl bootstatus "$DEVICE" -b >/dev/null
-open -a Simulator
+open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
 
 # Canonical status-bar override — see .claude/rules/status-bar-overrides.md.
 xcrun simctl status_bar "$DEVICE" override \
@@ -412,7 +417,7 @@ mkdir -p "$(dirname "$OUTPUT")"
 echo "Booting $WATCH_SIM…"
 xcrun simctl boot "$WATCH_SIM" 2>/dev/null || true
 xcrun simctl bootstatus "$WATCH_SIM" -b >/dev/null   # the trivial fix: wait for full boot
-open -a Simulator
+open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
 
 # Pick the right launch arg per screen. Two functions in the watch app
 # (loadWatchDemoData + loadWatchPickerDemoData) consume these.

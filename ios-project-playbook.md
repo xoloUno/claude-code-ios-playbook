@@ -272,7 +272,6 @@ import StoreKit
 @Observable
 final class SubscriptionManager {
     private(set) var isSubscribed = false
-    private var updateTask: Task<Void, Never>?
 
     /// Product IDs — must match App Store Connect exactly
     static let productIDs: Set<String> = [
@@ -280,15 +279,27 @@ final class SubscriptionManager {
         "your.bundle.id.monthly"
     ]
 
+    // Lives for the app's lifetime (held in the App struct), so the listener never needs cancelling.
     init() {
-        updateTask = Task { [weak self] in
+        Task { [weak self] in
             for await result in Transaction.updates {
-                if case .verified = result {
-                    await self?.checkSubscription()
-                }
+                await self?.handle(result)
             }
         }
-        Task { await checkSubscription() }
+        Task { [weak self] in
+            // Purchases interrupted before finish() (a crash, a force quit) come back at launch.
+            for await result in Transaction.unfinished {
+                await self?.handle(result)
+            }
+            await self?.checkSubscription()
+        }
+    }
+
+    /// Refresh the entitlement, then finish. Never grant or finish from an unverified transaction.
+    func handle(_ result: VerificationResult<Transaction>) async {
+        guard case .verified(let transaction) = result else { return }
+        await checkSubscription()
+        await transaction.finish()
     }
 
     func checkSubscription() async {
@@ -303,8 +314,6 @@ final class SubscriptionManager {
         }
         isSubscribed = hasActive
     }
-
-    deinit { updateTask?.cancel() }
 }
 ```
 
@@ -333,8 +342,9 @@ struct PaywallView: View {
         .subscriptionStoreControlStyle(.prominentPicker)
         .storeButton(.visible, for: .restorePurchases)
         .onInAppPurchaseCompletion { _, result in
-            if case .success(.success) = result {
-                await subscriptionManager.checkSubscription()
+            // A purchase handled here doesn't also arrive on Transaction.updates.
+            if case .success(.success(let verification)) = result {
+                await subscriptionManager.handle(verification)
             }
         }
     }
@@ -363,6 +373,21 @@ struct YourApp: App {
 
 **Gate features on subscription status:**
 `if subscriptionManager.isSubscribed { /* premium feature */ }`
+
+**StoreKit pitfalls:**
+- **Finish every verified transaction after granting the entitlement** — from
+  `Transaction.updates`, from `onInAppPurchaseCompletion`, and from the launch drain of
+  `Transaction.unfinished`. Unfinished transactions are redelivered indefinitely. In a file that
+  also imports SwiftUI, write `StoreKit.Transaction` (SwiftUI has its own `Transaction`).
+- **`onInAppPurchaseCompletion` covers only the store views inside the view it's attached to**,
+  and a descendant's handler wins. Attach it to a container holding every store view (a
+  `ProductView` beside `SubscriptionStoreView`, say); a view outside it falls back to the default
+  path (successes on `Transaction.updates`, failures as a system alert).
+- **Offer-code eligibility is permanent and easy to get wrong.** It's judged on the customer's
+  whole purchase history in the app ("never purchased" alone turns away every subscriber) and
+  can't be edited after the code is created. The sandbox ignores eligibility for consumables,
+  non-consumables and non-renewing subscriptions (it enforces it for auto-renewable ones), so
+  sandbox testing won't catch a wrong setting on a non-consumable.
 
 ### 2.3 StoreKit Configuration File (for Previews & Testing)
 
@@ -909,6 +934,11 @@ frames setup          # downloads Apple Frames 4 assets from cdn.macstories.net
 
 Ensure `~/.local/bin` is in your `PATH`. Verify with `frames --version`.
 
+**Version note:** iPhone Duo and iPhone 18 Pro artwork need frames-cli 1.5.0 or later
+**plus** its new standard asset pack — update the clone, then re-run `frames setup`. 1.5.0
+also auto-picks the 18 Pro frame for sizes it shares with the 17 Pro, so pass
+`--device <name>` when output must stay reproducible.
+
 **Optional Claude Code skill:** The repo ships a skill at `skill/SKILL.md`. Install
 once to `~/.claude/skills/frames-cli/SKILL.md` so Claude Code sessions have native
 awareness of flags and batch patterns.
@@ -1171,8 +1201,9 @@ shots, use the `widget_screenshots` lane (bootstrap.sh installs it and a compani
 2. Launches your app with `-WIDGET_DEMO_MODE YES` so you can auto-start a Live
    Activity in a deterministic state (wire this launch-arg check in your
    `@main` app struct — start an `ActivityKit` activity with canned demo data).
-3. Locks the simulator via Cmd+L (AppleScript → Simulator.app), captures the
-   lock screen — the Live Activity is visible.
+3. Locks the simulator via Cmd+L (an AppleScript keystroke to Device Hub, which
+   replaced Simulator.app in Xcode 27; check once that Device Hub honors it),
+   captures the lock screen — the Live Activity is visible.
 4. Unlocks, goes home, captures the home screen with your widget.
 5. Optionally chains `frame_screenshots` to apply Apple Frames.
 

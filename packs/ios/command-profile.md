@@ -48,11 +48,12 @@ Slot these into the universal flow at the stage named — not in list order.
 
 - **Release notes.** If user-facing changes were made and a `release-notes-draft.md`
   exists (or the app keeps one), update it.
-- **Prose-humanizer.** If this session touched user-facing prose — `release-notes-draft.md`
-  or `fastlane/metadata/en-US/description.txt` — invoke the `prose-humanizer` subagent on
+- **Prose-humanizer.** If this session touched user-facing prose — `release-notes-draft.md`,
+  `fastlane/metadata/en-US/description.txt` or `fastlane/metadata/en-US/release_notes.txt`
+  (the text that ships) — invoke the `prose-humanizer` subagent on
   each before commit, to cut AI-tells (decorative adjectives, inflated verbs, significance
   padding) so the text reads natural to App Store reviewers. **Skip non-English**
-  `fastlane/metadata/<locale>/description.txt` — they're translations, and humanizing them
+  `fastlane/metadata/<locale>/` files — they're translations, and humanizing them
   risks breaking translation accuracy; non-English locales drift between releases on purpose
   and `/release` retranslates them fresh from en-US per `.claude/rules/metadata-translation.md`.
   Requires the `writing-prose-like-a-human-for-agents` plugin; if it isn't installed, skip

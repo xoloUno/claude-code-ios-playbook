@@ -38,6 +38,13 @@ Solo dev with limited hours — be strategic, not exhaustive.
 - **Parameterized tests:** Use `@Test(arguments:)` for multiple inputs with same logic
 - **No mocking persistence** — use real UserDefaults (with a test suite name) or
   in-memory SwiftData containers. Mock boundaries (network), not internals.
+- **Two Swift Testing compile traps** (Swift 6.4):
+  - A `@MainActor` suite's `deinit` is nonisolated, so cleanup there can't touch the suite's
+    statics. Make immutable `Sendable` constants `nonisolated static let`. Keep mutable state
+    actor-isolated or behind synchronization (e.g. a `nonisolated static let` holding a
+    `Mutex`); `nonisolated` can't go on a mutable `static var`.
+  - `#expect(items.allSatisfy(\.flag))` fails with a misleading "call can throw" error; the
+    closure form `#expect(items.allSatisfy { $0.flag })` compiles.
 
 ## Test the error paths, not just the happy path
 

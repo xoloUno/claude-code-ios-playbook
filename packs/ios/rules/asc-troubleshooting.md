@@ -107,9 +107,20 @@ exec "$ROOT/scripts/asc-query.rb" "$@"
 | List versions and their state | `apps/{app_id}/appStoreVersions` |
 | Inspect screenshot sets for a locale | `appStoreVersionLocalizations/{loc_id}/appScreenshotSets` |
 | List screenshots in a set | `appScreenshotSets/{set_id}/appScreenshots` |
+| Check age-rating answers | `apps/{app_id}/appInfos`, then `appInfos/{app_info_id}/ageRatingDeclaration` |
 
 Find `app_id` once via `apps?filter[bundleId]={bundle.id}` and stash it in `.env.fastlane`
 or `.env.project` for reuse.
+
+## "You must respond to the required age ratings questions"
+
+"Add for Review" can block with this even when the age rating was answered before. Apple added
+Social Media questions on 2026-07-09 and has required them for new apps and updates since
+September 2026. Older answers keep their values, but the new Boolean attributes `socialMedia` and
+`socialMediaAgeRestricted` (App Store Connect API 4.4.1) read `null` until answered. Check with
+the age-rating query above: `socialMedia: null` is the missing answer, and
+`socialMediaAgeRestricted` matters only when `socialMedia` is `true`. The user answers it in App
+Store Connect → App Information → Age Rating.
 
 ## When NOT to use this
 

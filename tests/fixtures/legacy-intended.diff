@@ -13,20 +13,40 @@
 +  still reads `-scheme [APP_NAME]`, compose couldn't resolve the scheme (no `XCODE_SCHEME`,
 +  no `project.yml` `name:`): report the runner as unconfigured rather than guessing. The
    same rule documents the Swift Testing conventions and the SwiftData `TEST_HOST` gotcha;
-@@ -56,4 +59,4 @@
+@@ -47,7 +50,8 @@
+   exists (or the app keeps one), update it.
+-- **Prose-humanizer.** If this session touched user-facing prose — `release-notes-draft.md`
+-  or `fastlane/metadata/en-US/description.txt` — invoke the `prose-humanizer` subagent on
++- **Prose-humanizer.** If this session touched user-facing prose — `release-notes-draft.md`,
++  `fastlane/metadata/en-US/description.txt` or `fastlane/metadata/en-US/release_notes.txt`
++  (the text that ships) — invoke the `prose-humanizer` subagent on
+   each before commit, to cut AI-tells (decorative adjectives, inflated verbs, significance
+   padding) so the text reads natural to App Store reviewers. **Skip non-English**
+-  `fastlane/metadata/<locale>/description.txt` — they're translations, and humanizing them
++  `fastlane/metadata/<locale>/` files — they're translations, and humanizing them
+   risks breaking translation accuracy; non-English locales drift between releases on purpose
+@@ -56,4 +60,4 @@
    this step and say so in the wrap-up summary. (Prose-humanizer is a *mutation*, not a gate.)
 -- **Scope items.** If `CLAUDE.md` has a scope/checklist section, check off any items this
 -  session completed.
 +- **Scope items.** If the instructions file's project-owned part has a scope/checklist
 +  section, check off any items this session completed.
  
-@@ -62,3 +65,5 @@
+@@ -62,3 +66,5 @@
  - **`[skip ci]`.** On a **local** session, append `[skip ci]` to the commit subject unless
 -  the user says otherwise. On a **cloud** session, do **not** — let CI run. (This is the
 +  the user says otherwise. On a **cloud** session, do **not** — let CI run. When autonomy
 +  applies (core "Autonomy"; never without that section), leave it off the last push before
 +  a merge, so CI checks the PR's final commit (core merge checklist). (This is the
    iOS-specific rule the universal skeleton deliberately stays silent about.)
+--- a/.claude/commands/capture-manual-surfaces.md
++++ b/.claude/commands/capture-manual-surfaces.md
+@@ -34,3 +34,4 @@
+    a. Boot `$PRIMARY_SIM` if not already booted (`xcrun simctl bootstatus -b "$PRIMARY_SIM"`),
+-      then `open -a Simulator`.
++      then `open "$(xcode-select -p)/../Applications/DeviceHub.app"` (Xcode 27 replaced
++      Simulator.app with Device Hub).
+ 
 --- a/.claude/commands/conform.md
 +++ b/.claude/commands/conform.md
 @@ -25,3 +25,4 @@
@@ -54,10 +74,13 @@
 +       unmodified playbook copy.
 +     - Audit the pack rules as usual.
  
-@@ -60,8 +76,11 @@
+@@ -60,8 +76,14 @@
  
 -   **Check D — CLAUDE.md template gaps (severity: LOW, advisory only)**
 +   **Check D — Instructions-file template gaps (severity: LOW, advisory only)**
++   - **Pack-gated, like Check C:** `CLAUDE-TEMPLATE.md` is an iOS app template, so only run
++     this check for iOS projects (`.claude/rules/build-deploy.md` is present). For non-iOS
++     projects, skip Check D; its sections would all come back as false gaps.
     - Read `<playbook>/CLAUDE-TEMPLATE.md` and extract H2 section titles (`## ...`).
 -   - Read project's `CLAUDE.md` and extract H2 section titles.
 +   - Read the project's instructions file and extract H2 section titles. The instructions
@@ -70,13 +93,13 @@
 +   - Do NOT auto-fix these — the instructions file is project-specific and section gaps are
 +     usually a judgment call. Just surface for review.
  
-@@ -115,3 +134,4 @@
+@@ -115,3 +137,4 @@
     | iOS-pack commands | ❌ N missing | preflight.md (packs/ios/commands/) |
 -   | CLAUDE.md sections | ⚠️ N gaps | "Distribution", ... |
 +   | Core block (opted-in) | ⚠️ stale / N duplicate core rules | git-workflow.md (duplicate), ... |
 +   | Instructions-file sections | ⚠️ N gaps | "Distribution", ... |
     | Doc bloat | ⚠️ N found | MILESTONES.md (see Appendix C) |
-@@ -124,3 +144,6 @@
+@@ -124,3 +147,6 @@
  
 -4. **Ask the user how to proceed.** Use `AskUserQuestion` with three options:
 +4. **Choose how to proceed.** When autonomy applies (core "Autonomy"; never without that
@@ -84,7 +107,7 @@
 +   STALE_CORE_BLOCK: the core block holds the Autonomy guardrails, so park that fix for the
 +   user. Otherwise ask the user with `AskUserQuestion`, offering three options:
     - **Apply all auto-fixable** — apply the HIGH-severity *auto-fixable* items (stale/missing
-@@ -140,2 +163,10 @@
+@@ -140,2 +166,10 @@
         with a value other than `iPhone 17 Pro`, sed-substitute `iPhone 17 Pro` to that value
 +     - `build-deploy.md`, `testing.md`: substitute `[APP_NAME]` with the output of
 +       `bash <playbook>/resolve-xcode-scheme.sh <project>`, run after loading `.env.project` as
@@ -95,18 +118,18 @@
 +       the marked block. Never copy `core/rules/` files in, and never auto-remove a
 +       DUPLICATE_CORE file.
     - **Stale or missing playbook commands (Check B):** for a **composed (iOS)** project, copy from
-@@ -149,3 +180,4 @@
+@@ -149,3 +183,4 @@
       `compose-claude.sh <project> ios`.
 -   - **CLAUDE.md template gaps (Check D), doc bloat (Check E), stranded files (Check F),
 +   - **Duplicate core rules (Check A, opted-in), instructions-file template gaps (Check D),
 +     doc bloat (Check E), stranded files (Check F),
       untracked rule files (Check G):** do not auto-apply. Surface again at the end as "manual
-@@ -162,3 +194,3 @@
+@@ -162,3 +197,3 @@
     ⏭️  Skipped: N items (list)
 -   📋 Manual follow-ups: N items (list — bootstrap commands, CLAUDE.md gaps, doc bloat,
 +   📋 Manual follow-ups: N items (list — bootstrap commands, instructions-file gaps, doc bloat,
         stranded files)
-@@ -171,4 +203,5 @@
+@@ -171,4 +206,5 @@
  - This is a read-mostly command — only Check A and Check B writes are auto-applied, and only
 -  with the user's explicit approval in step 4.
 -- Treat project-specific files (CLAUDE.md, fastlane/metadata, project.yml) as user-owned —
@@ -315,6 +338,32 @@
 +   - When autonomy applies and the PR meets the core merge checklist, merge it and delete
 +     its branch. Otherwise leave it open and list it in step 8.
     - Never `git push --force` without an explicit request.
+--- a/.claude/rules/app-intents.md
++++ b/.claude/rules/app-intents.md
+@@ -1,3 +1,3 @@
+ ---
+-description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap and unreliable simulator dispatch
++description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap, unreliable simulator dispatch, and where shortcuts actually surface
+ globs: **/*Intent*.swift, **/*Shortcut*.swift, **/*AppShortcuts*.swift
+@@ -7,4 +7,4 @@
+ 
+-Two empirically-verified traps when working with `AppShortcutsProvider` / App Intents. Both cost
+-real debugging time because neither surfaces where you'd first look.
++Empirically-verified traps when working with `AppShortcutsProvider` / App Intents. Each costs
++real debugging time because it doesn't surface where you'd first look.
+ 
+@@ -60,2 +60,11 @@
+ 
++## Where App Shortcuts surface — and their phrases per locale
++
++App Shortcuts appear in **Spotlight, the Shortcuts app and Siri**. They do **not** appear on the
++app icon's long-press menu, which shows Home Screen quick actions (`UIApplicationShortcutItem`),
++a separate API. Write device test steps for the real surfaces.
++
++If a localized app exposes App Shortcuts, give it an `AppShortcuts.xcstrings` with phrases for
++each locale. Without one, the Siri phrases exist only in the development language.
++
+ See [`simulator.md`](simulator.md) for the broader "the simulator lies" gotchas.
 --- a/.claude/rules/asc-troubleshooting.md
 +++ b/.claude/rules/asc-troubleshooting.md
 @@ -5,2 +5,6 @@
@@ -324,6 +373,41 @@
 +dimensions or alpha, version-state transitions), read the installed `fastlane/<tool>/lib/...`
 +source or query the ASC API with the JWT helper below. Don't recall it from memory.
  
+@@ -105,2 +109,3 @@
+ | List screenshots in a set | `appScreenshotSets/{set_id}/appScreenshots` |
++| Check age-rating answers | `apps/{app_id}/appInfos`, then `appInfos/{app_info_id}/ageRatingDeclaration` |
+ 
+@@ -108,2 +113,12 @@
+ or `.env.project` for reuse.
++
++## "You must respond to the required age ratings questions"
++
++"Add for Review" can block with this even when the age rating was answered before. Apple added
++Social Media questions on 2026-07-09 and has required them for new apps and updates since
++September 2026. Older answers keep their values, but the new Boolean attributes `socialMedia` and
++`socialMediaAgeRestricted` (App Store Connect API 4.4.1) read `null` until answered. Check with
++the age-rating query above: `socialMedia: null` is the missing answer, and
++`socialMediaAgeRestricted` matters only when `socialMedia` is `true`. The user answers it in App
++Store Connect → App Information → Age Rating.
+ 
+--- a/.claude/rules/build-deploy.md
++++ b/.claude/rules/build-deploy.md
+@@ -76,2 +76,7 @@
+ 
++A lane that passes `sync_screenshots: true` to `deliver` fails unless
++`FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS=1` is set (still beta-gated in fastlane 2.232).
++Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
++when invoking.
++
+ **Screenshots — Shotsmith is the standard pipeline** (Flara's): it composes captioned + gradient
+@@ -117,2 +122,7 @@
+ 
++**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
++`project.pbxproj`, and CI that runs `xcodegen generate` first will hide a stale one. Regenerate
++and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
++`MANUAL-TASKS.md` so a local session does it before merging.
++
+ ## Available Plugins & MCP Servers
 --- a/.claude/rules/git-workflow.md
 +++ b/.claude/rules/git-workflow.md
 @@ -40,3 +40,4 @@
@@ -334,12 +418,152 @@
  4. Push to a feature/fix branch, not `main`
 --- a/.claude/rules/metadata-translation.md
 +++ b/.claude/rules/metadata-translation.md
-@@ -106,2 +106,8 @@
- 
+@@ -100,2 +100,8 @@
+      terms, do-not-translate list, regional variants)
++   - Uses title case for section headings and keeps brand casing — no
++     ALL-CAPS headings (the en-US source follows this too)
++   - Doesn't quote a Siri / App Shortcut phrase unless the app's
++     `AppShortcuts.xcstrings` has that locale; otherwise describe the
++     shortcut by its translated title, so the notes don't promise a voice
++     command that doesn't exist in that language
+ 4. Show a diff (old locale file vs. proposed new translation)
+@@ -105,2 +111,8 @@
+ 6. Write the new translation only after approval
++
 +When autonomy applies (core "Autonomy"; never without that section), write
 +the translations on a task branch instead, and merge them through a PR before
 +`/release`, which runs from `main`. Merging uploads nothing. Ask once, with
 +the App Store Connect upload approval, rather than per locale, and upload
 +nothing until then.
+ 
+--- a/.claude/rules/screenshot-pipeline.md
++++ b/.claude/rules/screenshot-pipeline.md
+@@ -168,3 +168,3 @@
+ xcrun simctl bootstatus "$DEVICE" -b >/dev/null
+-open -a Simulator
++open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
+ ```
+@@ -200,2 +200,7 @@
+ widget has time to refresh.
 +
- ## ASC character limits
++If the surface's UI changed since the last capture, ask the user to confirm the
++new UI is rendering before capturing: a stale app extension on the sim keeps
++drawing the old one. Refresh it by installing over the existing app, never by
++uninstalling (see [`simulator.md`](simulator.md)).
+ 
+@@ -236,3 +241,3 @@
+ |---|---|---|
+-| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Simulator), then verify the Live Activity is rendering on the lock screen. |
++| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Device Hub), then verify the Live Activity is rendering on the lock screen. |
+ | Home Screen widget | `91_HomeScreen_Widget.png` | Unlock (Cmd+Shift+H twice, or swipe up), then navigate to the Home Screen page that contains the widget. |
+@@ -281,3 +286,3 @@
+ xcrun simctl bootstatus "$DEVICE" -b >/dev/null
+-open -a Simulator
++open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
+ 
+@@ -414,3 +419,3 @@
+ xcrun simctl bootstatus "$WATCH_SIM" -b >/dev/null   # the trivial fix: wait for full boot
+-open -a Simulator
++open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
+ 
+--- a/.claude/rules/simulator.md
++++ b/.claude/rules/simulator.md
+@@ -1,3 +1,3 @@
+ ---
+-description: Simulator build/run hygiene — install over (don't uninstall), and never strip entitlements via signing overrides
++description: Simulator build/run hygiene — install over (don't uninstall), pin one sim by UDID, and never strip entitlements via signing overrides
+ globs: **/*
+@@ -7,5 +7,5 @@
+ 
+-Two traps when building or running an app on a booted simulator for verification. Both are
+-correctness-critical: one silently destroys hand-built sim state, the other crashes the app at
+-launch.
++Three traps when building or running an app on a booted simulator for verification. All are
++correctness-critical: one silently destroys hand-built sim state, one splits your work across two
++sims, and one crashes the app at launch.
+ 
+@@ -30,2 +30,11 @@
+ - Same rule for watchOS / iPadOS sims, not just iPhone.
++
++## Pin one simulator by UDID when names repeat
++
++The same device name can exist on several installed runtimes (an "iPhone 17 Pro Max" on both
++iOS 26.5 and 27.0, say). Name lookups then resolve per tool: `simctl … | head -1` and
++`xcodebuild -destination 'platform=iOS Simulator,name=…'` can land on different sims, so you
++prep one and build, install or capture on the other. Resolve the UDID once and use it
++everywhere: `simctl` takes a UDID wherever it takes a name, and `xcodebuild` takes
++`-destination 'platform=iOS Simulator,id=<UDID>'`.
+ 
+--- a/.claude/rules/testing.md
++++ b/.claude/rules/testing.md
+@@ -40,2 +40,9 @@
+   in-memory SwiftData containers. Mock boundaries (network), not internals.
++- **Two Swift Testing compile traps** (Swift 6.4):
++  - A `@MainActor` suite's `deinit` is nonisolated, so cleanup there can't touch the suite's
++    statics. Make immutable `Sendable` constants `nonisolated static let`. Keep mutable state
++    actor-isolated or behind synchronization (e.g. a `nonisolated static let` holding a
++    `Mutex`); `nonisolated` can't go on a mutable `static var`.
++  - `#expect(items.allSatisfy(\.flag))` fails with a misleading "call can throw" error; the
++    closure form `#expect(items.allSatisfy { $0.flag })` compiles.
+ 
+--- a/.claude/rules/wwdc26-ios27.md
++++ b/.claude/rules/wwdc26-ios27.md
+@@ -7,4 +7,4 @@
+ 
+-**Current date context: June 2026. The current shipping OS is iOS 26. iOS 27 and
+-Xcode 27 were announced at WWDC26 (2026-06-08) and are in developer beta.**
++**Current state (checked 2026-10-27): iOS 27 and Xcode 27 have shipped. The current
++Xcode is 27.1 (27A9275) with the iOS 27.1 SDK. WWDC26 was 2026-06-08.**
+ 
+@@ -16,5 +16,5 @@
+ **Platform facts:** iOS 27, iPadOS 27, macOS 27, watchOS 27, tvOS 27, visionOS 27;
+-Swift 6.4. **Xcode 27 is Apple-silicon-only.** Beta caveat: everything in this rule was
+-verified on Xcode 27 beta build **27A5194q** — re-verify behavior at GM before relying
+-on it in release tooling.
++Swift 6.4. **Xcode 27 is Apple-silicon-only.** Most items below were first verified on
++Xcode 27 beta **27A5194q**; the Xcode MCP and iPhone Duo sections were rechecked on 27.1.
++Re-verify an older item before relying on it in release tooling.
+ 
+@@ -38,4 +38,3 @@
+ ```sh
+-DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
+-  xcrun mcpbridge run-agent skills export --output-dir <dir> --replace-existing
++xcrun mcpbridge run-agent skills export --output-dir <dir> --replace-existing
+ ```
+@@ -57,10 +56,29 @@
+ 
+-`mcpbridge` is a stdio MCP bridge to a running Xcode (server name `xcode-tools`; the
+-binary also exists in Xcode 26.5, without the skills-export subcommand). Tools are
+-**session-scoped to a workspace tab** — `tools/list` returns nothing headless. Known
+-tools (from Apple's own skills): `XcodeGlob`/`XcodeGrep`/`XcodeRead`/`XcodeLS`/`XcodeUpdate`,
+-`GetTargetBuildSettings`, `DeviceInteractionStartSession`/`DeviceInteractionInstallAndRun`/
+-`DeviceEventSynthesize`/`DeviceInteractionEndSession`, and the localization tools
+-(`LocalizationPlanner`, `StringCatalogRead`/`StringCatalogContext`/`StringCatalogEdit`).
++`mcpbridge` is the stdio MCP bridge agents connect through; it targets the Xcode that
++`xcode-select` picks (`MCP_XCODE_PID` overrides). **Use the tool names the server lists** —
++they change between releases, and the exported skills lag: `device-interaction` still says
++`DeviceEventSynthesize`, while Xcode 27.1 exposes `DeviceInteractionSynthesize`.
++
++Headless mode is optional: `xcrun mcp-server` manages the service (`status`, `open`, and
++sudo-only `enable` / `allow-folder` / `approve`). A connection that already works doesn't need
++it, and turning it on is the user's call.
++
++Seen in Flara's workflow (not reproduced elsewhere): opening an XcodeGen project in Xcode,
++including through these tools, rewrote tracked files — a scheme's version and a String
++Catalog's formatting. Close the workspace and revert, or regenerate.
++
+ See `build-deploy.md` for how this relates to the third-party MCP servers.
++
++## iPhone Duo (foldable, iOS 27.1)
++
++Checked against the iOS 27.1 SDK:
++- Gate Duo-only layout on `@Environment(\.toolbarVerticalEdge)` (nil wherever there's no
++  vertical toolbar column), not on the device model. `ToolbarItem(…).axisBehavior(.verticalPreferred)`
++  puts an item in that column.
++- `GeometryProxy.reservedRegions(kind: .division)` gives the crease frame when half-open;
++  `onHingeChange` reports hinge changes.
++- `simctl` has no fold command: set poses in Device Hub. To capture one screen, find its ID
++  with `xcrun simctl io <device> enumerate`, then `screenshot --display=<id>`.
++- Framing needs frames-cli 1.5.0+ and its new asset pack (see `ios-project-playbook.md`,
++  Track A).
+ 

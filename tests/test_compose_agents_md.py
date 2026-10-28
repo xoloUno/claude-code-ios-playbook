@@ -300,6 +300,23 @@ class ComposeAgentsMdTest(unittest.TestCase):
         testing = read(os.path.join(p, ".claude", "rules", "testing.md")).decode()
         self.assertIn("-scheme " + resolved + " -destination", testing)
 
+    # --- PRIMARY_SIM in build-deploy.md and testing.md ----------------------------------------
+    def test_primary_sim_swaps_only_the_destination_lines(self):
+        default, _ = self.compose_with_name("sim-default", b"name: Demo\n")
+        custom, _ = self.compose_with_name("sim-custom", b"name: Demo\n", env={"PRIMARY_SIM": "iPhone Air"})
+        for name in ("build-deploy.md", "testing.md"):
+            a = read(os.path.join(default, ".claude", "rules", name)).decode().splitlines()
+            b = read(os.path.join(custom, ".claude", "rules", name)).decode().splitlines()
+            self.assertEqual(len(a), len(b), name)
+            changed = [(x, y) for x, y in zip(a, b) if x != y]
+            self.assertEqual(len(changed), 1, name)  # its one xcodebuild -destination line
+            x, y = changed[0]
+            self.assertIn(" -destination 'platform=iOS Simulator,name=iPhone 17 Pro'", x)
+            self.assertEqual(y, x.replace("name=iPhone 17 Pro'", "name=iPhone Air'"))
+        table = read(os.path.join(custom, ".claude", "rules", "build-deploy.md")).decode()
+        self.assertIn('| **iPhone 6.9"** | **iPhone 17 Pro Max** |', table)
+        self.assertIn('| iPhone 6.3" | iPhone 17 Pro |', table)
+
     def conform_scheme(self, p):
         """/conform's documented sequence: load the project's .env.project, then run the resolver."""
         script = ('set -a; [ -f .env.project ] && . ./.env.project; set +a; '

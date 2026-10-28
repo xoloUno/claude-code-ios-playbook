@@ -28,6 +28,24 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-28 — Compose swaps `PRIMARY_SIM` only in the `-destination` lines
+
+With a `PRIMARY_SIM` other than the default, `compose-claude.sh` replaced every "iPhone 17 Pro"
+in the composed `build-deploy.md` and `testing.md`. That also rewrote the screenshot table in
+`build-deploy.md`: with `PRIMARY_SIM="iPhone Air"` the 6.9" row read "iPhone Air Max" (no such
+device) and the 6.3" row read "iPhone Air". The swap now matches only `name=iPhone 17 Pro'` in
+the two `xcodebuild -destination` lines. Output with the default sim is unchanged.
+
+**Files affected:**
+- `compose-claude.sh` — the `PRIMARY_SIM` substitution is anchored to the `-destination` lines
+- `tests/test_compose_agents_md.py` — composes with a custom sim and checks both the destination
+  lines and the table
+
+**What to do in your project:**
+- If `.env.project` sets a `PRIMARY_SIM` other than "iPhone 17 Pro", re-compose `.claude/`
+  (`/upgrade`, or `compose-claude.sh`) to restore the screenshot table's device names.
+- Otherwise nothing.
+
 ## 2026-10-28 — Core "Grok Bot" section: paste-ready prompts for website UIs
 
 Grok Bot is xAI and Cursor's computer-use agent. It is too new for models to know,

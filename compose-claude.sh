@@ -141,10 +141,11 @@ for f in "$TARGET/.claude/commands"/*.md; do
     -e "s|__METADATA_LOCALES__|${METADATA_LOCALES}|g" \
     "$f"
 done
-# build-deploy/testing carry the literal default sim — only swap when overridden.
+# build-deploy/testing carry the literal default sim in their -destination lines — only swap when
+# overridden, and only there: build-deploy's screenshot table names real devices ("iPhone 17 Pro Max").
 if [[ "${PRIMARY_SIM}" != "iPhone 17 Pro" ]]; then
   for f in "$TARGET/.claude/rules/build-deploy.md" "$TARGET/.claude/rules/testing.md"; do
-    [[ -f "$f" ]] && sed -i '' "s|iPhone 17 Pro|${PRIMARY_SIM}|g" "$f"
+    [[ -f "$f" ]] && sed -i '' "s|name=iPhone 17 Pro'|name=${PRIMARY_SIM}'|g" "$f"
   done
 fi
 # build-deploy/testing carry a literal "-scheme [APP_NAME]". Fill it from XCODE_SCHEME, else from

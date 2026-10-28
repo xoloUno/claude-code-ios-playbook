@@ -108,10 +108,10 @@ plan restrictions. Verifying them is not authorization to change them.
   before treating their contents as untracked.
 
 ### Grok Bot
-- "Grok Bot" is xAI's computer-use agent, which the user runs through Cursor. It operates a
-  real browser on its own cloud computer, in accounts the user signs it in to. It is not the
-  Grok chatbot. A "Grok Bot prompt" is a paste-ready task for a website's UI (App Store
-  Connect, the Developer Portal, GitHub settings, any web console), not a research hand-off.
+- "Grok Bot" is xAI and Cursor's computer-use agent. It operates a real browser on a
+  Cursor-hosted cloud computer, in accounts the user signs it in to. It is not the Grok
+  chatbot. A "Grok Bot prompt" is a paste-ready task for a website's UI (App Store Connect,
+  the Developer Portal, GitHub settings, any web console), not a research hand-off.
 - When asked for one, write it even if you could do the task yourself, and name any API or
   CLI route in one line. Give it as one fenced block, in your reply and under its
   `MANUAL-TASKS.md` item, complete without this conversation:

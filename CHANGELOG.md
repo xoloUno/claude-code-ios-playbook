@@ -30,7 +30,7 @@ signal during multi-version skips.
 
 ## 2026-10-28 — Core "Grok Bot" section: paste-ready prompts for website UIs
 
-Grok Bot is xAI's computer-use agent, run through Cursor. It is too new for models to know,
+Grok Bot is xAI and Cursor's computer-use agent. It is too new for models to know,
 so a session asked for "a prompt for Grok Bot" to do App Store Connect steps wrote a research
 hand-off for the Grok chatbot instead. A new core section defines the term and the prompt: one
 fenced block under its `MANUAL-TASKS.md` item, complete on its own, with the starting URL,

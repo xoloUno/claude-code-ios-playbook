@@ -28,6 +28,30 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-28 — Core "Grok Bot" section: paste-ready prompts for website UIs
+
+Grok Bot is xAI's computer-use agent, run through Cursor. It is too new for models to know,
+so a session asked for "a prompt for Grok Bot" to do App Store Connect steps wrote a research
+hand-off for the Grok chatbot instead. A new core section defines the term and the prompt: one
+fenced block under its `MANUAL-TASKS.md` item, complete on its own, with the starting URL,
+exact navigation paths and values, "only if offered" conditions, a stop-and-report rule for
+screens that don't match, and an "ask me before clicking" step ahead of each irreversible
+click. Sign-in, 2FA and payment stay with the user, secrets stay out of the prompt, and the
+session checks the result through an API or CLI afterwards. This adopts inbox #21, Flara's
+App Review submission, where pasted steps in this shape worked on the first try.
+
+**Files affected:** `core/agents-core.md` (new "Grok Bot" section after "Handoffs and
+records"); `inbox.md` (#21 removed as adopted); `REFACTOR-PLAN.md`.
+
+**What to do in your project:**
+- **Opted-in projects:** re-render the core block. iOS apps on the marketplace plugin get it
+  with the next plugin release and `/playbook:upgrade`; non-iOS repos get it by re-running
+  `bridge-symlink.sh`. The only diff is the new section.
+- **Legacy projects** (core rules in `.claude/rules/`): nothing changes; the section reaches
+  them when they opt in to the `AGENTS.md` layout.
+
+---
+
 ## 2026-10-27 — Bootstrap's first commit is complete and well-formed
 
 `bootstrap.sh` generated the Xcode project before later steps added `PrivacyInfo.xcprivacy`,

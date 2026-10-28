@@ -654,8 +654,9 @@ the workflow output (run `wf_e73fd29f-ed9`).
     - M0/M1, the toolchain and iOS 27 fact refresh, including iPhone Duo: refresh what a
       project's work needs, when it needs it.
     - Inbox curation: done 2026-10-27 (21 entries: 13 adopted, 7 discarded). #21, the Grok
-      hand-off of App Store Connect steps, stays deferred until the next hand-off is captured
-      too. Run `/curate` when the inbox gets in the way again.
+      hand-off of App Store Connect steps, was adopted 2026-10-28 as the core "Grok Bot"
+      section after a session read a Grok Bot request as a Grok chatbot research hand-off.
+      The inbox is empty. Run `/curate` when it gets in the way again.
     - 3a, `loadcheck.sh` as a playbook tool: the next time an instructions-loading check is
       needed (`codex-review.sh` landed with autonomy).
     - Phase C's `/context-health` and `/preflight`, as above.

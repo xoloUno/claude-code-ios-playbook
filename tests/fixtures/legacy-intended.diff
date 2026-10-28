@@ -190,22 +190,37 @@
 +   `.claude/rules/`: adaptive colors, no force unwraps, etc.)
 --- a/.claude/commands/inbox.md
 +++ b/.claude/commands/inbox.md
-@@ -8,3 +8,4 @@
+@@ -8,4 +8,5 @@
     "What did you discover? (gotcha, pattern, suggestion, correction, tooling tip)"
 -2. Read the project's CLAUDE.md to get the app name for the entry
+-3. Classify the category: gotcha | suggestion | pattern | correction | tooling
 +2. Read the project's instructions file (`AGENTS.md` when it carries the playbook core
 +   markers, otherwise `CLAUDE.md`) to get the app name from its title
- 3. Classify the category: gotcha | suggestion | pattern | correction | tooling
++3. Decide the lesson's category from the list in the inbox header's format (step 4)
+ 4. Resolve the inbox file, using the first option that yields an existing playbook
 @@ -14,3 +15,4 @@
     b. The `PLAYBOOK_HOME` value in `~/.config/playbook/config` (`source` it, or grep the line).
 -   c. Legacy fallback — the `**Inbox location:**` line in `.claude/rules/playbook-inbox.md`
 +   c. Legacy fallback (only in projects that still carry the rule; opted-in projects don't)
 +      — the `**Inbox location:**` line in `.claude/rules/playbook-inbox.md`
        (in a composed copy it holds the resolved absolute path). Skip this if the line still
-@@ -23,3 +25,3 @@
- ```markdown
+@@ -19,13 +21,6 @@
+    d. If none resolve, ask the user for the playbook directory.
+-   Then write a new entry at the bottom of the inbox file (just above any trailing whitespace).
+-
+-Entry format:
+-```markdown
 -### [TODAY'S DATE] — [APP_NAME from CLAUDE.md]
-+### [TODAY'S DATE] — [APP_NAME from the instructions file]
+-
+-**Category:** [category]
+-**Context:** [what was being worked on in this session — infer from recent activity]
+-**Lesson:** [the insight — be specific and actionable]
+-**Suggested action:** [what should change in playbook/template/rules, or "none — just FYI"]
+-```
++   Then read the inbox file's header, which owns the entry format, and write a new entry in
++   that format at the bottom of the file (just above any trailing whitespace), without a
++   number. Use today's date and the app name from step 2, infer the context from recent
++   activity, and make the lesson specific and actionable.
  
 --- a/.claude/commands/preflight.md
 +++ b/.claude/commands/preflight.md
@@ -445,6 +460,23 @@
 +the App Store Connect upload approval, rather than per locale, and upload
 +nothing until then.
  
+--- a/.claude/rules/playbook-inbox.md
++++ b/.claude/rules/playbook-inbox.md
+@@ -34,11 +34,4 @@
+ 
+-```markdown
+-### [DATE] — [PROJECT_NAME]
+-
+-**Category:** gotcha | suggestion | pattern | correction | tooling
+-**Context:** [what was being done when this was discovered]
+-**Lesson:** [the insight — be specific]
+-**Suggested action:** [what should change in playbook/template/rules, or "none — just FYI"]
+-```
+-
+-Append new entries at the bottom of the file, before any trailing whitespace.
++The inbox file's header owns the format: read its "Entry format" section and follow it.
++Append new entries at the bottom of the file, before any trailing whitespace, without a
++number (curation numbers them).
 --- a/.claude/rules/screenshot-pipeline.md
 +++ b/.claude/rules/screenshot-pipeline.md
 @@ -168,3 +168,3 @@

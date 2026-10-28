@@ -96,7 +96,7 @@
 | **Pinning** | Version primitive | **Semver `version` + git release tag** for your own marketplace (controlled rollout). **SHA-pin** only for the vendored Hudson fork and for freezing a release-critical consumer. |
 | **Instr** (2026-10-01; symlink 2026-10-02) | Where project instructions live | **`AGENTS.md`**, holding project-owned text plus a generated "Shared workflow" block between `<!-- playbook:core:begin -->` / `<!-- playbook:core:end -->` markers. For opted-in projects the block replaces the six `core/rules/` copies. **`CLAUDE.md` is a relative symlink to `AGENTS.md`.** An `@AGENTS.md` import was rejected because it failed in fresh, unapproved headless test launches from a subdirectory. Compose accepts only that exact alias. |
 | **Fail** (2026-10-01) | Compose failure contract | Validate the layout and every required source (each pack's `required.txt`, the universal commands, core) **before writing anything**. A failure after writing begins is reported as possibly partial. No automatic restore and no undo promise. |
-| **Auto** (2026-10-22) | Approval friction | **Autonomy policy** in the core block (#41 → `90fb81e`). Routine, reversible work runs without per-step approval: commits, feature-branch pushes, PRs, and merges that pass a checklist (tests and lint, CI where it exists, current `main`, and no open finding that meets the core "Code Review Rules" bar after one GitHub Codex bot review). A fixed list always goes to the user, parked in `MANUAL-TASKS.md`. Enforcement is Claude Code's auto mode plus the native rules in `settings/autonomy.json`: deny force pushes and explicit pushes to `main`, an auto-mode block on pushing `main` in any other form, and ask for fastlane lanes that reach App Store Connect; merges get a checklist because they can be reverted. No sandbox, hook, installer or word list: the 2026-10-22 canary showed the sandbox fenced the whole home folder and needed a growing exemption list. Claude keeps stock access to personal folders; any other local agent gets an OS-level read deny of them in its own config (`tools/codex-review.sh` shows the Codex profile). A local Codex review is an optional second opinion during development, never a merge item. `PLAYBOOK_AUTONOMY=on` switches it on; `autonomy: off` opts a project out. |
+| **Auto** (2026-10-22) | Approval friction | **Autonomy policy** in the core block (#41 → `90fb81e`). Routine, reversible work runs without per-step approval: commits, feature-branch pushes, PRs, and merges that pass a checklist (tests and lint, CI where it exists, current `main`, and no open finding that meets the core "Code Review Rules" bar after one Codex review). **Amended 2026-10-28:** the merge review is one local `tools/codex-review.sh` run, not the GitHub Codex bot, which kept stalling; prose-only PRs, judged by path, need none. A fixed list always goes to the user, parked in `MANUAL-TASKS.md`. Enforcement is Claude Code's auto mode plus the native rules in `settings/autonomy.json`: deny force pushes and explicit pushes to `main`, an auto-mode block on pushing `main` in any other form, and ask for fastlane lanes that reach App Store Connect; merges get a checklist because they can be reverted. No sandbox, hook, installer or word list: the 2026-10-22 canary showed the sandbox fenced the whole home folder and needed a growing exemption list. Claude keeps stock access to personal folders; any other local agent gets an OS-level read deny of them in its own config (`tools/codex-review.sh` shows the Codex profile). The same local Codex review is also an optional second opinion during development. `PLAYBOOK_AUTONOMY=on` switches it on; `autonomy: off` opts a project out. |
 
 ## 3. Target architecture — "skill-first, plugin-wrapped, MCP-backed"
 
@@ -615,8 +615,8 @@ the workflow output (run `wf_e73fd29f-ed9`).
       and record "Current State" through a `chore/` PR;
     - 1.2.2 (#49) and 1.2.3 (#51): the restore covers only the `.pbxproj` and `Info.plist`
       files fastlane changed, and stops and asks if anything else is still changed.
-  - [ ] With the next core change, add two owner-approved rules (2026-10-22) to the merge
-    checklist, so one re-render round covers both:
+  - [x] Two owner-approved rules (2026-10-22) joined the merge checklist on 2026-10-28, with
+    the ride-alongs, so one re-render round covers them and the "Grok Bot" section (#62):
     - **Review fallback.** If the GitHub Codex review hasn't finished within about 15 minutes,
       one local `codex-review.sh` review with the same bar counts as the merge review. Two
       bot reviews stalled for 20–30 minutes on 2026-10-22 while about ten ran at once; #49
@@ -650,7 +650,9 @@ the workflow output (run `wf_e73fd29f-ed9`).
       the plugin with Flara's recipe (#56) when it's next touched. Then Phase 4: retire the
       composed `/upgrade`, teach `bootstrap.sh`, and wire the tag into `/wrapup`.
       `/playbook:upgrade` is the primary upgrade verb; `/conform` stays the drift check.
-    - The two queued merge-checklist rules (Autonomy, above): with the next core change.
+    - One re-render round for the 2026-10-28 core changes ("Grok Bot", the merge-review
+      rules) and #63's compose fix: a plugin release (the owner's call), then
+      `/playbook:upgrade` or compose in the iOS apps and `bridge-symlink.sh` in the others.
     - M0/M1, the toolchain and iOS 27 fact refresh, including iPhone Duo: refresh what a
       project's work needs, when it needs it.
     - Inbox curation: done 2026-10-27 (21 entries: 13 adopted, 7 discarded). #21, the Grok

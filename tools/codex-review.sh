@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # codex-review.sh <prompt-file> <name> — run one read-only Codex review non-interactively.
 #
-# A second opinion during development; the GitHub Codex bot reviews the PR itself. Run it
-# from the playbook, from inside the repo under review:
+# A second opinion during development, and the merge review under the core "Autonomy"
+# checklist. Run it from the playbook, from inside the repo under review:
 #   "$PLAYBOOK_HOME"/tools/codex-review.sh <prompt-file> <name>
 # Codex runs under a permissions profile built from the ":workspace" built-in: it writes only
 # to a fresh temp workspace, and the OS denies it reads of the personal folders in DENY_READ.

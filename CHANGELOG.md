@@ -28,6 +28,35 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-28 — Plugin `v1.4.0` — local merge review, Grok Bot, compose sim fix
+
+Bumps `.claude-plugin/plugin.json` from `1.3.0` to `1.4.0`. After this merges, the merge
+commit gets the tag `playbook--v1.4.0`; tag and manifest versions stay equal. Cached plugin
+installs refresh only when the manifest version changes, so until then `/playbook:upgrade`
+keeps composing the 1.3.0 source. It's a minor release: the core block gains a section and
+changes its merge checklist.
+
+**What a 1.3.0 consumer gets** (the entries below have the details):
+- **Core block:** the "Grok Bot" section, with prompts that say what the agent may touch and
+  read back permanent values; the Autonomy merge review is one local `codex-review.sh` run,
+  and prose-only PRs skip it; "Playbook lessons" points to the `inbox.md` header for the
+  entry format.
+- **Commands and rules:** `/inbox` and the legacy capture rule point to the same header;
+  `/capture-manual-surfaces` and the screenshot rule describe the checked Device Hub
+  keystrokes.
+- **Compose:** a non-default `PRIMARY_SIM` replaces only the `-destination` lines.
+- Since 1.3.0, `bootstrap.sh`, PlaybookLauncher, `ios-project-playbook.md` and
+  `getting-started.md` changed too; they reach new projects and readers, not composed output.
+
+**Files affected:** `.claude-plugin/plugin.json` (`version` `1.3.0` → `1.4.0`).
+
+**What to do in your project:** iOS apps on the plugin run `/playbook:upgrade`; iOS apps on
+the pinned submodule move the pin to the tag and recompose; iOS apps composed straight from
+the playbook re-run `compose-claude.sh`; non-iOS repos re-run `bridge-symlink.sh` to refresh
+the core block. The Autonomy section changes, so review the diff.
+
+---
+
 ## 2026-10-28 — Merge review is the local Codex review; prose-only PRs skip it
 
 Two merge-checklist rules the owner approved on 2026-10-22 (the review rule reworded on

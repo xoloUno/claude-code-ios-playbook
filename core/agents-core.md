@@ -119,12 +119,14 @@ plan restrictions. Verifying them is not authorization to change them.
 - When asked for one, write it even if you could do the task yourself, and name any API or
   CLI route in one line. Give it as one fenced block, in your reply and under its
   `MANUAL-TASKS.md` item, complete without this conversation:
-  - the goal, identifiers (app, bundle ID, version, build) and the starting URL;
+  - the goal, what it may touch, identifiers (app, bundle ID, version, build) and the
+    starting URL;
   - numbered steps with exact navigation paths, field names and values, and conditions such
     as "only if offered";
   - "stop, screenshot and report" for any screen that doesn't match the steps;
   - "ask me before clicking <button>" ahead of each irreversible click (submit, publish,
-    delete, pay);
+    delete, pay), with an exact readback first of any value that can't change once saved
+    (an SKU, a product ID);
   - what to report when done.
 - Leave sign-in, 2FA and payment to the user. Keep secrets out: the prompt goes to xAI and
   Cursor.

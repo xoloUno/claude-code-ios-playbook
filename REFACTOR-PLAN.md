@@ -658,7 +658,10 @@ the workflow output (run `wf_e73fd29f-ed9`).
     - Inbox curation: done 2026-10-27 (21 entries: 13 adopted, 7 discarded). #21, the Grok
       hand-off of App Store Connect steps, was adopted 2026-10-28 as the core "Grok Bot"
       section after a session read a Grok Bot request as a Grok chatbot research hand-off.
-      Run `/curate` when the inbox gets in the way again.
+      Curated again 2026-10-28 (#22–#30, checked against Apple's docs, with a Codex second
+      opinion on keeping it lean): 4 adopted, 3 discarded, and #26 and #28 (tvOS)
+      deferred until a second tvOS or multiplatform app. Run `/curate` when the inbox gets
+      in the way again.
     - 3a, `loadcheck.sh` as a playbook tool: the next time an instructions-loading check is
       needed (`codex-review.sh` landed with autonomy).
     - Phase C's `/context-health` and `/preflight`, as above.

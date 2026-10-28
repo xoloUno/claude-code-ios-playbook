@@ -30,8 +30,10 @@ signal during multi-version skips.
 
 ## 2026-10-28 — Merge review is the local Codex review; prose-only PRs skip it
 
-Two merge-checklist rules the owner approved on 2026-10-22 were queued for the next core
-change; they land now, so one re-render round carries them and the "Grok Bot" section below.
+Two merge-checklist rules the owner approved on 2026-10-22 (the review rule reworded on
+2026-10-27) were queued for the next core change; they land now, so one re-render round
+carries them and the "Grok Bot" section below. The same round carries the inbox curation of
+2026-10-28.
 
 - **Merge review.** Under autonomy, the merge review is one local `tools/codex-review.sh` run,
   not the GitHub Codex bot, which kept stalling (one sat at "running" for over two hours). A
@@ -44,12 +46,18 @@ change; they land now, so one re-render round carries them and the "Grok Bot" se
 - **One home for the inbox entry format.** The `inbox.md` header owns it. The core block,
   the legacy capture rule (`playbook-inbox.md`) and `/inbox` now point there instead of
   carrying copies. Captures stay unnumbered, as before.
+- **Grok Bot prompts** (inbox #30) say what the agent may touch, and read back any value that
+  can't change once saved (an SKU, a product ID) before asking to save it.
+- **Reference docs** (inbox #22, #27, #29): a pitfalls row for watch purchases that fail with
+  NSCocoaErrorDomain 4097/4099; the SKU is permanent at record creation while the bundle ID
+  can change until the first build upload; Kids apps use Made for Kids, not a primary
+  category. The curation deferred two tvOS entries and discarded three.
 
-**Files affected:** `core/agents-core.md` (merge checklist, "Second opinions", "Playbook
-lessons"); `core/rules/playbook-inbox.md`; `.claude/commands/inbox.md`;
+**Files affected:** `core/agents-core.md` (merge checklist, "Second opinions", "Grok Bot",
+"Playbook lessons"); `core/rules/playbook-inbox.md`; `.claude/commands/inbox.md`;
 `tools/codex-review.sh` (header comment); `tests/test_compose_agents_md.py` and
 `tests/fixtures/legacy-intended.diff` (the capture rule is now an intended legacy change);
-`REFACTOR-PLAN.md`.
+`ios-project-playbook.md`; `getting-started.md`; `inbox.md`; `REFACTOR-PLAN.md`.
 
 **What to do in your project:**
 - **Opted-in projects:** re-render the core block in the same round as the "Grok Bot" entry:

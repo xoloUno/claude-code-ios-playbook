@@ -637,12 +637,19 @@ the workflow output (run `wf_e73fd29f-ed9`).
   - [x] Cleanup: the memory notes are done, and starter prompts carry only the task
     (2026-10-22). The owner's communication preferences moved to a private user-level file
     outside this repo.
-- [x] **Maintenance mode (2026-10-22).** The modernization is done. The six opted-in projects
-  live in `~/dev`, run on the shared core and packs in the `AGENTS.md` layout, and have
+- [x] **Maintenance mode (2026-10-22).** The modernization is done. The opted-in projects (six
+  then, eight by 2026-10-28) live in `~/dev`, run on the shared core and packs in the `AGENTS.md` layout, and have
   autonomy on; new projects start the same way (Stage 1c in §4, `.xcode-version` since #53). The playbook
   is no longer a project: its work happens on contact, when a project hits a problem (inbox →
   `/curate`) or a decision has a date. A new idea goes on the on-contact list as one line and
   becomes work only when a project needs it.
+  - [x] **Re-render round, 2026-10-28.** Plugin `v1.4.0` (#65 → `7383f0b`) carried #58 and
+    #62–#64 to all eight opted-in projects in one round: `/playbook:upgrade` in flara-app
+    (#93); submodule pin plus compose in teewye-app (#5) and broadsheet-app (#8, into `dev`);
+    `bridge-symlink.sh` in shotsmith (#8), devpulse (#5) and c3d-bridge-modeler (#25); and
+    compose in dachipari-app (#11, with its `PRIMARY_SIM`) and kendibah-app (#1), the two
+    projects bootstrapped since 2026-10-22. Every core block now equals
+    `core/agents-core.md`.
   - **On contact** (nothing to do until a project touches it):
     - `.xcode-version` in teewye and broadsheet, which still pin Xcode 26.3 in their
       workflows: copy flara-app #65 the next time either needs a new Xcode.
@@ -650,9 +657,6 @@ the workflow output (run `wf_e73fd29f-ed9`).
       the plugin with Flara's recipe (#56) when it's next touched. Then Phase 4: retire the
       composed `/upgrade`, teach `bootstrap.sh`, and wire the tag into `/wrapup`.
       `/playbook:upgrade` is the primary upgrade verb; `/conform` stays the drift check.
-    - One re-render round for the 2026-10-28 core changes ("Grok Bot", the merge-review
-      rules) and #63's compose fix: a plugin release (the owner's call), then
-      `/playbook:upgrade` or compose in the iOS apps and `bridge-symlink.sh` in the others.
     - M0/M1, the toolchain and iOS 27 fact refresh, including iPhone Duo: refresh what a
       project's work needs, when it needs it.
     - Inbox curation: done 2026-10-27 (21 entries: 13 adopted, 7 discarded). #21, the Grok

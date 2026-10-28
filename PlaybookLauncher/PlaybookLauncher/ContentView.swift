@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var viewModel = LauncherViewModel()
+    @Bindable var viewModel: LauncherViewModel
     @State private var showLog = false
     @State private var editingIdentity = false
     @FocusState private var focusedField: ProjectField?
@@ -337,5 +337,5 @@ struct LogView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(viewModel: LauncherViewModel())
 }

@@ -45,9 +45,13 @@ plan restrictions. Verifying them is not authorization to change them.
   - if the repo has CI, at least one check ran on that commit and every check passed, so
     leave `[skip ci]` off the last push;
   - the branch contains the current `main`;
-  - after one Codex review, no open finding meets the bar in "Code Review Rules". The
-    GitHub Codex bot reviews when a PR opens; if it hasn't, comment `@codex review` once.
-    Fix each finding that meets the bar, and don't ask for another review afterward;
+  - after one local Codex review, no open finding meets the bar in "Code Review Rules".
+    That review is the merge review: run it on the PR's changes as "Second opinions" says,
+    and don't wait for the GitHub Codex bot. Fix each finding that meets the bar, including
+    any the bot has posted by then, and don't ask for another review afterward. A PR that
+    changes only prose needs no Codex review, though publishing it still needs the user. It
+    isn't prose-only if it touches `AGENTS.md`, `CLAUDE.md`, `.claude/`, hooks, workflows or
+    code, or, in the playbook, `core/` or `packs/`;
   - nothing in the PR needs the user (next bullet).
 
   For playbook shared source, `pytest` must also pass, and a compose diff must show only
@@ -79,8 +83,8 @@ plan restrictions. Verifying them is not authorization to change them.
   parts, and after two failed attempts at the same problem. Write the prompt to a temp file,
   ask Codex to apply "Code Review Rules", then, from the repo, run
   `"$PLAYBOOK_HOME"/tools/codex-review.sh <prompt-file> <name>`, resolving `PLAYBOOK_HOME`
-  as "Playbook lessons" says. One round; its findings are inputs, not approvals, and not a
-  merge checklist item.
+  as "Playbook lessons" says. One round; its findings are inputs, not approvals. The merge
+  review in "Autonomy" runs the same command.
 
 ### Handoffs and records
 - Anything that needs the user goes in `MANUAL-TASKS.md` at the repository root, not only in
@@ -115,12 +119,14 @@ plan restrictions. Verifying them is not authorization to change them.
 - When asked for one, write it even if you could do the task yourself, and name any API or
   CLI route in one line. Give it as one fenced block, in your reply and under its
   `MANUAL-TASKS.md` item, complete without this conversation:
-  - the goal, identifiers (app, bundle ID, version, build) and the starting URL;
+  - the goal, what it may touch, identifiers (app, bundle ID, version, build) and the
+    starting URL;
   - numbered steps with exact navigation paths, field names and values, and conditions such
     as "only if offered";
   - "stop, screenshot and report" for any screen that doesn't match the steps;
   - "ask me before clicking <button>" ahead of each irreversible click (submit, publish,
-    delete, pay);
+    delete, pay), with an exact readback first of any value that can't change once saved
+    (an SKU, a product ID);
   - what to report when done.
 - Leave sign-in, 2FA and payment to the user. Keep secrets out: the prompt goes to xAI and
   Cursor.
@@ -130,10 +136,10 @@ plan restrictions. Verifying them is not authorization to change them.
 
 ### Playbook lessons
 Capture new reusable lessons promptly in the shared playbook inbox. Resolve `PLAYBOOK_HOME`
-from the environment or from `~/.config/playbook/config`, then append to its existing
-`inbox.md` with the date, project, Category, Context, Lesson and Suggested action. Leave out
-project-only details, lessons already documented, and one-off failures. If the directory or
-the inbox is missing, report it instead of creating a guessed destination.
+from the environment or from `~/.config/playbook/config`, then append an entry to its
+existing `inbox.md` in the format its header gives. Leave out project-only details, lessons
+already documented, and one-off failures. If the directory or the inbox is missing, report
+it instead of creating a guessed destination.
 
 ## Code Review Rules
 - Report only findings that could lose data, publish something private, do something

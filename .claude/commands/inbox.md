@@ -8,7 +8,7 @@ Steps:
    "What did you discover? (gotcha, pattern, suggestion, correction, tooling tip)"
 2. Read the project's instructions file (`AGENTS.md` when it carries the playbook core
    markers, otherwise `CLAUDE.md`) to get the app name from its title
-3. Classify the category: gotcha | suggestion | pattern | correction | tooling
+3. Decide the lesson's category from the list in the inbox header's format (step 4)
 4. Resolve the inbox file, using the first option that yields an existing playbook
    directory (the inbox is `<playbook>/inbox.md`):
    a. The `$PLAYBOOK_HOME` environment variable, if set.
@@ -19,17 +19,10 @@ Steps:
       holds an unsubstituted token — `$PLAYBOOK_HOME` (a live symlinked rule) or legacy
       `PLAYBOOK_PATH`.
    d. If none resolve, ask the user for the playbook directory.
-   Then write a new entry at the bottom of the inbox file (just above any trailing whitespace).
-
-Entry format:
-```markdown
-### [TODAY'S DATE] — [APP_NAME from the instructions file]
-
-**Category:** [category]
-**Context:** [what was being worked on in this session — infer from recent activity]
-**Lesson:** [the insight — be specific and actionable]
-**Suggested action:** [what should change in playbook/template/rules, or "none — just FYI"]
-```
+   Then read the inbox file's header, which owns the entry format, and write a new entry in
+   that format at the bottom of the file (just above any trailing whitespace), without a
+   number. Use today's date and the app name from step 2, infer the context from recent
+   activity, and make the lesson specific and actionable.
 
 5. Confirm to the user what was logged and where
 

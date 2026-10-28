@@ -32,13 +32,6 @@ dropping the lesson.
 
 ## Entry format
 
-```markdown
-### [DATE] — [PROJECT_NAME]
-
-**Category:** gotcha | suggestion | pattern | correction | tooling
-**Context:** [what was being done when this was discovered]
-**Lesson:** [the insight — be specific]
-**Suggested action:** [what should change in playbook/template/rules, or "none — just FYI"]
-```
-
-Append new entries at the bottom of the file, before any trailing whitespace.
+The inbox file's header owns the format: read its "Entry format" section and follow it.
+Append new entries at the bottom of the file, before any trailing whitespace, without a
+number (curation numbers them).

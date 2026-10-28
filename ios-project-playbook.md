@@ -434,6 +434,7 @@ If you do have a backend that gates features on subscription status:
 | **Purchases work in sim but not TestFlight** | StoreKit Configuration still active in scheme | Uncheck it in Release/Archive scheme options |
 | **`Transaction.currentEntitlements` empty after purchase** | Not awaiting the async sequence correctly | Use `for await` loop, not `.first` |
 | **"Cannot connect to iTunes Store"** | Paid Applications Agreement inactive | Accept in ASC → Business |
+| **Watch purchase fails with NSCocoaErrorDomain 4097/4099** ("Couldn't communicate with a helper application") | StoreKit's connection to its system service dropped | Say the store connection was lost: retry, or buy on iPhone if the watch shares the entitlement. The purchase can still complete after the failure, so keep `Transaction.updates` running. Test a watch purchase on a production install. |
 | **Promotional offer not applying** | Missing JWS authentication | JWS is now required for promotional offers and introductory offer eligibility APIs (back-deployed to iOS 15). See Apple's [StoreKit updates](https://developer.apple.com/documentation/updates/storekit). |
 
 > **New in iOS 26:** `SubscriptionOfferView` provides a built-in SwiftUI view for
@@ -1402,6 +1403,8 @@ later if you need them.
 - [ ] App record exists (name, bundle ID, SKU)
 - [ ] Categories set (primary + secondary)
 - [ ] Age rating questionnaire completed
+- [ ] Kids apps (iOS and iPadOS only): Age Rating → **Made for Kids** with an age band, not
+  Kids as a primary category. Needs a calculated 4+ or 9+; permanent once App Review approves
 - [ ] App Privacy questionnaire completed and published
 - [ ] Privacy Policy URL entered (only appears AFTER publishing privacy questionnaire)
 - [ ] Support URL entered

@@ -24,7 +24,7 @@ In a Claude Code session in the `_playbook/` directory:
 
 ## Entry format
 
-**Next entry number:** 22
+**Next entry number:** 31
 
 Capturing sessions append new entries at the bottom of this file without a number; curation
 numbers them. Numbers are permanent IDs: never renumber an entry or reuse a removed number,
@@ -41,3 +41,17 @@ entry's heading reads `### #[NUMBER] — [DATE] — [PROJECT_NAME]`.
 ```
 
 ---
+
+### #28 — 2026-10-27 — DachipariApp
+
+**Category:** gap
+**Context:** `bootstrap.sh` produced an iPhone-first, portrait, iOS-only project (XcodeGen target, CI building only the iOS simulator, fastlane `platform :ios`). The spec is a tvOS + iPadOS app with Universal Purchase.
+**Lesson:** A multiplatform app needs one XcodeGen target with `supportedDestinations: [iOS, tvOS]` (one bundle ID, so Universal Purchase works), `TARGETED_DEVICE_FAMILY` `2,3` for iPad + TV with no iPhone, and a CI build per platform. The playbook has no tvOS guidance, so each project has to retarget by hand.
+**Suggested action:** Add a bootstrap platforms option (iphone / ipad / tvos) that sets destinations, device family, orientation and CI destinations, or note in getting-started.md what to change for non-iPhone apps.
+
+### #26 — 2026-10-27 — DachipariApp
+
+**Category:** gotcha
+**Context:** Planning a tvOS + iPadOS camera app (Continuity Camera on Apple TV). The spike plan logged results to a JSONL file in Documents and assumed the TV could use two Continuity Cameras at once.
+**Lesson:** WWDC23 session 10256 ("Discover Continuity Camera for tvOS") says `.documentDirectory` is in the tvOS headers but fails with a runtime error. tvOS apps should use only `.cachesDirectory`, which can be purged between launches. The same session says only one Continuity Camera can be connected to an Apple TV at a time. The SDK headers don't mention either limit.
+**Suggested action:** If the playbook adds tvOS guidance, include both: Caches-only file storage on tvOS (pull logs before the app quits, or move data to iCloud), and a single Continuity Camera per Apple TV.

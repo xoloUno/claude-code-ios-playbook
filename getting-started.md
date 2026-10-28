@@ -299,6 +299,8 @@ what each one means and how to do it:
 - Click My Apps → **+** → New App
 - Select iOS, enter name, select your bundle ID, set SKU (e.g., "myapp")
 - Click Create
+- The SKU is permanent after Create. The bundle ID can still change until the first build
+  upload, so assume one for setup and confirm it before any upload.
 
 **3. Create provisioning profile**
 - Go to https://developer.apple.com/account/resources/profiles

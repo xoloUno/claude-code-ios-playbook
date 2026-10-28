@@ -621,6 +621,10 @@ the workflow output (run `wf_e73fd29f-ed9`).
       one local `codex-review.sh` review with the same bar counts as the merge review. Two
       bot reviews stalled for 20–30 minutes on 2026-10-22 while about ten ran at once; #49
       and #51 already used the fallback, and on #51 the local review caught a real bug.
+      **2026-10-27:** Erik: use the local review, because the bot has been failing (#60's sat
+      at "running" for over two hours). So when this rule lands, word it as "the local review
+      is the merge review" rather than a fallback. On #60 the local review caught two real
+      bugs in three rounds.
     - **Prose-only PRs.** "A PR that changes only prose outside `AGENTS.md`/`CLAUDE.md`,
       `.claude/`, hooks, workflows and code needs no Codex review; publishing still needs
       the user." The rule goes by path, not by judgment, because instruction files change

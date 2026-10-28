@@ -28,6 +28,27 @@ signal during multi-version skips.
 
 ---
 
+## 2026-10-27 — Bootstrap's first commit is complete and well-formed
+
+`bootstrap.sh` generated the Xcode project before later steps added `PrivacyInfo.xcprivacy`,
+so the first commit carried a project without the privacy manifest, and the post-push build
+check regenerated it into an uncommitted `project.pbxproj` change. Bootstrap now regenerates
+just before that commit and no longer regenerates afterwards. The commit message also had no
+blank line after its first line, which made the whole message the subject, and it hardcoded a
+`Co-Authored-By: Claude` line, which the core Git rule forbids; the subject now stands alone and
+the line is gone. Finally, `AGENTS.md` now gets the real Team ID instead of `YOUR_TEAM_ID`.
+
+**Files affected:**
+- `bootstrap.sh` — regenerate before the first commit, split the commit subject from its body,
+  drop the co-author line, fill in the Team ID in `AGENTS.md`
+
+**What to do in your project:**
+- Nothing for existing projects. CI regenerates the project in its own workflows, so builds
+  there were never missing the manifest.
+- A project bootstrapped before this fix shows `project.pbxproj` as modified right after
+  bootstrap: commit it on a `fix/` branch. If its `AGENTS.md` still says `YOUR_TEAM_ID`,
+  replace it with the Team ID from `project.yml`.
+
 ## 2026-10-27 — Device Hub keystrokes checked
 
 The owner checked the widget-capture keystrokes by hand in Device Hub on Xcode 27.1. Cmd+L

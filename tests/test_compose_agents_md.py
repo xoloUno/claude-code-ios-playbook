@@ -337,6 +337,7 @@ class ComposeAgentsMdTest(unittest.TestCase):
             "set -euo pipefail",
             'require_file() { [[ -f "$1" ]] || { echo "missing $1" >&2; exit 1; }; }',
             f'SCRIPT_DIR="{PLAYBOOK}"; APP_NAME=Demo; BUNDLE_ID=com.example.demo; REPO_NAME=demo-app',
+            'TEAM_ID=ABCDE12345',
             *section])
         # bootstrap resolves the playbook from PLAYBOOK_HOME, as a real run does.
         r = subprocess.run(["bash", "-c", harness], cwd=p, capture_output=True,
@@ -346,6 +347,7 @@ class ComposeAgentsMdTest(unittest.TestCase):
         agents = read(os.path.join(p, "AGENTS.md"))
         self.assertTrue(agents.startswith(b"# AGENTS.md \xe2\x80\x94 Demo\n"), agents[:60])
         self.assertNotIn(b"[APP_NAME]", agents)
+        self.assertIn(b"**Team ID:** ABCDE12345\n", agents)
         self.assertIn(BEGIN + b"\n" + self.body + END + b"\n", agents)
         rules = os.listdir(os.path.join(p, ".claude", "rules"))
         self.assertFalse(set(CORE_RULES) & set(rules), rules)

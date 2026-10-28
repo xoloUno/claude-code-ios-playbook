@@ -1089,6 +1089,7 @@ sed -e "s|\[APP_NAME\]|$APP_NAME|g" \
     -e "s|\[com\.example\.appname\]|$BUNDLE_ID|g" \
     -e "s|\[appname\]|$APP_NAME_LOWER|g" \
     -e "s|\[REPO_NAME\]|$REPO_NAME|g" \
+    -e "s|YOUR_TEAM_ID|$TEAM_ID|g" \
     "$TEMPLATE" > AGENTS.md
 require_file AGENTS.md
 ln -s AGENTS.md CLAUDE.md
@@ -1116,12 +1117,13 @@ else
   echo "⚠️  Lefthook not installed. Run: brew install lefthook && lefthook install"
 fi
 # --- Initial commit ---
+# Regenerate first: the project was generated before later steps added files such as
+# PrivacyInfo.xcprivacy, and the commit must carry a project that includes them.
+xcodegen generate --quiet
 git add -A
-git commit -m "chore: bootstrap $APP_NAME project
-XcodeGen project, Fastlane CI/CD, GitHub Actions workflows,
+git commit -m "chore: bootstrap $APP_NAME project" -m "XcodeGen project, Fastlane CI/CD, GitHub Actions workflows,
 SwiftLint, Lefthook pre-commit hooks, Dependabot, privacy manifest,
-Claude Code hooks and slash commands, legal doc templates.
-Co-Authored-By: Claude <noreply@anthropic.com>"
+Claude Code hooks and slash commands, legal doc templates."
 git log --oneline -1 >/dev/null || { echo "❌ Initial commit failed"; exit 1; }
 echo "✓ Initial commit created"
 # --- Create GitHub repo and push ---
@@ -1131,7 +1133,6 @@ gh repo view "$ORG/$REPO_NAME" --json name >/dev/null || { echo "❌ GitHub repo
 echo "✓ GitHub repo created and pushed"
 # --- Verify project compiles ---
 echo "🔨 Verifying project compiles..."
-xcodegen generate --quiet 2>/dev/null
 if xcodebuild build -scheme "$APP_NAME" -destination 'generic/platform=iOS Simulator' -quiet 2>/dev/null; then
   echo "✓ Build verified"
 else

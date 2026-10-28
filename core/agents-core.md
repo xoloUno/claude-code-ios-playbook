@@ -107,6 +107,27 @@ plan restrictions. Verifying them is not authorization to change them.
 - `MANUAL-TASKS.md` and `WORKLOG.md` are local scratchpads. Check the project's ignore rules
   before treating their contents as untracked.
 
+### Grok Bot
+- "Grok Bot" is xAI and Cursor's computer-use agent. It operates a real browser on a
+  Cursor-hosted cloud computer, in accounts the user signs it in to. It is not the Grok
+  chatbot. A "Grok Bot prompt" is a paste-ready task for a website's UI (App Store Connect,
+  the Developer Portal, GitHub settings, any web console), not a research hand-off.
+- When asked for one, write it even if you could do the task yourself, and name any API or
+  CLI route in one line. Give it as one fenced block, in your reply and under its
+  `MANUAL-TASKS.md` item, complete without this conversation:
+  - the goal, identifiers (app, bundle ID, version, build) and the starting URL;
+  - numbered steps with exact navigation paths, field names and values, and conditions such
+    as "only if offered";
+  - "stop, screenshot and report" for any screen that doesn't match the steps;
+  - "ask me before clicking <button>" ahead of each irreversible click (submit, publish,
+    delete, pay);
+  - what to report when done.
+- Leave sign-in, 2FA and payment to the user. Keep secrets out: the prompt goes to xAI and
+  Cursor.
+- When the user says it's done, check the result through an API or CLI where one exists,
+  such as the App Store Connect API for version state, build and review submission, and say
+  what you checked.
+
 ### Playbook lessons
 Capture new reusable lessons promptly in the shared playbook inbox. Resolve `PLAYBOOK_HOME`
 from the environment or from `~/.config/playbook/config`, then append to its existing

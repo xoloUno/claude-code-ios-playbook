@@ -82,7 +82,8 @@
 3. **Distribute cross-agent (Claude Code + Codex)** so playbook updates propagate without
    the per-project `/upgrade` ritual (drift is the pain being solved).
 4. **Spin out `PlaybookLauncher`** (a macOS SwiftUI GUI over `bootstrap.sh`, currently inside
-   `_playbook`) into its own repo = the iOS app factory. Move ASC/Team secrets to Keychain.
+   `_playbook`) into its own repo = the iOS app factory. (No Keychain move: since 2026-10-27
+   the launcher holds no secrets, see §7.)
 
 ## 2. Locked decisions (2026-05-30)
 
@@ -370,8 +371,9 @@ PlaybookLauncher repo  = iOS factory (iOS pack + bootstrap + lifecycle + Keychai
   auto-read both), strengthening the one-source stub invariant; and Apple's own localization
   flow (coordinator + sub-agents over MCP *tools*, never prompts) is first-party precedent
   for exactly the MCP-tool verb design locked here
-- [ ] **Stage 4 — Spin out PlaybookLauncher:** iOS factory + Keychain (close BOTH secret
-  stores: `.env.playbook` AND the `UserDefaults` copy)
+- [ ] **Stage 4 — Spin out PlaybookLauncher:** iOS factory. The Keychain migration was
+  dropped 2026-10-27: the launcher stopped collecting the ASC IDs, so neither of its stores
+  holds a secret (see §7).
 
 ## 5. Partition table (the build list)
 
@@ -469,9 +471,12 @@ the workflow output (run `wf_e73fd29f-ed9`).
   doesn't surface MCP prompts.
 - **Kickstart pricing:** weekly is **$2.99**, not $4.99 (yearly $69.99 correct). Treat its
   marketing copy as claim-not-proof. macOS 26.2 + Apple-Silicon floor would block CI.
-- **Secrets live in TWO places:** `.env.playbook` (cleartext) AND `LauncherViewModel` persists
-  identity to `UserDefaults`. Keychain migration must close both; the `.p8` ASC key is the
-  crown jewel — audit git history, rotate if ever committed.
+- **The launcher holds no secrets (2026-10-27).** It asks only for the Team ID, GitHub org
+  and domain, because bootstrap.sh reads only `TEAM_ID` and `ORG`; the ASC Key and Issuer IDs
+  come from each project's `.env.fastlane` and GitHub Secrets. Each run restores or removes
+  the `.env.playbook`/`.env.project` it writes, and loading drops the ASC IDs older builds
+  kept in `UserDefaults`. Git history has never held a `.env.*` or `.p8` file. The `.p8` ASC
+  key is still the crown jewel: rotate it if it's ever committed.
 - Anthropic doc URLs moved: `docs.anthropic.com/en/docs/claude-code/*` → `code.claude.com/docs/en/*`.
 
 **Xcode 27 / WWDC26 facts (verified hands-on on beta 27A5194q, 2026-06-10; re-verify at GM):**
@@ -616,6 +621,10 @@ the workflow output (run `wf_e73fd29f-ed9`).
       one local `codex-review.sh` review with the same bar counts as the merge review. Two
       bot reviews stalled for 20–30 minutes on 2026-10-22 while about ten ran at once; #49
       and #51 already used the fallback, and on #51 the local review caught a real bug.
+      **2026-10-27:** Erik: use the local review, because the bot has been failing (#60's sat
+      at "running" for over two hours). So when this rule lands, word it as "the local review
+      is the merge review" rather than a fallback. On #60 the local review caught two real
+      bugs in three rounds.
     - **Prose-only PRs.** "A PR that changes only prose outside `AGENTS.md`/`CLAUDE.md`,
       `.claude/`, hooks, workflows and code needs no Codex review; publishing still needs
       the user." The rule goes by path, not by judgment, because instruction files change
@@ -655,7 +664,7 @@ the workflow output (run `wf_e73fd29f-ed9`).
       ground; Hudson, SHA-pinned, for SwiftData + Concurrency only.
     - Stage 3: Codex + MCP + a bake-off harness. The coding-tool subscription bake-off runs
       as a purchase decision inside project work, not as a playbook stage.
-    - Stage 4: the PlaybookLauncher spin-out and Keychain migration.
+    - Stage 4: the PlaybookLauncher spin-out.
 
 ## 10. References
 

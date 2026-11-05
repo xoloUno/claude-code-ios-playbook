@@ -31,8 +31,8 @@ plan restrictions. Verifying them is not authorization to change them.
 - At session start, inspect existing changes. Preserve work you didn't make and carry on
   with independent work. Ask before altering, committing or stashing unrelated changes.
 - Checkpoint at logical milestones. If repeated mistakes suggest the context is degrading,
-  say so and suggest a fresh session; suggest one too once a long run's handoff is written,
-  since every turn re-sends the history. When autonomy applies, commit checkpoints to the task
+  say so and suggest a fresh session; do the same once a long run's handoff is written.
+  When autonomy applies, commit checkpoints to the task
   branch and push it; otherwise preserve work without committing or pushing automatically.
 - Before committing code changes, run the project's applicable declared validation gates.
   Use its test workflow when there is one, otherwise the documented test command. Report
@@ -65,9 +65,8 @@ plan restrictions. Verifying them is not authorization to change them.
   - nothing in the PR needs the user (next bullet).
 
   For playbook shared source, `pytest` must also pass, and a compose diff must show only
-  the intended downstream changes. If any item fails, park the PR. A CI job that fails
-  within seconds with no steps is usually a billing block: check its annotations
-  (`gh api repos/<owner>/<repo>/check-runs/<id>/annotations`), and if so, park the merges
+  the intended downstream changes. If any item fails, park the PR. A CI job that fails in
+  seconds with no steps is usually a billing block (see its check-run annotations): park
   with one note to the user rather than debugging.
 - These always need the user:
   - device testing;
@@ -163,7 +162,6 @@ it instead of creating a guessed destination.
 - Report only findings that could lose data, publish something private, do something
   irreversible, or break a routine workflow (build, test, commit, push, PR, merge, release).
 - Leave out style, naming, wording, and risks that need an unlikely setup.
-- In a change that wires features together, check that each user step it depends on
-  (pairing, sign-in, purchase, permission) has a production caller. A missing one is a
-  finding.
+- In a change that wires features together, a user step it depends on (pairing, sign-in,
+  purchase, permission) with no production caller is a finding.
 - Suggest the smallest fix, and prefer removing code over adding machinery.

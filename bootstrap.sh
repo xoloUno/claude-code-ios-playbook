@@ -496,11 +496,11 @@ platform :ios do
     )
     increment_build_number(
       build_number: latest_testflight_build_number + 1,
-      xcodeproj: Dir.glob("*.xcodeproj").first
+      xcodeproj: "__APP_NAME__.xcodeproj"
     )
     update_code_signing_settings(
       use_automatic_signing: false,
-      path: Dir.glob("*.xcodeproj").first,
+      path: "__APP_NAME__.xcodeproj",
       team_id: CredentialsManager::AppfileConfig.try_fetch_value(:team_id),
       profile_name: ENV["PROVISIONING_PROFILE_NAME"],
       bundle_identifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
@@ -510,7 +510,7 @@ platform :ios do
     # update_code_signing_settings block per target here.
     # See ios-project-playbook.md §4.1 for multi-target signing.
     build_app(
-      scheme: Dir.glob("*.xcodeproj").first.sub(".xcodeproj", ""),
+      scheme: "__APP_NAME__",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
@@ -532,11 +532,11 @@ platform :ios do
     )
     increment_build_number(
       build_number: latest_testflight_build_number + 1,
-      xcodeproj: Dir.glob("*.xcodeproj").first
+      xcodeproj: "__APP_NAME__.xcodeproj"
     )
     update_code_signing_settings(
       use_automatic_signing: false,
-      path: Dir.glob("*.xcodeproj").first,
+      path: "__APP_NAME__.xcodeproj",
       team_id: CredentialsManager::AppfileConfig.try_fetch_value(:team_id),
       profile_name: ENV["PROVISIONING_PROFILE_NAME"],
       bundle_identifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
@@ -544,7 +544,7 @@ platform :ios do
     )
     # If app has extension targets, add signing blocks here (same as beta lane).
     build_app(
-      scheme: Dir.glob("*.xcodeproj").first.sub(".xcodeproj", ""),
+      scheme: "__APP_NAME__",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
@@ -640,6 +640,9 @@ platform :ios do
   end
 end
 FASTFILE
+# fastlane runs a lane's own Ruby from fastlane/, so a Dir.glob("*.xcodeproj") written in the lane
+# finds nothing and the scheme turns nil. Write the literal project and scheme names instead.
+sed -i '' "s|__APP_NAME__|$APP_NAME|g" fastlane/Fastfile
 # --- GitHub Actions workflows ---
 mkdir -p .github/workflows
 cat > .github/workflows/build-check.yml << 'BUILDCHECK'
@@ -1036,7 +1039,7 @@ commit-msg:
     conventional-commit:
       run: |
         MSG=$(head -1 "{1}")
-        echo "$MSG" | grep -qE '^(feat|fix|docs|refactor|test|chore|ui|perf|ci)(\([a-z0-9-]+\))?!?: .{1,72}$' || \
+        echo "$MSG" | grep -qE '^((feat|fix|docs|refactor|test|chore|ui|perf|ci)(\([a-z0-9-]+\))?!?: .{1,72}|Merge .+)$' || \
         (echo "❌ Commit message must follow conventional commits format" && \
          echo "   Example: feat(live-activity): add stop button" && exit 1)
 LEFTHOOK

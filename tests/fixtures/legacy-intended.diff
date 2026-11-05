@@ -162,7 +162,23 @@
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
 +- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -20,7 +21,15 @@
+@@ -9,4 +10,7 @@
+ Steps:
+-1. **Check provisioning profiles** before anything else. Run:
+-   `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
++1. **Check provisioning profiles** before anything else. Current Xcode and `fastlane sigh`
++   keep them in `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`; older installs
++   are in `~/Library/MobileDevice/Provisioning Profiles/`. List the profile names in both
++   (file names don't carry them):
++   `find ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles ~/Library/MobileDevice/Provisioning\ Profiles -name '*.mobileprovision' 2>/dev/null | while IFS= read -r f; do security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw -o - - 2>/dev/null; done`
+    Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
+@@ -14,3 +18,4 @@
+    Tell the user which profiles are missing and that they need to download them from
+-   Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
++   Apple Developer Portal → Profiles and install them (double-click the file, or copy it to
++   `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`).
+    Offer to fall back to GitHub Actions instead.
+@@ -20,7 +25,15 @@
  5. If upload succeeds, ask user if they want to tag this release
 -6. Push main with `[skip ci]` to sync remote without triggering any workflows
 -7. Update "Current State" in CLAUDE.md with the deploy
@@ -251,7 +267,23 @@
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
 +- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -36,7 +37,15 @@
+@@ -9,4 +10,7 @@
+ Steps:
+-1. **Check provisioning profiles** before anything else. Run:
+-   `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
++1. **Check provisioning profiles** before anything else. Current Xcode and `fastlane sigh`
++   keep them in `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`; older installs
++   are in `~/Library/MobileDevice/Provisioning Profiles/`. List the profile names in both
++   (file names don't carry them):
++   `find ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles ~/Library/MobileDevice/Provisioning\ Profiles -name '*.mobileprovision' 2>/dev/null | while IFS= read -r f; do security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw -o - - 2>/dev/null; done`
+    Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
+@@ -14,3 +18,4 @@
+    Tell the user which profiles are missing and that they need to download them from
+-   Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
++   Apple Developer Portal → Profiles and install them (double-click the file, or copy it to
++   `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`).
+    Offer to fall back to GitHub Actions instead.
+@@ -36,7 +41,15 @@
  8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 -9. Push main with `[skip ci]` to sync remote without triggering any workflows
 -10. Update "Current State" in CLAUDE.md with the release
@@ -463,15 +495,27 @@
  
 --- a/.claude/rules/build-deploy.md
 +++ b/.claude/rules/build-deploy.md
-@@ -76,2 +76,7 @@
+@@ -62,2 +62,11 @@
  
++**Profiles from an agent's shell.** When a device build needs a profile refresh
++(`-allowProvisioningUpdates`, say after Apple grants a restricted entitlement), `xcodebuild`
++in an agent's shell reports "No Accounts" even with an Apple ID signed in to Xcode, then
++blames the entitlement ("requires approval from Apple"). Pass the ASC API key from
++`.env.fastlane` instead: `-authenticationKeyPath "$ASC_KEY_FILEPATH" -authenticationKeyID
++"$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"`. Keep profile backups outside the
++profile folders: `xcodebuild` tries to load every file there and logs a warning per backup on
++each archive, burying real signing errors.
++
+ ## App Store Release
+@@ -75,2 +84,7 @@
+ Metadata lives in `fastlane/metadata/<locale>/`. Edit those files before running `/release`.
++
 +A lane that passes `sync_screenshots: true` to `deliver` fails unless
 +`FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS=1` is set (still beta-gated in fastlane 2.232).
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
-+
- **Screenshots — Shotsmith is the standard pipeline** (Flara's): it composes captioned + gradient
-@@ -117,2 +122,7 @@
+ 
+@@ -117,2 +131,7 @@
  
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
 +`project.pbxproj`, and CI that runs `xcodegen generate` first will hide a stale one. Regenerate
@@ -479,7 +523,7 @@
 +`MANUAL-TASKS.md` so a local session does it before merging.
 +
  ## Available Plugins & MCP Servers
-@@ -131,3 +141,3 @@
+@@ -131,3 +150,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
 +build verification (open a PR → Build Check workflow). For API

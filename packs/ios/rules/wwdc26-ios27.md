@@ -82,6 +82,16 @@ Checked against the iOS 27.1 SDK:
 - Framing needs frames-cli 1.5.0+ and its new asset pack (see `ios-project-playbook.md`,
   Track A).
 
+## Drag to reorder (`reorderable`)
+
+Seen on the iOS 27.0 and 27.1 Simulators with a custom `Layout` in a horizontal `ScrollView`:
+- Pair `reorderContainer(for:)` with a `Transferable` `dragContainer(for:)`. Without one, a
+  long press never lifts a tile.
+- Give each reorderable element one concrete view type, with its parameters computed from the
+  item. A `switch` or `if` between two view types at the element root traps in
+  `DragContainerStorage.payload` on lift, and a `.contextMenu` on the same tiles trapped the
+  same way. Keep context menus off reorderable tiles until a device run shows they work.
+
 ## Localization agents
 
 Xcode 27 translates String Catalogs agent-natively (coordinator + sub-agents over the

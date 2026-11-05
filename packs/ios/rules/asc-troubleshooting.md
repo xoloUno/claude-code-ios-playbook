@@ -8,6 +8,12 @@ Before asserting what fastlane or ASC will do (timeouts, retries, metadata sync,
 dimensions or alpha, version-state transitions), read the installed `fastlane/<tool>/lib/...`
 source or query the ASC API with the JWT helper below. Don't recall it from memory.
 
+Before writing a Grok Bot prompt for the Developer Portal or ASC, read the UI traps under
+"ASC Field Location Cheat Sheet" in `ios-project-playbook.md` (App Group prefix, the
+attach-group flow, the multicast request form, hidden round prices). The API reports a new
+IAP without a review screenshot as `MISSING_METADATA`; the UI calls it "Prepare for
+Submission".
+
 ## Fastlane screenshot verify hang
 
 **Symptom:** `bundle exec fastlane upload_screenshots` (or `release` with screenshots)

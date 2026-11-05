@@ -13,6 +13,31 @@ globs: **/*.swift
 - **No comments explaining what** — only why (write self-documenting code)
 - **Previews required** for every SwiftUI View
 - **SwiftLint enforced** — `.swiftlint.yml` in project root. CI fails on violations.
+- **Callback APIs without `Sendable` annotations trap under Swift 6.** WatchConnectivity
+  (27 SDK) calls reply and error handlers off the main thread, and a closure written inside
+  `@MainActor` code inherits main-actor isolation, so the runtime check traps. Mark such
+  handlers `@Sendable`, keep delegate methods `nonisolated`, and pass only `Sendable` values
+  into `Task { @MainActor in … }`.
+- **Encode IDs into file names as lowercase hex, not base64.** The macOS file system (and so
+  every Simulator container) is case-insensitive by default, so two base64 names that differ
+  only in case collide.
+
+## SwiftUI traps
+
+- `@ScaledMetric` ignores a `.dynamicTypeSize(...)` cap, even one applied above it. Clamp the
+  metric yourself (`min(diameter, 56)`).
+- A `List` in constant edit mode ignores `.swipeActions` (context menus still work), and rows
+  can't move between sections. A draggable "hidden" group needs one `ForEach` with a fixed,
+  `.moveDisabled` divider row.
+- Apple's restricted device symbols (`appletv.fill`, `appletvremote.gen4`, …) may refer only
+  to that Apple product. `logo.playstation` and `logo.xbox` are unrestricted.
+
+## XcodeGen projects
+
+- Never hand-merge `project.pbxproj`. Resolve a conflict with `git checkout --theirs` on it,
+  then `xcodegen generate`.
+- Don't keep empty source folders: `xcodegen` adds them as groups in one checkout but not in
+  a fresh clone or worktree, so the project file depends on where it was generated.
 
 # Automated Quality Tools
 

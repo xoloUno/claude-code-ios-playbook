@@ -23,6 +23,10 @@ Update `PrivacyInfo.xcprivacy` whenever you add code that uses any of these API 
 The bootstrap template includes `CA92.1` (UserDefaults) by default since almost every
 app uses it.
 
+A disposable on-disk cache can bound itself by total size alone (sum `.fileSizeKey`, clear
+the folder on overflow) and needs no entry. LRU eviction by modification or creation date
+uses the File timestamp APIs and needs `C617.1`.
+
 ## How to update
 
 Add a new entry to the `NSPrivacyAccessedAPITypes` array in `PrivacyInfo.xcprivacy`:

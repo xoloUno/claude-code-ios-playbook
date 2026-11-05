@@ -47,6 +47,9 @@ done
 OUT="/private/tmp/codex-reviews/$NAME-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT/work"
 cp "$PROMPT_FILE" "$OUT/prompt.md"
+# Codex starts in the empty $OUT/work, so name the repo it should review.
+[[ -n "$REPO_ROOT" ]] && printf '\n\nThe repository under review is %s. Your working folder is an empty scratch folder; read the repository with `git -C %s ...` and absolute paths.\n' \
+  "$REPO_ROOT" "$REPO_ROOT" >> "$OUT/prompt.md"
 
 echo "codex: $("$CODEX" --version) | out: $OUT"
 start=$(date +%s)

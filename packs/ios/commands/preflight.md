@@ -44,6 +44,12 @@ Steps:
    a git tag like `v<MARKETING>-beta.<BUILD>` already exists. If yes, warn — the build
    number likely needs a bump.
 
+7. **Links resolve** — Collect every unique `https://` URL from the `*_url.txt` files and
+   `description.txt` in each locale dir (skip `review_information/`), plus the targets in
+   `LegalURLs.swift` if it exists. For each, `curl -sL -o /dev/null -w '%{http_code}' <url>`
+   must print 200. FAIL on anything else and list the URL: a private repo's GitHub Pages and
+   Apple's retired `stdevapps` EULA path both return 404 (see `legal-urls.md`).
+
 Present results as a PASS / FAIL / WARN table:
 
 ```
@@ -57,6 +63,7 @@ Present results as a PASS / FAIL / WARN table:
 | Git state | ⚠️ WARN | On dev, 2 unpushed commits |
 | Version | ✅ PASS | MARKETING_VERSION 1.2.0 matches |
 | Build number | ✅ PASS | 71 (no existing tag) |
+| Links | ✅ PASS | 4 unique URLs return 200 |
 
 Overall: ❌ FAIL — fix metadata char limits before deploy.
 ```

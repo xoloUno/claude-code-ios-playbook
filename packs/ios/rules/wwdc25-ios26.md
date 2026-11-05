@@ -35,7 +35,11 @@ Frameworks that always require verification before use: ActivityKit, AppIntents,
 FoundationModels, HealthKit (iOS 26 additions), Metal 4, RealityKit, any SwiftUI modifier
 introduced after iOS 18.
 
-> **AppIntents + Control Widgets gotcha (iOS 26):** intents invoked from
-> `ControlWidgetButton` cannot deliver URLs back via `OpensIntent(OpenURLIntent(...))`.
-> Use a shared App Group UserDefaults bridge instead. See
-> `ios-project-playbook.md` §4.5.
+> **AppIntents + Control Widgets gotcha (iOS 26, still true on iOS 27):** intents invoked
+> from `ControlWidgetButton` cannot deliver URLs back via `OpensIntent(OpenURLIntent(...))`.
+> To open the app at a destination, use an `OpenIntent` + `TargetContentProvidingIntent`
+> handled by `onAppIntentExecution` (see `app-intents.md`); keep the App Group bridge in
+> `ios-project-playbook.md` §4.5 for intents that must run in the extension.
+>
+> **Button roles (iOS 26+):** `Button(role: .close)` and `Button(role: .confirm)` draw the
+> system labels; in a toolbar they render as the glass X and the blue glass checkmark.

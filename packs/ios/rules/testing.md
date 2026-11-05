@@ -45,6 +45,17 @@ Solo dev with limited hours — be strategic, not exhaustive.
     `Mutex`); `nonisolated` can't go on a mutable `static var`.
   - `#expect(items.allSatisfy(\.flag))` fails with a misleading "call can throw" error; the
     closure form `#expect(items.allSatisfy { $0.flag })` compiles.
+  - `#expect(try await store.load().field == value)` inside an `async throws` closure fails
+    with "errors thrown from here are not handled". Hoist it:
+    `let saved = try await store.load()`, then `#expect(saved.field == value)`.
+- **Express version fixtures relative to the current constant.** A literal
+  `{"schemaVersion":2}` meant as "newer" becomes current after a bump, and the failure looks
+  like a data-loss bug. Write `currentSchemaVersion + 1`.
+- **Bound every wait in async tests.** A test that waits for a condition only the fixed code
+  produces (`await clock.waitForSleeper()`) hangs instead of failing on the regression it
+  guards. Spin with `Task.yield()` up to a cap, or race a deadline, then `#expect` the
+  condition. To prove a new test catches its bug, remove the fix and run it under
+  `timeout`.
 
 ## Test the error paths, not just the happy path
 
@@ -60,6 +71,13 @@ Add a **throwing** test double (`Throwing<Service>` alongside `Recording<Service
 3. The app keeps functioning in degraded mode.
 
 Mock the boundary, then prove the failure behavior — not just the success behavior.
+
+A double must also cancel the way the real API does. `URLSessionWebSocketTask.receive()` has
+no task-cancellation handler, so a timeout that cancels a task group still waits until the
+socket closes; close the socket first. A fake built on cancellable `Task.sleep` hides that
+bug, so give timeout tests a fake that resumes only on close. Likewise, an unstructured
+`Task` in a FIFO chain doesn't inherit its caller's cancellation: propagate it, and check
+for cancellation after the predecessor finishes so a cancelled queued command isn't sent.
 
 ## SwiftData test target setup
 
@@ -77,7 +95,7 @@ targets by accident.
 ## Running tests
 
 ```bash
-# Via Xcode
+# Via Xcode (boot the sim first; see simulator.md, which also covers pinning by UDID)
 xcodebuild test -scheme [APP_NAME] -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
 
 # Via slash command

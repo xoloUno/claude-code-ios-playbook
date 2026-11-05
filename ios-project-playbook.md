@@ -82,7 +82,7 @@ bash '_playbook/bootstrap.sh'
 - Lefthook pre-commit hooks (SwiftLint, Gitleaks, conventional commit validation)
 - Claude Code hooks (auto-lint on every file edit)
 - Claude Code slash commands (`/feature`, `/test`, `/review`)
-- Legal doc templates for GitHub Pages hosting
+- Legal doc templates in `legal/`, to move into a public `<app>-legal` repo for GitHub Pages
 - Fastlane metadata directory for future automation
 - Release notes draft file
 - Proper .gitignore
@@ -752,16 +752,29 @@ func push(_ record: CKRecord) async throws {
 The same principle applies to any async capability: StoreKit product loading, HealthKit
 authorization, CoreLocation permissions. If init can fail, don't trust that it succeeded.
 
-### 4.5 Control Center Widget Intents (App Group Bridge)
+### 4.5 Control Center Widget Intents
 
 If your app ships a Control Widget (`ControlWidgetButton`/`ControlWidgetToggle`)
 backed by an `AppIntent`, do NOT return `OpensIntent(OpenURLIntent(...))` from the
-intent. On iOS 26, the URL is silently dropped on the way back to the app —
-`.onOpenURL` never fires. The `openAppWhenRun: true` flag still foregrounds the app,
-but the payload is lost. (Home-screen widgets using `Link` / `.widgetURL` keep working
-through the standard URL handler — leave those alone.)
+intent. On iOS 26, and still on the iOS 27.0 Simulator, the URL is silently dropped on the
+way back to the app (the log shows `Prepared url to URL(nil)`) — `.onOpenURL` never fires.
+Apple documents `OpenURLIntent` for universal links. (Home-screen widgets using `Link` /
+`.widgetURL` keep working through the standard URL handler — leave those alone.)
 
-**Reliable pattern: shared App Group UserDefaults bridge.**
+**Preferred for opening the app to a destination: `OpenIntent` + `TargetContentProvidingIntent`.**
+Compile the intent into both the app and the widget extension and use it as
+`ControlWidgetButton(action:)`. The scene's `.onAppIntentExecution(IntentType.self)` gets the
+intent, target included, before the scene becomes active, and `perform()` runs in the app
+process. This opened the app on cold, warm and foreground taps on the iOS 27.0 Simulator
+(2026-10-28; a device recheck was pending). A `LiveActivityIntent` also runs in the app
+process; see `app-intents.md` for both patterns.
+
+Don't build a relay on Darwin notifications: they don't launch or resume a suspended app
+(Apple DTS, developer.apple.com/forums/thread/69333). Prove any extension-to-app path with
+the app suspended, and in spike results keep apart "the system called back", "the transport
+succeeded" and "the device did the thing".
+
+**Fallback for intents that must run in the extension: shared App Group UserDefaults bridge.**
 
 1. The intent (running in the widget extension's process) writes the requested action
    to App Group UserDefaults — e.g. a `pendingAction` key with the payload + a
@@ -776,6 +789,35 @@ through the standard URL handler — leave those alone.)
 
 Put the bridge type in a shared SPM package so both the app target and the widget
 extension import the same key constants without drift.
+
+### 4.6 Talking to Other Devices (LAN, Watch)
+
+Seen building a TV remote (Kendibah, iOS and macOS 27, 2026-10/11). Most of these surface
+only on real hardware.
+
+- **UDP broadcast:** Network framework can't send it. An `NWConnection` to a directed
+  broadcast address fails with `EACCES`; use a BSD socket with `SO_BROADCAST`. A UDP
+  `NWConnection.send` with `isComplete: false` fails with `ENOTSUP`, even for unicast.
+- **Interface masks:** `getifaddrs` netmask `sockaddr`s are truncated after the last
+  non-zero byte (`sa_len` 7 for a /24), so code that requires a full `sockaddr_in` finds no
+  interface.
+- **Address parsing:** `IPv4Address("192.0.2")` succeeds and means 192.0.0.2 (`inet_aton`
+  shorthand). Validate four octets before sending anything.
+- **URL paths:** `URL.path` drops a trailing slash; match with `path(percentEncoded: false)`.
+- **User-approved handshakes:** when the user approves a pairing in another app on the same
+  phone, switching apps suspends yours within seconds and the waiting socket is lost.
+  Run the handshake inside `UIApplication.beginBackgroundTask(withName:expirationHandler:)`,
+  ending the task in the handler and in a `defer`. Test it on a device by switching apps
+  mid-handshake; a Mac or the Simulator never suspends the app.
+- **Extension networking:** a NowPlaying extension's LAN requests failed (`URLError -1009`,
+  `NWConnection` `ENETDOWN`) while the app reached the same TV, yet setting
+  `NWParameters.requiredInterfaceType = .wifi` let TCP through. Before concluding that an
+  extension is blocked from the LAN, compare the default path with an explicit Wi-Fi one.
+- **Simulator:** multicast discovery sees only its own packets; see `simulator.md` for the
+  macOS-harness pattern.
+- **WatchConnectivity:** mark reply and error handlers `@Sendable` (see `code-style.md`). On
+  the iPhone, publish `applicationContext` again from `sessionWatchStateDidChange`, or a
+  context sent before the watch app finished installing is lost.
 
 ---
 
@@ -1405,10 +1447,11 @@ later if you need them.
 ### 6.1 Pre-Submission Checklist
 
 **Legal & Hosting:**
-- [ ] Privacy policy finalized in `docs/privacy.html` — all placeholders replaced
-- [ ] Terms of service finalized in `docs/terms.html`
-- [ ] GitHub Pages enabled (repo Settings → Pages → main branch, /docs folder)
-- [ ] Both URLs verified accessible
+- [ ] Privacy policy finalized in `privacy.html` — all placeholders replaced
+- [ ] Terms of service finalized in `terms.html`
+- [ ] Both pages live in the public `<app>-legal` repo with GitHub Pages on (Settings →
+      Pages → `main`, `/`); see `legal-urls.md`
+- [ ] Both URLs verified accessible (`/preflight` checks every metadata URL)
 
 **App Store Connect:**
 - [ ] App record exists (name, bundle ID, SKU)
@@ -1582,6 +1625,21 @@ This is a blocking error — no builds can be uploaded until the version is bump
 | App Privacy + Privacy Policy URL | App Information → App Privacy |
 | Pricing | Pricing and Availability (left sidebar) |
 | Subscription products | Subscriptions (left sidebar) |
+
+**UI traps to state up front in a Grok Bot setup prompt** (seen 2026-10 on two apps):
+1. The App Group "Identifier" field adds the `group.` prefix itself. Typing `group.<id>`
+   gives `group.group.<id>`, so give only the part after the prefix.
+2. Attaching a group to an existing App ID: Configure → tick the group → Continue → Assign →
+   Done → Save → Confirm. A prompt that skips Assign and Done makes the agent stop.
+3. The Multicast Networking Entitlement request form
+   (developer.apple.com/contact/request/networking-multicast) has no bundle ID or platform
+   field. It asks for App Name, App Store URL and Apple ID of the app (both optional), App
+   Category, the app's main purpose and the justification. Create the ASC app record first
+   so the request can carry the app's Apple ID.
+4. Round USD IAP prices such as $15.00 sit under "See Additional Prices" at the bottom of
+   the price list.
+5. "New App" can show "Your user access settings could not be saved… all users currently
+   have access". It's harmless when the request was Full Access.
 
 ---
 

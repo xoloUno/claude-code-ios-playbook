@@ -349,11 +349,12 @@ ASC_KEY_FILEPATH=~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8
 - This enables the `/deploy` slash command to upload to TestFlight from your machine
 - To test manually: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
 
-**6. Enable GitHub Pages**
-- Go to your repo on github.com → Settings → Pages
-- Source: Deploy from a branch
-- Branch: `main`, folder: `/docs`
-- Click Save
+**6. Publish the legal pages**
+- The app repo is private, and GitHub Pages serves private repos only on paid plans
+- Create a public repo named `<app>-legal` and move the files from the app's `legal/` folder
+  into its root
+- In that repo: Settings → Pages → Deploy from a branch → `main`, folder `/` → Save
+- The metadata URLs bootstrap wrote already point at `https://<org>.github.io/<app>-legal/`
 
 ---
 

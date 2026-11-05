@@ -230,6 +230,19 @@
 +   - `/deploy` and `/release` run from `main`: on `main` this passes; on any other branch,
 +     WARN that its PR must merge first
     - Branch should be pushed and up-to-date with origin
+@@ -44,2 +45,8 @@
+    number likely needs a bump.
++
++7. **Links resolve** — Collect every unique `https://` URL from the `*_url.txt` files and
++   `description.txt` in each locale dir (skip `review_information/`), plus the targets in
++   `LegalURLs.swift` if it exists. For each, `curl -sL -o /dev/null -w '%{http_code}' <url>`
++   must print 200. FAIL on anything else and list the URL: a private repo's GitHub Pages and
++   Apple's retired `stdevapps` EULA path both return 404 (see `legal-urls.md`).
+ 
+@@ -58,2 +65,3 @@
+ | Build number | ✅ PASS | 71 (no existing tag) |
++| Links | ✅ PASS | 4 unique URLs return 200 |
+ 
 --- a/.claude/commands/release.md
 +++ b/.claude/commands/release.md
 @@ -5,3 +5,4 @@
@@ -267,20 +280,28 @@
  Be specific about file names and line numbers. Suggest fixes, not just problems.
 --- a/.claude/commands/status.md
 +++ b/.claude/commands/status.md
-@@ -28,3 +28,4 @@
+@@ -23,3 +23,6 @@
+ 1. `git branch --show-current` and `git status --short` — current branch + dirty state.
+-2. `git log --oneline -5` — recent commits on the current branch.
++2. `git log --oneline -5` — recent commits on the current branch. Also run
++   `git worktree list`: flag worktrees marked prunable (their folder is gone; suggest
++   `git worktree prune`) and worktrees whose commit is already on the default branch. Only
++   flag them: removing a worktree with uncommitted changes needs the user.
+ 3. `git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null` — ahead/behind vs
+@@ -28,3 +31,4 @@
  4. Open PRs: `gh pr list --state open --limit 10` (if `gh` is available).
 -5. If `CLAUDE.md` is present **and** has a "Current State" / "current status" section,
 +5. If the instructions file (`AGENTS.md` when it carries the playbook core markers,
 +   otherwise `CLAUDE.md`) is present **and** has a "Current State" / "current status" section,
     summarize it (last-updated date, what's in flight, next up). If it has no such
-@@ -32,4 +33,4 @@
+@@ -32,4 +36,4 @@
  6. If `WORKLOG.md` is present, read its latest entry — show the date and key points.
 -7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them and ask
 -   whether any are now done.
 +7. If `MANUAL-TASKS.md` is present with unchecked items (`- [ ]`), list them at the top of
 +   the briefing and ask whether any are now done.
  
-@@ -60,2 +61,2 @@
+@@ -60,2 +64,2 @@
  
 -After presenting, ask: "What would you like to work on?"
 +After presenting, recommend the next item and ask: "What would you like to work on?"
@@ -367,7 +388,7 @@
 @@ -1,3 +1,3 @@
  ---
 -description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap and unreliable simulator dispatch
-+description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap, unreliable simulator dispatch, and where shortcuts actually surface
++description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap, unreliable simulator dispatch, where shortcuts surface, and running control and Live Activity buttons in the app
  globs: **/*Intent*.swift, **/*Shortcut*.swift, **/*AppShortcuts*.swift
 @@ -7,4 +7,4 @@
  
@@ -376,7 +397,7 @@
 +Empirically-verified traps when working with `AppShortcutsProvider` / App Intents. Each costs
 +real debugging time because it doesn't surface where you'd first look.
  
-@@ -60,2 +60,11 @@
+@@ -60,2 +60,31 @@
  
 +## Where App Shortcuts surface — and their phrases per locale
 +
@@ -387,21 +408,47 @@
 +If a localized app exposes App Shortcuts, give it an `AppShortcuts.xcstrings` with phrases for
 +each locale. Without one, the Siri phrases exist only in the development language.
 +
++## Controls and Live Activity buttons that run in the app
++
++- **A control that opens the app to a destination:** give it an intent that adopts
++  `OpenIntent` and `TargetContentProvidingIntent`, compile that intent into both the app and
++  the widget extension, and use it as `ControlWidgetButton(action:)`. The scene's
++  `.onAppIntentExecution(IntentType.self) { intent in … }` receives it with its target before
++  the scene becomes active, and `perform()` runs in the app process, on cold, warm and
++  foreground taps (iOS 27.0 Simulator). Files that use `onAppIntentExecution` need
++  `import AppIntents` next to SwiftUI. Never return `OpenURLIntent` with a custom scheme from
++  a control: the URL is dropped.
++- **A button that must run through the app's own model** (Live Activity, Control Center):
++  a `LiveActivityIntent` runs in the app's process even when its button lives in the widget
++  extension, so one command path serves the app, Siri, the Lock Screen and Control Center.
++  Compile it into both targets and put its `perform` body behind an app-only compilation
++  condition (`SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) <APP>_APP"` on the app
++  target). An intent launch has no scene, so work a `.task` starts (StoreKit listener, store
++  load) must also be reachable from the intent, through an idempotent `start()`.
++- Darwin notifications don't launch or resume a suspended app, so an extension-to-app relay
++  built on them works only while the app is in the foreground.
++
  See [`simulator.md`](simulator.md) for the broader "the simulator lies" gotchas.
 --- a/.claude/rules/asc-troubleshooting.md
 +++ b/.claude/rules/asc-troubleshooting.md
-@@ -5,2 +5,6 @@
+@@ -5,2 +5,12 @@
  broken.
 +
 +Before asserting what fastlane or ASC will do (timeouts, retries, metadata sync, accepted
 +dimensions or alpha, version-state transitions), read the installed `fastlane/<tool>/lib/...`
 +source or query the ASC API with the JWT helper below. Don't recall it from memory.
++
++Before writing a Grok Bot prompt for the Developer Portal or ASC, read the UI traps under
++"ASC Field Location Cheat Sheet" in `ios-project-playbook.md` (App Group prefix, the
++attach-group flow, the multicast request form, hidden round prices). The API reports a new
++IAP without a review screenshot as `MISSING_METADATA`; the UI calls it "Prepare for
++Submission".
  
-@@ -105,2 +109,3 @@
+@@ -105,2 +115,3 @@
  | List screenshots in a set | `appScreenshotSets/{set_id}/appScreenshots` |
 +| Check age-rating answers | `apps/{app_id}/appInfos`, then `appInfos/{app_info_id}/ageRatingDeclaration` |
  
-@@ -108,2 +113,12 @@
+@@ -108,2 +119,12 @@
  or `.env.project` for reuse.
 +
 +## "You must respond to the required age ratings questions"
@@ -437,6 +484,36 @@
 -build verification (push to branch → Build Check workflow). For API
 +build verification (open a PR → Build Check workflow). For API
  verification in cloud sessions, fall back to web search on developer.apple.com.
+--- a/.claude/rules/code-style.md
++++ b/.claude/rules/code-style.md
+@@ -15,2 +15,27 @@
+ - **SwiftLint enforced** — `.swiftlint.yml` in project root. CI fails on violations.
++- **Callback APIs without `Sendable` annotations trap under Swift 6.** WatchConnectivity
++  (27 SDK) calls reply and error handlers off the main thread, and a closure written inside
++  `@MainActor` code inherits main-actor isolation, so the runtime check traps. Mark such
++  handlers `@Sendable`, keep delegate methods `nonisolated`, and pass only `Sendable` values
++  into `Task { @MainActor in … }`.
++- **Encode IDs into file names as lowercase hex, not base64.** The macOS file system (and so
++  every Simulator container) is case-insensitive by default, so two base64 names that differ
++  only in case collide.
++
++## SwiftUI traps
++
++- `@ScaledMetric` ignores a `.dynamicTypeSize(...)` cap, even one applied above it. Clamp the
++  metric yourself (`min(diameter, 56)`).
++- A `List` in constant edit mode ignores `.swipeActions` (context menus still work), and rows
++  can't move between sections. A draggable "hidden" group needs one `ForEach` with a fixed,
++  `.moveDisabled` divider row.
++- Apple's restricted device symbols (`appletv.fill`, `appletvremote.gen4`, …) may refer only
++  to that Apple product. `logo.playstation` and `logo.xbox` are unrestricted.
++
++## XcodeGen projects
++
++- Never hand-merge `project.pbxproj`. Resolve a conflict with `git checkout --theirs` on it,
++  then `xcodegen generate`.
++- Don't keep empty source folders: `xcodegen` adds them as groups in one checkout but not in
++  a fresh clone or worktree, so the project file depends on where it was generated.
+ 
 --- a/.claude/rules/git-workflow.md
 +++ b/.claude/rules/git-workflow.md
 @@ -40,3 +40,4 @@
@@ -445,6 +522,47 @@
 +3. Conventional commit, with attribution per the host's settings and the user's policy
 +   (don't hardcode a co-author line)
  4. Push to a feature/fix branch, not `main`
+--- a/.claude/rules/legal-urls.md
++++ b/.claude/rules/legal-urls.md
+@@ -11,2 +11,12 @@
+ legal pages for multiple apps under one domain.
++
++**Host the pages in a separate public repo.** App repos are private, and GitHub Pages serves
++private repos only on paid plans, so pages in the app repo's `docs/` return 404. Bootstrap
++points the URLs at `https://<org>.github.io/<app>-legal/` and writes the page templates to
++`legal/`; move them into a public `<org>/<app>-legal` repo with Pages serving `main` `/`.
++`/preflight` checks that every URL returns 200.
++
++**Apple's Standard EULA** is `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`.
++The older `…/dev/stdevapps/` returns 404. An app with auto-renewable subscriptions needs a
++working Terms of Use (EULA) link in its description (Guideline 3.1.2).
+ 
+@@ -88,5 +98,7 @@
+ # 2. Per-locale URL files. Iterate actual locale dirs so we don't hardcode
+-#    a list that drifts from reality.
++#    a list that drifts from reality. review_information/ holds App Review
++#    notes, not a locale.
+ LOCALE_COUNT=0
+ for locale_dir in "$METADATA_DIR"/*/; do
++  [ "$(basename "$locale_dir")" = review_information ] && continue
+   printf '%s' "$BASE_URL/privacy.html" > "$locale_dir/privacy_url.txt"
+@@ -101,2 +113,4 @@
+ #    matches only URLs ending in /privacy.html or /terms.html.
++#    `-i.bak` + rm works with both BSD (macOS) and GNU (Linux, CI) sed;
++#    `-i ''` is BSD-only.
+ DESC_COUNT=0
+@@ -105,3 +119,3 @@
+   [ -f "$desc" ] || continue
+-  sed -E -i '' \
++  sed -E -i.bak \
+     -e "s|https://[^[:space:]]+/privacy\\.html|$BASE_URL/privacy.html|g" \
+@@ -109,2 +123,3 @@
+     "$desc"
++  rm -f "$desc.bak"
+   DESC_COUNT=$((DESC_COUNT + 1))
+@@ -147 +162,2 @@
+   to verify state.
++- **The script must run under both BSD and GNU sed** — cloud sessions and CI use GNU.
 --- a/.claude/rules/metadata-translation.md
 +++ b/.claude/rules/metadata-translation.md
 @@ -100,2 +100,8 @@
@@ -482,14 +600,31 @@
 +The inbox file's header owns the format: read its "Entry format" section and follow it.
 +Append new entries at the bottom of the file, before any trailing whitespace, without a
 +number (curation numbers them).
+--- a/.claude/rules/privacy-manifest.md
++++ b/.claude/rules/privacy-manifest.md
+@@ -24,2 +24,6 @@
+ app uses it.
++
++A disposable on-disk cache can bound itself by total size alone (sum `.fileSizeKey`, clear
++the folder on overflow) and needs no entry. LRU eviction by modification or creation date
++uses the File timestamp APIs and needs `C617.1`.
+ 
 --- a/.claude/rules/screenshot-pipeline.md
 +++ b/.claude/rules/screenshot-pipeline.md
-@@ -168,3 +168,3 @@
+@@ -122,2 +122,7 @@
+ 
++**Apps that control hardware:** to capture "connected" states without a real device, run a
++small fake device server on the Mac's loopback (for example a Python `http.server` speaking
++the device's HTTP API on 127.0.0.1), and seed the app's store with the fake device's identity
++and address. The Simulator reaches it at 127.0.0.1.
++
+ ## Gitignore policy
+@@ -168,3 +173,3 @@
  xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 -open -a Simulator
 +open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
  ```
-@@ -200,2 +200,7 @@
+@@ -200,2 +205,7 @@
  widget has time to refresh.
 +
 +If the surface's UI changed since the last capture, ask the user to confirm the
@@ -497,19 +632,19 @@
 +drawing the old one. Refresh it by installing over the existing app, never by
 +uninstalling (see [`simulator.md`](simulator.md)).
  
-@@ -236,4 +241,4 @@
+@@ -236,4 +246,4 @@
  |---|---|---|
 -| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Simulator), then verify the Live Activity is rendering on the lock screen. |
 -| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock (Cmd+Shift+H twice, or swipe up), then navigate to the Home Screen page that contains the widget. |
 +| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Device Hub), then verify the Live Activity is rendering on the lock screen. |
 +| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock with Cmd+Shift+H in Device Hub, which acts as one swipe up: from the lock screen the first press reveals the open app and the second goes home. Then navigate to the Home Screen page that contains the widget. |
  | Control Center (with Control Widget) | `92_ControlCenter.png` | From any non-app screen, swipe down from the top-right corner of the simulator to invoke Control Center. |
-@@ -281,3 +286,3 @@
+@@ -281,3 +291,3 @@
  xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 -open -a Simulator
 +open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
  
-@@ -414,3 +419,3 @@
+@@ -414,3 +424,3 @@
  xcrun simctl bootstatus "$WATCH_SIM" -b >/dev/null   # the trivial fix: wait for full boot
 -open -a Simulator
 +open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
@@ -519,18 +654,19 @@
 @@ -1,3 +1,3 @@
  ---
 -description: Simulator build/run hygiene — install over (don't uninstall), and never strip entitlements via signing overrides
-+description: Simulator build/run hygiene — install over (don't uninstall), pin one sim by UDID, and never strip entitlements via signing overrides
++description: Simulator and device-loop hygiene — install over (don't uninstall), pin and boot one sim by UDID, never strip entitlements via signing overrides, and know what the Simulator can't prove
  globs: **/*
-@@ -7,5 +7,5 @@
+@@ -7,5 +7,6 @@
  
 -Two traps when building or running an app on a booted simulator for verification. Both are
 -correctness-critical: one silently destroys hand-built sim state, the other crashes the app at
 -launch.
 +Three traps when building or running an app on a booted simulator for verification. All are
 +correctness-critical: one silently destroys hand-built sim state, one splits your work across two
-+sims, and one crashes the app at launch.
++sims, and one crashes the app at launch. Shorter traps and Simulator limits have their own
++sections.
  
-@@ -30,2 +30,11 @@
+@@ -30,2 +31,55 @@
  - Same rule for watchOS / iPadOS sims, not just iPhone.
 +
 +## Pin one simulator by UDID when names repeat
@@ -541,10 +677,54 @@
 +prep one and build, install or capture on the other. Resolve the UDID once and use it
 +everywhere: `simctl` takes a UDID wherever it takes a name, and `xcodebuild` takes
 +`-destination 'platform=iOS Simulator,id=<UDID>'`.
++
++Boot it first: `xcrun simctl boot <UDID>; xcrun simctl bootstatus <UDID> -b`. Given a
++shut-down destination, `xcodebuild test` has sat for 10+ minutes with no output and never
++booted it. Write the full log to a file rather than piping through `grep` or `-quiet`, so a
++hang shows as an empty log instead of a slow test.
++
++On Xcode 27.1, the iOS 27.1 runtime offers only the iPhone Duo device type, so checking a fix
++on 27.1 means creating a Duo sim.
++
++## Simulator tooling traps
++
++- Regenerating with `xcodegen generate` while Xcode has the project open resets Xcode's run
++  destination, and the next Xcode or MCP run quietly uses another sim. Re-select it.
++- After one Xcode run with a `.storekit` configuration, `simctl launch` on that sim keeps the
++  local StoreKit environment and its test transactions. A clean "never purchased" state
++  needs a fresh sim.
++- A screenshot taken right after a tap can show the previous frame. Wait about a second, or
++  use `xcrun simctl io <UDID> screenshot`.
++- To capture `print` output, run `xcrun simctl launch --console <UDID> <bundle-id>` in the
++  background redirected to a file; `--stdout=<path>` wrote nothing.
++- Crash reports land in `~/Library/Logs/DiagnosticReports/<App>-<date>.ips`.
++
++## What the Simulator can't prove
++
++Seen on the iOS 27.0 and 27.1 Simulators; each looks like an app bug:
++- `RemoteMediaSession.start` (NowPlaying) throws `internalFailure`. Test it on a device.
++- Multicast discovery (SSDP over `NWConnectionGroup`) receives only its own looped-back
++  packets, never the devices' unicast replies. Test networking modules in a scratch macOS
++  SwiftPM harness that copies the module sources, then on a device.
++- A synthesized tap doesn't end a `DragGesture(minimumDistance: 0)` used as a tap target; a
++  finger on a device does.
++
++Anything that crosses app suspension (a handshake approved in another app, background
++delivery) needs a device test too: a Mac or the Simulator never suspends the app.
++
++## Device test loops
++
++- Reinstalling without changing `CFBundleVersion` can leave iOS running the old build of an
++  app extension. Pass `CURRENT_PROJECT_VERSION=$(date +%Y%m%d%H%M)` to each device build in a
++  test loop, and have probe code log its own `CFBundleVersion`.
++- An extension is suspended between system callbacks, so a log written from a detached `Task`
++  may never reach disk. Write synchronously under a lock (`Synchronization.Mutex`).
++- `devicectl device copy from --domain-type appGroupDataContainer` reads only under
++  `Library`, `Documents` or `tmp`, not the container root.
  
 --- a/.claude/rules/testing.md
 +++ b/.claude/rules/testing.md
-@@ -40,2 +40,9 @@
+@@ -40,2 +40,20 @@
    in-memory SwiftData containers. Mock boundaries (network), not internals.
 +- **Two Swift Testing compile traps** (Swift 6.4):
 +  - A `@MainActor` suite's `deinit` is nonisolated, so cleanup there can't touch the suite's
@@ -553,7 +733,49 @@
 +    `Mutex`); `nonisolated` can't go on a mutable `static var`.
 +  - `#expect(items.allSatisfy(\.flag))` fails with a misleading "call can throw" error; the
 +    closure form `#expect(items.allSatisfy { $0.flag })` compiles.
++  - `#expect(try await store.load().field == value)` inside an `async throws` closure fails
++    with "errors thrown from here are not handled". Hoist it:
++    `let saved = try await store.load()`, then `#expect(saved.field == value)`.
++- **Express version fixtures relative to the current constant.** A literal
++  `{"schemaVersion":2}` meant as "newer" becomes current after a bump, and the failure looks
++  like a data-loss bug. Write `currentSchemaVersion + 1`.
++- **Bound every wait in async tests.** A test that waits for a condition only the fixed code
++  produces (`await clock.waitForSleeper()`) hangs instead of failing on the regression it
++  guards. Spin with `Task.yield()` up to a cap, or race a deadline, then `#expect` the
++  condition. To prove a new test catches its bug, remove the fix and run it under
++  `timeout`.
  
+@@ -55,2 +73,9 @@
+ Mock the boundary, then prove the failure behavior — not just the success behavior.
++
++A double must also cancel the way the real API does. `URLSessionWebSocketTask.receive()` has
++no task-cancellation handler, so a timeout that cancels a task group still waits until the
++socket closes; close the socket first. A fake built on cancellable `Task.sleep` hides that
++bug, so give timeout tests a fake that resumes only on close. Likewise, an unstructured
++`Task` in a FIFO chain doesn't inherit its caller's cancellation: propagate it, and check
++for cancellation after the predecessor finishes so a cancelled queued command isn't sent.
+ 
+@@ -72,3 +97,3 @@
+ ```bash
+-# Via Xcode
++# Via Xcode (boot the sim first; see simulator.md, which also covers pinning by UDID)
+ xcodebuild test -scheme [APP_NAME] -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
+--- a/.claude/rules/wwdc25-ios26.md
++++ b/.claude/rules/wwdc25-ios26.md
+@@ -37,5 +37,9 @@
+ 
+-> **AppIntents + Control Widgets gotcha (iOS 26):** intents invoked from
+-> `ControlWidgetButton` cannot deliver URLs back via `OpensIntent(OpenURLIntent(...))`.
+-> Use a shared App Group UserDefaults bridge instead. See
+-> `ios-project-playbook.md` §4.5.
++> **AppIntents + Control Widgets gotcha (iOS 26, still true on iOS 27):** intents invoked
++> from `ControlWidgetButton` cannot deliver URLs back via `OpensIntent(OpenURLIntent(...))`.
++> To open the app at a destination, use an `OpenIntent` + `TargetContentProvidingIntent`
++> handled by `onAppIntentExecution` (see `app-intents.md`); keep the App Group bridge in
++> `ios-project-playbook.md` §4.5 for intents that must run in the extension.
++>
++> **Button roles (iOS 26+):** `Button(role: .close)` and `Button(role: .confirm)` draw the
++> system labels; in a toolbar they render as the glass X and the blue glass checkmark.
 --- a/.claude/rules/wwdc26-ios27.md
 +++ b/.claude/rules/wwdc26-ios27.md
 @@ -7,4 +7,4 @@
@@ -578,7 +800,7 @@
 -  xcrun mcpbridge run-agent skills export --output-dir <dir> --replace-existing
 +xcrun mcpbridge run-agent skills export --output-dir <dir> --replace-existing
  ```
-@@ -57,10 +56,29 @@
+@@ -57,10 +56,39 @@
  
 -`mcpbridge` is a stdio MCP bridge to a running Xcode (server name `xcode-tools`; the
 -binary also exists in Xcode 26.5, without the skills-export subcommand). Tools are
@@ -614,4 +836,14 @@
 +  with `xcrun simctl io <device> enumerate`, then `screenshot --display=<id>`.
 +- Framing needs frames-cli 1.5.0+ and its new asset pack (see `ios-project-playbook.md`,
 +  Track A).
++
++## Drag to reorder (`reorderable`)
++
++Seen on the iOS 27.0 and 27.1 Simulators with a custom `Layout` in a horizontal `ScrollView`:
++- Pair `reorderContainer(for:)` with a `Transferable` `dragContainer(for:)`. Without one, a
++  long press never lifts a tile.
++- Give each reorderable element one concrete view type, with its parameters computed from the
++  item. A `switch` or `if` between two view types at the element root traps in
++  `DragContainerStorage.payload` on lift, and a `.contextMenu` on the same tiles trapped the
++  same way. Keep context menus off reorderable tiles until a device run shows they work.
  

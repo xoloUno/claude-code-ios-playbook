@@ -35,7 +35,8 @@ ENV["PLAYBOOK_HOME"] = "/fixture/playbook-home"
 # Composed files changed on purpose for unmarked (legacy) projects too: the canary's
 # instructions-file wording, R3 attribution fix, worklog format and one-sentence ASC
 # addition, the 2026-10-22 autonomy policy, and the 2026-10-28 single home for the inbox
-# entry format. Their exact contents are pinned by LEGACY_FIXTURE.
+# entry format, and the 2026-11-05 inbox round's iOS rule additions. Their exact contents are
+# pinned by LEGACY_FIXTURE.
 INTENDED_LEGACY_CHANGES = {
     os.path.join(".claude", "commands", n) for n in (
         "wrapup.md", "status.md", "inbox.md", "upgrade.md", "conform.md",
@@ -45,7 +46,8 @@ INTENDED_LEGACY_CHANGES = {
     os.path.join(".claude", "rules", n) for n in (
         "asc-troubleshooting.md", "git-workflow.md", "metadata-translation.md",
         "app-intents.md", "build-deploy.md", "screenshot-pipeline.md", "simulator.md",
-        "testing.md", "wwdc26-ios27.md", "playbook-inbox.md")
+        "testing.md", "wwdc26-ios27.md", "playbook-inbox.md", "code-style.md",
+        "legal-urls.md", "privacy-manifest.md", "wwdc25-ios26.md")
 }
 
 PREFIX = b"# AGENTS.md \xe2\x80\x94 Fixture\n\nProject intro line.\n\n" + BEGIN + b"\n"

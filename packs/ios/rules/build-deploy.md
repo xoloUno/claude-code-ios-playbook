@@ -139,5 +139,5 @@ with the playbook plugin, or read it at
 https://github.com/xoloUno/claude-code-ios-playbook/blob/main/claude-code-plugins-setup.md.
 
 Cloud sessions do not have access to MCP tools. Use GitHub Actions for
-build verification (push to branch → Build Check workflow). For API
+build verification (open a PR → Build Check workflow). For API
 verification in cloud sessions, fall back to web search on developer.apple.com.

@@ -28,6 +28,33 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-04 — Build Check runs on pull requests, not on every push
+
+On a private repo, every macOS minute draws on the account's included Actions usage, and
+macOS runners cost about ten times Linux per minute (GitHub Free, checked 2026-11-04: $12 a
+month, about 190 macOS minutes at $0.062). Build Check ran on every push to every branch but
+`main`, so an autonomous run that pushed ten stacked PRs and their merge commits, without
+`[skip ci]`, used a month's allowance in four days, and GitHub blocked every later run.
+
+- **Trigger.** The bootstrap template now runs Build Check on `pull_request` and
+  `workflow_dispatch`. A branch with no PR runs nothing; run it there by hand with
+  `gh workflow run build-check.yml --ref <branch>`.
+- **`[skip build]` is gone.** It read `github.event.head_commit`, which `pull_request` events
+  don't carry. `[skip ci]` in the head commit skips `pull_request` runs natively.
+- **Docs.** `ios-project-playbook.md` §1.4 gives the new trigger, the `[skip ci]` rule for
+  pushes to a branch with an open PR, the cost reason and the Actions budget setting. Cloud
+  sessions open a PR (a draft is fine) to get a build.
+
+**Files affected:** `bootstrap.sh` (the `build-check.yml` heredoc); `ios-project-playbook.md`;
+`claude-code-plugins-setup.md`; `packs/ios/rules/build-deploy.md`; `tests/fixtures/legacy-intended.diff`
+(the rule line is an intended legacy change).
+
+**What to do in your project:** in `.github/workflows/build-check.yml`, replace the `push:` /
+`branches-ignore: [main]` trigger with `pull_request:` and `workflow_dispatch:`, and delete the
+job's `if: "!contains(github.event.head_commit.message, '[skip build]')"` line. The rule text in
+`.claude/rules/build-deploy.md` follows with the next plugin release and `/playbook:upgrade`.
+Merge the workflow change before stacked PRs, so each one picks it up when `main` is merged in.
+
 ## 2026-10-28 — Plugin `v1.4.0` — local merge review, Grok Bot, compose sim fix
 
 Bumps `.claude-plugin/plugin.json` from `1.3.0` to `1.4.0`. After this merges, the merge

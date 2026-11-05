@@ -642,17 +642,17 @@ FASTFILE
 mkdir -p .github/workflows
 cat > .github/workflows/build-check.yml << 'BUILDCHECK'
 name: Build Check
+# Pull requests only: on a private repo every macOS minute draws on the account's included
+# Actions usage. Run it on a branch without a PR with `gh workflow run build-check.yml --ref <branch>`.
 on:
-  push:
-    branches-ignore:
-      - main
+  pull_request:
+  workflow_dispatch:
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
     name: Xcode Build
-    if: "!contains(github.event.head_commit.message, '[skip build]')"
     runs-on: xcode-27
     steps:
       - uses: actions/checkout@v4

@@ -1,7 +1,7 @@
 # Playbook & Dev-Environment Refactor — Canonical Plan
 
 > **Purpose:** the single durable reference for this multi-session initiative. If context
-> is lost, start here. Last updated **2026-10-22**.
+> is lost, start here. Last updated **2026-11-05**.
 > **Status:** direction FINALIZED. **Stage 0 migration COMPLETE & verified (2026-05-30)** —
 > all 7 repos now live in `~/dev`, fsck-clean, and Flara compiles from the new location.
 > `~/dev` is canonical; the iCloud rollback copies were **deleted 2026-09-27**, closing Stage 0.
@@ -524,7 +524,7 @@ the workflow output (run `wf_e73fd29f-ed9`).
   metadata-translation.md), the lesson-capture loop, and any rule encoding a specific bug.
 - **Kickstart:** free-tier/optional only. Free Overdrive ≈ open-source
   [twostraws/ControlRoom](https://github.com/twostraws/ControlRoom).
-- **Paid agent tools (eval 2026-10-22):** Codex stays as the merge reviewer; Cursor ($20 legacy Pro) stays for now while a Grok Bot job comes up on its own; Bitrig gets a greenfield test against the playbook by 2026-11-07 (`~/dev/tool-eval-2026-11/decision.md`).
+- **Paid agent tools (eval 2026-10-22):** Codex stays as the merge reviewer; Cursor ($20 legacy Pro) stays for now while a Grok Bot job comes up on its own; Bitrig was cancelled on 2026-11-05 without the greenfield test, for lack of time. Erik will revisit it in January 2027 and run the test then (`~/dev/tool-eval-2026-11/decision.md`).
 
 ## 9. Open items / immediate next steps
 

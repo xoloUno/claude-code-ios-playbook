@@ -10,10 +10,14 @@ when the host changes.
 free GitHub Pages to custom domain at launch, hosting subscription expiration, consolidating
 legal pages for multiple apps under one domain.
 
-**Host the pages in a separate public repo.** App repos are private, and GitHub Pages serves
-private repos only on paid plans, so pages in the app repo's `docs/` return 404. Bootstrap
-points the URLs at `https://<org>.github.io/<app>-legal/` and writes the page templates to
-`legal/`; move them into a public `<org>/<app>-legal` repo with Pages serving `main` `/`.
+**Host the pages in a separate public `<app>-web` repo** (`kendibah-app` → `kendibah-web`). App
+repos are private, and GitHub Pages serves private repos only on paid plans, so pages in the
+app repo's `docs/` return 404. The web repo holds `index.html` (the support and marketing
+URL, which must link to a contact address), `privacy.html` and `terms.html`. Bootstrap writes
+those templates to `web/` and points the URLs at `https://<org>.github.io/<app>-web/`; move
+them into the web repo with GitHub Pages serving `main` `/`. With a custom domain, host the
+web repo where the domain lives (kendibah.com: Cloudflare Pages from `main`, output `/`, no
+build), then run the update script below. Merging to the web repo's `main` publishes the site.
 `/preflight` checks that every URL returns 200.
 
 **Apple's Standard EULA** is `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`.

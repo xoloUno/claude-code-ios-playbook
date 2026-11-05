@@ -568,20 +568,24 @@
  4. Push to a feature/fix branch, not `main`
 --- a/.claude/rules/legal-urls.md
 +++ b/.claude/rules/legal-urls.md
-@@ -11,2 +11,12 @@
+@@ -11,2 +11,16 @@
  legal pages for multiple apps under one domain.
 +
-+**Host the pages in a separate public repo.** App repos are private, and GitHub Pages serves
-+private repos only on paid plans, so pages in the app repo's `docs/` return 404. Bootstrap
-+points the URLs at `https://<org>.github.io/<app>-legal/` and writes the page templates to
-+`legal/`; move them into a public `<org>/<app>-legal` repo with Pages serving `main` `/`.
++**Host the pages in a separate public `<app>-web` repo** (`kendibah-app` → `kendibah-web`). App
++repos are private, and GitHub Pages serves private repos only on paid plans, so pages in the
++app repo's `docs/` return 404. The web repo holds `index.html` (the support and marketing
++URL, which must link to a contact address), `privacy.html` and `terms.html`. Bootstrap writes
++those templates to `web/` and points the URLs at `https://<org>.github.io/<app>-web/`; move
++them into the web repo with GitHub Pages serving `main` `/`. With a custom domain, host the
++web repo where the domain lives (kendibah.com: Cloudflare Pages from `main`, output `/`, no
++build), then run the update script below. Merging to the web repo's `main` publishes the site.
 +`/preflight` checks that every URL returns 200.
 +
 +**Apple's Standard EULA** is `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`.
 +The older `…/dev/stdevapps/` returns 404. An app with auto-renewable subscriptions needs a
 +working Terms of Use (EULA) link in its description (Guideline 3.1.2).
  
-@@ -88,5 +98,7 @@
+@@ -88,5 +102,7 @@
  # 2. Per-locale URL files. Iterate actual locale dirs so we don't hardcode
 -#    a list that drifts from reality.
 +#    a list that drifts from reality. review_information/ holds App Review
@@ -590,21 +594,21 @@
  for locale_dir in "$METADATA_DIR"/*/; do
 +  [ "$(basename "$locale_dir")" = review_information ] && continue
    printf '%s' "$BASE_URL/privacy.html" > "$locale_dir/privacy_url.txt"
-@@ -101,2 +113,4 @@
+@@ -101,2 +117,4 @@
  #    matches only URLs ending in /privacy.html or /terms.html.
 +#    `-i.bak` + rm works with both BSD (macOS) and GNU (Linux, CI) sed;
 +#    `-i ''` is BSD-only.
  DESC_COUNT=0
-@@ -105,3 +119,3 @@
+@@ -105,3 +123,3 @@
    [ -f "$desc" ] || continue
 -  sed -E -i '' \
 +  sed -E -i.bak \
      -e "s|https://[^[:space:]]+/privacy\\.html|$BASE_URL/privacy.html|g" \
-@@ -109,2 +123,3 @@
+@@ -109,2 +127,3 @@
      "$desc"
 +  rm -f "$desc.bak"
    DESC_COUNT=$((DESC_COUNT + 1))
-@@ -147 +162,2 @@
+@@ -147 +166,2 @@
    to verify state.
 +- **The script must run under both BSD and GNU sed** — cloud sessions and CI use GNU.
 --- a/.claude/rules/metadata-translation.md

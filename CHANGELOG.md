@@ -71,8 +71,9 @@ the iOS 27.1 SDK interfaces and the EULA links with `curl`.
 
 - **Legal pages.** App repos are private, and GitHub Pages serves private repos only on paid
   plans, so the pages bootstrap put in `docs/` returned 404. Bootstrap now writes the
-  templates to `legal/`, points the metadata URLs at `https://<org>.github.io/<app>-legal/`,
-  and its manual steps say to move the pages into that public repo. `legal-urls.md` says
+  templates to `web/`, points the metadata URLs at `https://<org>.github.io/<app>-web/`,
+  and its manual steps say to move the pages into that public `<app>-web` repo (Kendibah's
+  pattern: `kendibah-web`, served on kendibah.com by Cloudflare Pages). `legal-urls.md` says
   why and gives Apple's working EULA URL (`…/dev/stdeula/`; `…/dev/stdevapps/` is 404). Its
   `update-legal-urls.sh` template now runs under GNU sed (`-i.bak` + `rm`) and skips
   `fastlane/metadata/review_information/`.
@@ -107,7 +108,7 @@ the iOS 27.1 SDK interfaces and the EULA links with `curl`.
 release or re-render. By hand, on contact: add `.claude` to `.swiftlint.yml`'s `excluded:`
 and `/.claude/launch.json` to `.gitignore`; apply the two script fixes to
 `scripts/update-legal-urls.sh`; if the legal pages are served from the private app repo,
-move them to a public `<app>-legal` repo; and replace any `stdevapps` EULA link with
+move them to a public `<app>-web` repo; and replace any `stdevapps` EULA link with
 `stdeula`.
 
 ## 2026-11-04 — Build Check runs on pull requests, not on every push

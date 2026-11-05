@@ -82,7 +82,7 @@ bash '_playbook/bootstrap.sh'
 - Lefthook pre-commit hooks (SwiftLint, Gitleaks, conventional commit validation)
 - Claude Code hooks (auto-lint on every file edit)
 - Claude Code slash commands (`/feature`, `/test`, `/review`)
-- Legal doc templates in `legal/`, to move into a public `<app>-legal` repo for GitHub Pages
+- Website and legal page templates in `web/`, to move into a public `<app>-web` repo
 - Fastlane metadata directory for future automation
 - Release notes draft file
 - Proper .gitignore
@@ -1449,8 +1449,8 @@ later if you need them.
 **Legal & Hosting:**
 - [ ] Privacy policy finalized in `privacy.html` — all placeholders replaced
 - [ ] Terms of service finalized in `terms.html`
-- [ ] Both pages live in the public `<app>-legal` repo with GitHub Pages on (Settings →
-      Pages → `main`, `/`); see `legal-urls.md`
+- [ ] Both pages live in the public `<app>-web` repo, served from its `main` (GitHub Pages,
+      or the custom domain's host); see `legal-urls.md`
 - [ ] Both URLs verified accessible (`/preflight` checks every metadata URL)
 
 **App Store Connect:**

@@ -848,12 +848,13 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
 RELEASE
-# --- Legal page templates ---
+# --- Website and legal page templates ---
 # The app repo is private, and GitHub Pages serves private repos only on paid plans, so these
-# templates move into a public "$REPO_NAME-legal" repo (see the manual steps at the end and
-# legal-urls.md). The metadata URLs below already point there.
-mkdir -p legal
-cat > legal/index.html << LANDINGHTML
+# pages move into a public "<app>-web" repo (kendibah-app -> kendibah-web; see the manual steps
+# at the end and legal-urls.md). The metadata URLs below already point there.
+WEB_REPO="${REPO_NAME%-app}-web"
+mkdir -p web
+cat > web/index.html << LANDINGHTML
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>$APP_NAME</title>
@@ -869,7 +870,7 @@ cat > legal/index.html << LANDINGHTML
 </html>
 LANDINGHTML
 # Placeholder legal docs — fill in before App Store submission
-cat > legal/privacy.html << 'PRIVACYHTML'
+cat > web/privacy.html << 'PRIVACYHTML'
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Privacy Policy</title>
@@ -888,7 +889,7 @@ cat > legal/privacy.html << 'PRIVACYHTML'
 </body>
 </html>
 PRIVACYHTML
-cat > legal/terms.html << 'TERMSHTML'
+cat > web/terms.html << 'TERMSHTML'
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Terms of Service</title>
@@ -926,11 +927,11 @@ METADESC
 cat > fastlane/metadata/en-US/keywords.txt << 'KEYWORDS'
 KEYWORDS
 echo "Initial release." > fastlane/metadata/en-US/release_notes.txt
-echo "https://$ORG.github.io/$REPO_NAME-legal/privacy.html" > fastlane/metadata/en-US/privacy_url.txt
-echo "https://$ORG.github.io/$REPO_NAME-legal/" > fastlane/metadata/en-US/support_url.txt
+echo "https://$ORG.github.io/$WEB_REPO/privacy.html" > fastlane/metadata/en-US/privacy_url.txt
+echo "https://$ORG.github.io/$WEB_REPO/" > fastlane/metadata/en-US/support_url.txt
 cat > fastlane/metadata/en-US/promotional_text.txt << 'PROMO'
 PROMO
-echo "https://$ORG.github.io/$REPO_NAME-legal/" > fastlane/metadata/en-US/marketing_url.txt
+echo "https://$ORG.github.io/$WEB_REPO/" > fastlane/metadata/en-US/marketing_url.txt
 # --- Fastlane Deliverfile ---
 cat > fastlane/Deliverfile << 'DELIVERFILE'
 app_identifier CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
@@ -1159,6 +1160,6 @@ echo "   2. Create app record in App Store Connect"
 echo "   3. Create provisioning profile for $BUNDLE_ID"
 echo "   4. Add GitHub Secrets (see Phase 1 in ios-project-playbook.md)"
 echo "   5. Copy .env.fastlane (same ASC key values as your other apps) into the project root: fastlane and scripts/asc-query.rb need it"
-echo "   6. Create the public repo $ORG/$REPO_NAME-legal, move legal/*.html into it, and turn on GitHub Pages there (main, /)"
+echo "   6. Create the public repo $ORG/$WEB_REPO, move web/*.html into it, and turn on GitHub Pages there (main, /)"
 echo "   7. Open AGENTS.md (CLAUDE.md links to it) and fill in its project-specific sections (core problem, tech stack, etc.)"
 echo ""

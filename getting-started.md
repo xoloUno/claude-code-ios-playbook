@@ -351,10 +351,12 @@ ASC_KEY_FILEPATH=~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8
 
 **6. Publish the legal pages**
 - The app repo is private, and GitHub Pages serves private repos only on paid plans
-- Create a public repo named `<app>-legal` and move the files from the app's `legal/` folder
-  into its root
+- Create a public repo named `<app>-web` (`kendibah-app` → `kendibah-web`) and move the files
+  from the app's `web/` folder into its root
 - In that repo: Settings → Pages → Deploy from a branch → `main`, folder `/` → Save
-- The metadata URLs bootstrap wrote already point at `https://<org>.github.io/<app>-legal/`
+- The metadata URLs bootstrap wrote already point at `https://<org>.github.io/<app>-web/`
+- With a custom domain later, see `legal-urls.md` (Kendibah serves kendibah.com from its web
+  repo through Cloudflare Pages)
 
 ---
 

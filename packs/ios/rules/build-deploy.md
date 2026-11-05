@@ -60,6 +60,15 @@ Local deploy saves ~250 GitHub Actions credits per upload and is faster.
 > needs a separate `update_code_signing_settings` call and provisioning profile per target.
 > See `ios-project-playbook.md` §4.1 for the full multi-target signing setup.
 
+**Profiles from an agent's shell.** When a device build needs a profile refresh
+(`-allowProvisioningUpdates`, say after Apple grants a restricted entitlement), `xcodebuild`
+in an agent's shell reports "No Accounts" even with an Apple ID signed in to Xcode, then
+blames the entitlement ("requires approval from Apple"). Pass the ASC API key from
+`.env.fastlane` instead: `-authenticationKeyPath "$ASC_KEY_FILEPATH" -authenticationKeyID
+"$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"`. Keep profile backups outside the
+profile folders: `xcodebuild` tries to load every file there and logs a warning per backup on
+each archive, burying real signing errors.
+
 ## App Store Release
 
 ```bash

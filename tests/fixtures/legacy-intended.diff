@@ -162,7 +162,23 @@
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
 +- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -20,7 +21,15 @@
+@@ -9,4 +10,7 @@
+ Steps:
+-1. **Check provisioning profiles** before anything else. Run:
+-   `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
++1. **Check provisioning profiles** before anything else. Current Xcode and `fastlane sigh`
++   keep them in `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`; older installs
++   are in `~/Library/MobileDevice/Provisioning Profiles/`. List the profile names in both
++   (file names don't carry them):
++   `find ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles ~/Library/MobileDevice/Provisioning\ Profiles -name '*.mobileprovision' 2>/dev/null | while IFS= read -r f; do security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw -o - - 2>/dev/null; done`
+    Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
+@@ -14,3 +18,4 @@
+    Tell the user which profiles are missing and that they need to download them from
+-   Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
++   Apple Developer Portal → Profiles and install them (double-click the file, or copy it to
++   `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`).
+    Offer to fall back to GitHub Actions instead.
+@@ -20,7 +25,15 @@
  5. If upload succeeds, ask user if they want to tag this release
 -6. Push main with `[skip ci]` to sync remote without triggering any workflows
 -7. Update "Current State" in CLAUDE.md with the deploy
@@ -251,7 +267,23 @@
 +- Must be on `main` branch (if not, its PR must merge first; see the core merge checklist)
 +- The working tree must be clean (`git status --porcelain` prints nothing)
  - Provisioning profiles must be installed locally (see check below)
-@@ -36,7 +37,15 @@
+@@ -9,4 +10,7 @@
+ Steps:
+-1. **Check provisioning profiles** before anything else. Run:
+-   `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
++1. **Check provisioning profiles** before anything else. Current Xcode and `fastlane sigh`
++   keep them in `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`; older installs
++   are in `~/Library/MobileDevice/Provisioning Profiles/`. List the profile names in both
++   (file names don't carry them):
++   `find ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles ~/Library/MobileDevice/Provisioning\ Profiles -name '*.mobileprovision' 2>/dev/null | while IFS= read -r f; do security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw -o - - 2>/dev/null; done`
+    Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
+@@ -14,3 +18,4 @@
+    Tell the user which profiles are missing and that they need to download them from
+-   Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
++   Apple Developer Portal → Profiles and install them (double-click the file, or copy it to
++   `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`).
+    Offer to fall back to GitHub Actions instead.
+@@ -36,7 +41,15 @@
  8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 -9. Push main with `[skip ci]` to sync remote without triggering any workflows
 -10. Update "Current State" in CLAUDE.md with the release
@@ -463,15 +495,27 @@
  
 --- a/.claude/rules/build-deploy.md
 +++ b/.claude/rules/build-deploy.md
-@@ -76,2 +76,7 @@
+@@ -62,2 +62,11 @@
  
++**Profiles from an agent's shell.** When a device build needs a profile refresh
++(`-allowProvisioningUpdates`, say after Apple grants a restricted entitlement), `xcodebuild`
++in an agent's shell reports "No Accounts" even with an Apple ID signed in to Xcode, then
++blames the entitlement ("requires approval from Apple"). Pass the ASC API key from
++`.env.fastlane` instead: `-authenticationKeyPath "$ASC_KEY_FILEPATH" -authenticationKeyID
++"$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"`. Keep profile backups outside the
++profile folders: `xcodebuild` tries to load every file there and logs a warning per backup on
++each archive, burying real signing errors.
++
+ ## App Store Release
+@@ -75,2 +84,7 @@
+ Metadata lives in `fastlane/metadata/<locale>/`. Edit those files before running `/release`.
++
 +A lane that passes `sync_screenshots: true` to `deliver` fails unless
 +`FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS=1` is set (still beta-gated in fastlane 2.232).
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
-+
- **Screenshots — Shotsmith is the standard pipeline** (Flara's): it composes captioned + gradient
-@@ -117,2 +122,7 @@
+ 
+@@ -117,2 +131,7 @@
  
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
 +`project.pbxproj`, and CI that runs `xcodegen generate` first will hide a stale one. Regenerate
@@ -479,7 +523,7 @@
 +`MANUAL-TASKS.md` so a local session does it before merging.
 +
  ## Available Plugins & MCP Servers
-@@ -131,3 +141,3 @@
+@@ -131,3 +150,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
 +build verification (open a PR → Build Check workflow). For API
@@ -524,20 +568,24 @@
  4. Push to a feature/fix branch, not `main`
 --- a/.claude/rules/legal-urls.md
 +++ b/.claude/rules/legal-urls.md
-@@ -11,2 +11,12 @@
+@@ -11,2 +11,16 @@
  legal pages for multiple apps under one domain.
 +
-+**Host the pages in a separate public repo.** App repos are private, and GitHub Pages serves
-+private repos only on paid plans, so pages in the app repo's `docs/` return 404. Bootstrap
-+points the URLs at `https://<org>.github.io/<app>-legal/` and writes the page templates to
-+`legal/`; move them into a public `<org>/<app>-legal` repo with Pages serving `main` `/`.
++**Host the pages in a separate public `<app>-web` repo** (`kendibah-app` → `kendibah-web`). App
++repos are private, and GitHub Pages serves private repos only on paid plans, so pages in the
++app repo's `docs/` return 404. The web repo holds `index.html` (the support and marketing
++URL, which must link to a contact address), `privacy.html` and `terms.html`. Bootstrap writes
++those templates to `web/` and points the URLs at `https://<org>.github.io/<app>-web/`; move
++them into the web repo with GitHub Pages serving `main` `/`. With a custom domain, host the
++web repo where the domain lives (kendibah.com: Cloudflare Pages from `main`, output `/`, no
++build), then run the update script below. Merging to the web repo's `main` publishes the site.
 +`/preflight` checks that every URL returns 200.
 +
 +**Apple's Standard EULA** is `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`.
 +The older `…/dev/stdevapps/` returns 404. An app with auto-renewable subscriptions needs a
 +working Terms of Use (EULA) link in its description (Guideline 3.1.2).
  
-@@ -88,5 +98,7 @@
+@@ -88,5 +102,7 @@
  # 2. Per-locale URL files. Iterate actual locale dirs so we don't hardcode
 -#    a list that drifts from reality.
 +#    a list that drifts from reality. review_information/ holds App Review
@@ -546,21 +594,21 @@
  for locale_dir in "$METADATA_DIR"/*/; do
 +  [ "$(basename "$locale_dir")" = review_information ] && continue
    printf '%s' "$BASE_URL/privacy.html" > "$locale_dir/privacy_url.txt"
-@@ -101,2 +113,4 @@
+@@ -101,2 +117,4 @@
  #    matches only URLs ending in /privacy.html or /terms.html.
 +#    `-i.bak` + rm works with both BSD (macOS) and GNU (Linux, CI) sed;
 +#    `-i ''` is BSD-only.
  DESC_COUNT=0
-@@ -105,3 +119,3 @@
+@@ -105,3 +123,3 @@
    [ -f "$desc" ] || continue
 -  sed -E -i '' \
 +  sed -E -i.bak \
      -e "s|https://[^[:space:]]+/privacy\\.html|$BASE_URL/privacy.html|g" \
-@@ -109,2 +123,3 @@
+@@ -109,2 +127,3 @@
      "$desc"
 +  rm -f "$desc.bak"
    DESC_COUNT=$((DESC_COUNT + 1))
-@@ -147 +162,2 @@
+@@ -147 +166,2 @@
    to verify state.
 +- **The script must run under both BSD and GNU sed** — cloud sessions and CI use GNU.
 --- a/.claude/rules/metadata-translation.md

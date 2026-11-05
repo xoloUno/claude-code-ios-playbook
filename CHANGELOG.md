@@ -28,6 +28,42 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-05 — Core: review fallback, stacked PRs, `[skip ci]`, delegation guide
+
+The guardrail half of the 2026-11-05 inbox round (#42–#75).
+
+- **Core "Git":** finish a merge that a `commit-msg` hook rejects with
+  `git commit -m "chore(merge): …"`; in a PR stack, retarget the next PR before deleting a
+  merged branch, because deleting its base closes it.
+- **Core "Autonomy":** `[skip ci]` on intermediate pushes and stacked-branch merge commits;
+  fold small fixes and records into the next PR; a CI job that fails in seconds with no
+  steps is usually a billing block, so park with one note.
+- **Core "Second opinions":** if Codex is unavailable or out of quota, the merge review is
+  Claude Code's `/code-review` at high effort, named in the PR; a delegate's code is never
+  reviewed by its own vendor's model. A pointer to the new `tools/delegating.md` (roles,
+  plan review before briefs, the brief, Cursor and Codex launch recipes, orchestrator
+  chores).
+- **Core "Code Review Rules":** in wiring changes, a required user step with no production
+  caller is a finding.
+- **Core "Session hygiene":** suggest a fresh session once a long run's handoff is written.
+- **`/deploy` and `/release` step 1** read profile names from both profile folders; current
+  Xcode keeps them in `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`.
+- **`build-deploy.md`:** pass the ASC API key to `xcodebuild -allowProvisioningUpdates` from
+  an agent's shell, and keep profile backups out of the profile folders.
+- **Bootstrap:** the Fastfile names the project and scheme literally (fastlane runs lane code
+  from `fastlane/`, where `Dir.glob("*.xcodeproj")` finds nothing and the scheme turns nil);
+  the commit-msg hook accepts `Merge …` subjects.
+
+**Files affected:** `core/agents-core.md`, `tools/delegating.md` (new),
+`packs/ios/commands/{deploy,release}.md`, `packs/ios/rules/build-deploy.md`, `bootstrap.sh`.
+
+**What to do in your project:** the core block and command text arrive with the next plugin
+release or re-render. By hand: in `fastlane/Fastfile`, replace `Dir.glob("*.xcodeproj").first`
+with `"<App>.xcodeproj"` and `Dir.glob("*.xcodeproj").first.sub(".xcodeproj", "")` with
+`"<Scheme>"` before the next upload (broadsheet, dachipari and teewye still carry the
+template pattern); optionally add `|Merge .+` to the `conventional-commit` regex in
+`lefthook.yml`.
+
 ## 2026-11-05 — Inbox round: iOS traps, legal pages in a public repo, bootstrap fixes
 
 Curated inbox entries #31–#72 (mostly Kendibah, some Flara). API claims were checked against
@@ -35,8 +71,9 @@ the iOS 27.1 SDK interfaces and the EULA links with `curl`.
 
 - **Legal pages.** App repos are private, and GitHub Pages serves private repos only on paid
   plans, so the pages bootstrap put in `docs/` returned 404. Bootstrap now writes the
-  templates to `legal/`, points the metadata URLs at `https://<org>.github.io/<app>-legal/`,
-  and its manual steps say to move the pages into that public repo. `legal-urls.md` says
+  templates to `web/`, points the metadata URLs at `https://<org>.github.io/<app>-web/`,
+  and its manual steps say to move the pages into that public `<app>-web` repo (Kendibah's
+  pattern: `kendibah-web`, served on kendibah.com by Cloudflare Pages). `legal-urls.md` says
   why and gives Apple's working EULA URL (`…/dev/stdeula/`; `…/dev/stdevapps/` is 404). Its
   `update-legal-urls.sh` template now runs under GNU sed (`-i.bak` + `rm`) and skips
   `fastlane/metadata/review_information/`.
@@ -71,7 +108,7 @@ the iOS 27.1 SDK interfaces and the EULA links with `curl`.
 release or re-render. By hand, on contact: add `.claude` to `.swiftlint.yml`'s `excluded:`
 and `/.claude/launch.json` to `.gitignore`; apply the two script fixes to
 `scripts/update-legal-urls.sh`; if the legal pages are served from the private app repo,
-move them to a public `<app>-legal` repo; and replace any `stdevapps` EULA link with
+move them to a public `<app>-web` repo; and replace any `stdevapps` EULA link with
 `stdeula`.
 
 ## 2026-11-04 — Build Check runs on pull requests, not on every push

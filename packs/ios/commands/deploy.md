@@ -8,12 +8,16 @@ Prerequisites — abort if any fail:
 - Provisioning profiles must be installed locally (see check below)
 
 Steps:
-1. **Check provisioning profiles** before anything else. Run:
-   `ls ~/Library/MobileDevice/Provisioning\ Profiles/`
+1. **Check provisioning profiles** before anything else. Current Xcode and `fastlane sigh`
+   keep them in `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`; older installs
+   are in `~/Library/MobileDevice/Provisioning Profiles/`. List the profile names in both
+   (file names don't carry them):
+   `find ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles ~/Library/MobileDevice/Provisioning\ Profiles -name '*.mobileprovision' 2>/dev/null | while IFS= read -r f; do security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw -o - - 2>/dev/null; done`
    Verify that every profile name referenced in the Fastfile's `update_code_signing_settings`
    and `provisioningProfiles` is installed (__PROVISIONING_PROFILES__). If any are missing, STOP — do not run fastlane.
    Tell the user which profiles are missing and that they need to download them from
-   Apple Developer Portal → Profiles and copy them to `~/Library/MobileDevice/Provisioning Profiles/`.
+   Apple Developer Portal → Profiles and install them (double-click the file, or copy it to
+   `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`).
    Offer to fall back to GitHub Actions instead.
 2. Verify build compiles: build for iOS Simulator via XcodeBuildMCP
 3. Run SwiftLint: `/opt/homebrew/bin/swiftlint lint --strict --quiet`

@@ -21,12 +21,18 @@ plan restrictions. Verifying them is not authorization to change them.
 - Attribution follows the host's settings and the user's policy. Don't hardcode a
   co-author line.
 - Parallel agent sessions in one repository each get their own worktree.
+- If a `commit-msg` hook rejects git's default merge message, run `git merge --no-commit`,
+  then `git commit -m "chore(merge): bring in <branch>"`.
+- In a stack of PRs, deleting a merged PR's branch closes the PR based on it, and a closed
+  PR can't change its base. Merge without `--delete-branch`, run
+  `gh pr edit <next> --base main`, then delete the branch.
 
 ### Session hygiene
 - At session start, inspect existing changes. Preserve work you didn't make and carry on
   with independent work. Ask before altering, committing or stashing unrelated changes.
 - Checkpoint at logical milestones. If repeated mistakes suggest the context is degrading,
-  say so and suggest a fresh session. When autonomy applies, commit checkpoints to the task
+  say so and suggest a fresh session; do the same once a long run's handoff is written.
+  When autonomy applies, commit checkpoints to the task
   branch and push it; otherwise preserve work without committing or pushing automatically.
 - Before committing code changes, run the project's applicable declared validation gates.
   Use its test workflow when there is one, otherwise the documented test command. Report
@@ -39,6 +45,10 @@ plan restrictions. Verifying them is not authorization to change them.
   `/wrapup` asks for a commit, a push and a PR.
 - Don't ask about routine work. Commit to a task branch, push feature branches, open and
   update your own PRs, and merge a PR that meets the checklist below, then delete its branch.
+- Put `[skip ci]` on intermediate pushes, including merge commits that update a stacked
+  branch, but never on a PR's last push before merging: CI minutes cost money.
+- A merge review costs about the same for 10 lines as for 300, so fold small fixes and
+  records into the next PR. Keep risky or independent work in a PR of its own.
 - Merge checklist:
   - the work is finished, not a checkpoint;
   - the project's tests and lint pass on the PR's latest commit;
@@ -55,7 +65,9 @@ plan restrictions. Verifying them is not authorization to change them.
   - nothing in the PR needs the user (next bullet).
 
   For playbook shared source, `pytest` must also pass, and a compose diff must show only
-  the intended downstream changes. If any item fails, park the PR.
+  the intended downstream changes. If any item fails, park the PR. A CI job that fails in
+  seconds with no steps may be a billing block: if its check-run annotations name payments
+  or a spending limit, park with one note to the user rather than debugging.
 - These always need the user:
   - device testing;
   - App Store Connect and Developer Portal actions;
@@ -85,6 +97,12 @@ plan restrictions. Verifying them is not authorization to change them.
   `"$PLAYBOOK_HOME"/tools/codex-review.sh <prompt-file> <name>`, resolving `PLAYBOOK_HOME`
   as "Playbook lessons" says. One round; its findings are inputs, not approvals. The merge
   review in "Autonomy" runs the same command.
+- If Codex is unavailable or out of quota, run Claude Code's `/code-review` at high effort
+  with the same bar instead, and say in the PR which reviewer ran. Code a delegate wrote is
+  never reviewed by a model from the same vendor, so `/code-review` is also the merge review
+  for code Codex wrote.
+- To delegate implementation to another local agent, follow
+  `"$PLAYBOOK_HOME"/tools/delegating.md`.
 
 ### Handoffs and records
 - Anything that needs the user goes in `MANUAL-TASKS.md` at the repository root, not only in
@@ -145,4 +163,6 @@ it instead of creating a guessed destination.
 - Report only findings that could lose data, publish something private, do something
   irreversible, or break a routine workflow (build, test, commit, push, PR, merge, release).
 - Leave out style, naming, wording, and risks that need an unlikely setup.
+- In a change that wires features together, a user step it depends on (pairing, sign-in,
+  purchase, permission) with no production caller is a finding.
 - Suggest the smallest fix, and prefer removing code over adding machinery.

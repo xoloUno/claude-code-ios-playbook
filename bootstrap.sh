@@ -496,11 +496,11 @@ platform :ios do
     )
     increment_build_number(
       build_number: latest_testflight_build_number + 1,
-      xcodeproj: Dir.glob("*.xcodeproj").first
+      xcodeproj: "__APP_NAME__.xcodeproj"
     )
     update_code_signing_settings(
       use_automatic_signing: false,
-      path: Dir.glob("*.xcodeproj").first,
+      path: "__APP_NAME__.xcodeproj",
       team_id: CredentialsManager::AppfileConfig.try_fetch_value(:team_id),
       profile_name: ENV["PROVISIONING_PROFILE_NAME"],
       bundle_identifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
@@ -510,7 +510,7 @@ platform :ios do
     # update_code_signing_settings block per target here.
     # See ios-project-playbook.md §4.1 for multi-target signing.
     build_app(
-      scheme: Dir.glob("*.xcodeproj").first.sub(".xcodeproj", ""),
+      scheme: "__APP_NAME__",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
@@ -532,11 +532,11 @@ platform :ios do
     )
     increment_build_number(
       build_number: latest_testflight_build_number + 1,
-      xcodeproj: Dir.glob("*.xcodeproj").first
+      xcodeproj: "__APP_NAME__.xcodeproj"
     )
     update_code_signing_settings(
       use_automatic_signing: false,
-      path: Dir.glob("*.xcodeproj").first,
+      path: "__APP_NAME__.xcodeproj",
       team_id: CredentialsManager::AppfileConfig.try_fetch_value(:team_id),
       profile_name: ENV["PROVISIONING_PROFILE_NAME"],
       bundle_identifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
@@ -544,7 +544,7 @@ platform :ios do
     )
     # If app has extension targets, add signing blocks here (same as beta lane).
     build_app(
-      scheme: Dir.glob("*.xcodeproj").first.sub(".xcodeproj", ""),
+      scheme: "__APP_NAME__",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
@@ -640,6 +640,9 @@ platform :ios do
   end
 end
 FASTFILE
+# fastlane runs a lane's own Ruby from fastlane/, so a Dir.glob("*.xcodeproj") written in the lane
+# finds nothing and the scheme turns nil. Write the literal project and scheme names instead.
+sed -i '' "s|__APP_NAME__|$APP_NAME|g" fastlane/Fastfile
 # --- GitHub Actions workflows ---
 mkdir -p .github/workflows
 cat > .github/workflows/build-check.yml << 'BUILDCHECK'
@@ -845,12 +848,13 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
 RELEASE
-# --- Legal page templates ---
+# --- Website and legal page templates ---
 # The app repo is private, and GitHub Pages serves private repos only on paid plans, so these
-# templates move into a public "$REPO_NAME-legal" repo (see the manual steps at the end and
-# legal-urls.md). The metadata URLs below already point there.
-mkdir -p legal
-cat > legal/index.html << LANDINGHTML
+# pages move into a public "<app>-web" repo (kendibah-app -> kendibah-web; see the manual steps
+# at the end and legal-urls.md). The metadata URLs below already point there.
+WEB_REPO="${REPO_NAME%-app}-web"
+mkdir -p web
+cat > web/index.html << LANDINGHTML
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>$APP_NAME</title>
@@ -866,7 +870,7 @@ cat > legal/index.html << LANDINGHTML
 </html>
 LANDINGHTML
 # Placeholder legal docs — fill in before App Store submission
-cat > legal/privacy.html << 'PRIVACYHTML'
+cat > web/privacy.html << 'PRIVACYHTML'
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Privacy Policy</title>
@@ -885,7 +889,7 @@ cat > legal/privacy.html << 'PRIVACYHTML'
 </body>
 </html>
 PRIVACYHTML
-cat > legal/terms.html << 'TERMSHTML'
+cat > web/terms.html << 'TERMSHTML'
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Terms of Service</title>
@@ -923,11 +927,11 @@ METADESC
 cat > fastlane/metadata/en-US/keywords.txt << 'KEYWORDS'
 KEYWORDS
 echo "Initial release." > fastlane/metadata/en-US/release_notes.txt
-echo "https://$ORG.github.io/$REPO_NAME-legal/privacy.html" > fastlane/metadata/en-US/privacy_url.txt
-echo "https://$ORG.github.io/$REPO_NAME-legal/" > fastlane/metadata/en-US/support_url.txt
+echo "https://$ORG.github.io/$WEB_REPO/privacy.html" > fastlane/metadata/en-US/privacy_url.txt
+echo "https://$ORG.github.io/$WEB_REPO/" > fastlane/metadata/en-US/support_url.txt
 cat > fastlane/metadata/en-US/promotional_text.txt << 'PROMO'
 PROMO
-echo "https://$ORG.github.io/$REPO_NAME-legal/" > fastlane/metadata/en-US/marketing_url.txt
+echo "https://$ORG.github.io/$WEB_REPO/" > fastlane/metadata/en-US/marketing_url.txt
 # --- Fastlane Deliverfile ---
 cat > fastlane/Deliverfile << 'DELIVERFILE'
 app_identifier CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
@@ -1036,7 +1040,7 @@ commit-msg:
     conventional-commit:
       run: |
         MSG=$(head -1 "{1}")
-        echo "$MSG" | grep -qE '^(feat|fix|docs|refactor|test|chore|ui|perf|ci)(\([a-z0-9-]+\))?!?: .{1,72}$' || \
+        echo "$MSG" | grep -qE '^((feat|fix|docs|refactor|test|chore|ui|perf|ci)(\([a-z0-9-]+\))?!?: .{1,72}|Merge (branch|remote-tracking branch|pull request|tag|commit) .+)$' || \
         (echo "❌ Commit message must follow conventional commits format" && \
          echo "   Example: feat(live-activity): add stop button" && exit 1)
 LEFTHOOK
@@ -1156,6 +1160,6 @@ echo "   2. Create app record in App Store Connect"
 echo "   3. Create provisioning profile for $BUNDLE_ID"
 echo "   4. Add GitHub Secrets (see Phase 1 in ios-project-playbook.md)"
 echo "   5. Copy .env.fastlane (same ASC key values as your other apps) into the project root: fastlane and scripts/asc-query.rb need it"
-echo "   6. Create the public repo $ORG/$REPO_NAME-legal, move legal/*.html into it, and turn on GitHub Pages there (main, /)"
+echo "   6. Create the public repo $ORG/$WEB_REPO, move web/*.html into it, and turn on GitHub Pages there (main, /)"
 echo "   7. Open AGENTS.md (CLAUDE.md links to it) and fill in its project-specific sections (core problem, tech stack, etc.)"
 echo ""

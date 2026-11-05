@@ -44,6 +44,11 @@ cd <worktree> && cursor-agent -p --trust --workspace "$PWD" --model <model> "<br
   so `cd` first; otherwise the global config applies.
 - Pass neither `--force` (auto mode blocks it as an unsafe agent) nor `--sandbox` (Cursor
   then can't build, and two of four sandboxed tasks came back with compile errors).
+- Nothing above stops Cursor reading personal folders (`~/Documents` holds the `.p8` ASC
+  keys), and the playbook's policy is an OS-level read deny for every local agent but
+  Claude. Kendibah's batches ran without one. Before the next batch, run it under a
+  Seatbelt profile like the 2026-10 tool eval's (`~/dev/tool-eval-2026-11/cursor-fence.sb`
+  with `run-cursor.sh`), cut down to the credential denies, and check it still builds.
 - Launch it from Claude Code, not from inside another agent's sandbox: a nested agent
   inherits its parent's sandbox. Started from inside Codex, every command came back
   "Rejected:" with no reason. Treat "Rejected:" as "nothing ran".

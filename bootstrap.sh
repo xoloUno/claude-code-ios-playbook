@@ -1040,7 +1040,7 @@ commit-msg:
     conventional-commit:
       run: |
         MSG=$(head -1 "{1}")
-        echo "$MSG" | grep -qE '^((feat|fix|docs|refactor|test|chore|ui|perf|ci)(\([a-z0-9-]+\))?!?: .{1,72}|Merge .+)$' || \
+        echo "$MSG" | grep -qE '^((feat|fix|docs|refactor|test|chore|ui|perf|ci)(\([a-z0-9-]+\))?!?: .{1,72}|Merge (branch|remote-tracking branch|pull request|tag|commit) .+)$' || \
         (echo "❌ Commit message must follow conventional commits format" && \
          echo "   Example: feat(live-activity): add stop button" && exit 1)
 LEFTHOOK

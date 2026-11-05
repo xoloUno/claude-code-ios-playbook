@@ -46,7 +46,7 @@ plan restrictions. Verifying them is not authorization to change them.
 - Don't ask about routine work. Commit to a task branch, push feature branches, open and
   update your own PRs, and merge a PR that meets the checklist below, then delete its branch.
 - Put `[skip ci]` on intermediate pushes, including merge commits that update a stacked
-  branch: CI minutes cost money.
+  branch, but never on a PR's last push before merging: CI minutes cost money.
 - A merge review costs about the same for 10 lines as for 300, so fold small fixes and
   records into the next PR. Keep risky or independent work in a PR of its own.
 - Merge checklist:
@@ -66,8 +66,8 @@ plan restrictions. Verifying them is not authorization to change them.
 
   For playbook shared source, `pytest` must also pass, and a compose diff must show only
   the intended downstream changes. If any item fails, park the PR. A CI job that fails in
-  seconds with no steps is usually a billing block (see its check-run annotations): park
-  with one note to the user rather than debugging.
+  seconds with no steps may be a billing block: if its check-run annotations name payments
+  or a spending limit, park with one note to the user rather than debugging.
 - These always need the user:
   - device testing;
   - App Store Connect and Developer Portal actions;
@@ -99,7 +99,8 @@ plan restrictions. Verifying them is not authorization to change them.
   review in "Autonomy" runs the same command.
 - If Codex is unavailable or out of quota, run Claude Code's `/code-review` at high effort
   with the same bar instead, and say in the PR which reviewer ran. Code a delegate wrote is
-  never reviewed by a model from the same vendor.
+  never reviewed by a model from the same vendor, so `/code-review` is also the merge review
+  for code Codex wrote.
 - To delegate implementation to another local agent, follow
   `"$PLAYBOOK_HOME"/tools/delegating.md`.
 

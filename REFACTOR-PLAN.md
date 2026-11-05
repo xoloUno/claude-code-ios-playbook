@@ -664,8 +664,15 @@ the workflow output (run `wf_e73fd29f-ed9`).
       section after a session read a Grok Bot request as a Grok chatbot research hand-off.
       Curated again 2026-10-28 (#22–#30, checked against Apple's docs, with a Codex second
       opinion on keeping it lean): 4 adopted, 3 discarded, and #26 and #28 (tvOS)
-      deferred until a second tvOS or multiplatform app. Run `/curate` when the inbox gets
-      in the way again.
+      deferred until a second tvOS or multiplatform app. Curated again 2026-11-05 (#31–#75,
+      45 entries, mostly Kendibah; APIs checked against the iOS 27.1 SDK): iOS pack and
+      bootstrap fixes merged in #70; the core, deploy and delegation half is #71, waiting
+      for the owner; #61 and #67 deferred as owner decisions. Run `/curate` when the inbox
+      gets in the way again.
+    - Instruction budget: Flara's `AGENTS.md` (35.7 KB) and Kendibah's (74 KB) are past
+      Codex's 32 KiB default, and #71's core growth pushes c3d's (32.2 KB) past it too.
+      The core block is at the top, so Codex drops the project's own tail. Trim each in its
+      own project, on contact.
     - 3a, `loadcheck.sh` as a playbook tool: the next time an instructions-loading check is
       needed (`codex-review.sh` landed with autonomy).
     - Phase C's `/context-health` and `/preflight`, as above.

@@ -432,6 +432,11 @@
 +`MANUAL-TASKS.md` so a local session does it before merging.
 +
  ## Available Plugins & MCP Servers
+@@ -131,3 +141,3 @@
+ Cloud sessions do not have access to MCP tools. Use GitHub Actions for
+-build verification (push to branch → Build Check workflow). For API
++build verification (open a PR → Build Check workflow). For API
+ verification in cloud sessions, fall back to web search on developer.apple.com.
 --- a/.claude/rules/git-workflow.md
 +++ b/.claude/rules/git-workflow.md
 @@ -40,3 +40,4 @@

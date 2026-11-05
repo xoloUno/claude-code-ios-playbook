@@ -149,18 +149,29 @@ profile secrets change per app. Use GitHub Organization secrets for the shared o
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| **Build Check** | Push to any branch except `main` | Simulator compile check — catches errors in cloud sessions |
+| **Build Check** | Pull request opened or updated, or run by hand (`gh workflow run build-check.yml --ref <branch>`) | Simulator compile check — catches errors in cloud sessions |
 | **TestFlight Deploy** | Manual dispatch only (`workflow_dispatch`) | Emergency fallback — normally use `/deploy` locally |
 
 **Local sessions deploy locally.** Use the `/deploy` slash command to build, sign, and
 upload to TestFlight from your machine. This is faster than CI and costs zero GitHub
-Actions credits. Local sessions should include `[skip ci]` in commit messages to skip
-all workflows (they verify builds locally and deploy locally). Under the core "Autonomy"
-rules, leave it off the last push before a merge, so CI checks the PR's final commit.
+Actions credits. A push to a branch with no open PR runs no workflow. On a branch with an
+open PR, local sessions put `[skip ci]` in the commit message of every push but the last
+(they verify builds locally and deploy locally); under the core "Autonomy" rules, leave it
+off the last push before a merge, so CI checks the PR's final commit. GitHub also skips
+`pull_request` runs for a head commit marked `[skip ci]`.
+
+**Why pull requests only:** on a private repo, every macOS minute draws on the account's
+included Actions usage, and macOS runners cost about ten times Linux per minute (GitHub
+Free, checked 2026-11-04: $12 a month, about 190 minutes at $0.062). Triggering on every
+branch push, an autonomous run pushing ten stacked PRs and their merge commits used a
+month's allowance in four days; later runs were blocked with a "payments have failed or
+your spending limit" annotation. Set an Actions budget in Settings → Billing and plans →
+Budgets and alerts, with "Stop usage when budget limit is reached", to cap any overage.
 
 **Cloud sessions rely on Build Check.** Cloud sessions cannot build or deploy. They
 must NOT include `[skip ci]` — the Build Check workflow is their only compilation
-verification. Cloud sessions should never push to `main`.
+verification, so they open a PR (a draft is fine) to get a build. Cloud sessions should
+never push to `main`.
 
 **Triggering TestFlight from CLI:** If local Fastlane fails or you need to deploy
 remotely, trigger the workflow manually: `gh workflow run testflight.yml`

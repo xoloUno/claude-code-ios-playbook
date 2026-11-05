@@ -28,6 +28,52 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-05 — Inbox round: iOS traps, legal pages in a public repo, bootstrap fixes
+
+Curated inbox entries #31–#72 (mostly Kendibah, some Flara). API claims were checked against
+the iOS 27.1 SDK interfaces and the EULA links with `curl`.
+
+- **Legal pages.** App repos are private, and GitHub Pages serves private repos only on paid
+  plans, so the pages bootstrap put in `docs/` returned 404. Bootstrap now writes the
+  templates to `legal/`, points the metadata URLs at `https://<org>.github.io/<app>-legal/`,
+  and its manual steps say to move the pages into that public repo. `legal-urls.md` says
+  why and gives Apple's working EULA URL (`…/dev/stdeula/`; `…/dev/stdevapps/` is 404). Its
+  `update-legal-urls.sh` template now runs under GNU sed (`-i.bak` + `rm`) and skips
+  `fastlane/metadata/review_information/`.
+- **`/preflight`** gains a "Links resolve" step: every metadata and `LegalURLs` URL must
+  return 200.
+- **`/status`** flags prunable worktrees and worktrees already merged into the default branch.
+- **Bootstrap:** `.swiftlint.yml` excludes `.claude` (agent worktrees failed `--strict`
+  lint); `.gitignore` ignores `/.claude/launch.json`; no empty `Models`/`Views`/`Services`
+  folders (XcodeGen drift between checkouts); a manual step to copy `.env.fastlane` in.
+- **iOS pack rules:** Simulator tooling traps, what the Simulator can't prove, and device
+  test loops (`simulator.md`); bounded async waits, version-relative fixtures, cancellation-
+  faithful doubles and one more Swift Testing compile trap (`testing.md`); `reorderable`
+  traps (`wwdc26-ios27.md`); `OpenIntent` + `TargetContentProvidingIntent` for controls that
+  open the app, and `LiveActivityIntent` running in the app (`app-intents.md`,
+  `wwdc25-ios26.md`); `Sendable` callback handlers, hex file names, SwiftUI and XcodeGen
+  traps (`code-style.md`); size-only cache bounds (`privacy-manifest.md`); a pointer to the
+  Grok Bot UI traps (`asc-troubleshooting.md`); a fake device server for capturing hardware
+  apps (`screenshot-pipeline.md`).
+- **`ios-project-playbook.md`:** §4.5 now prefers `OpenIntent` over the App Group bridge; new
+  §4.6 on LAN and watch links; Grok Bot UI traps under the ASC cheat sheet; the legal
+  checklist.
+- **`tools/codex-review.sh`** names the repository in the prompt, since Codex starts in an
+  empty scratch folder and could review nothing, or the wrong checkout.
+
+**Files affected:** `bootstrap.sh`, `getting-started.md`, `ios-project-playbook.md`,
+`.claude/commands/status.md`, `packs/ios/commands/preflight.md`, `packs/ios/rules/`
+(`app-intents`, `asc-troubleshooting`, `code-style`, `legal-urls`, `privacy-manifest`,
+`screenshot-pipeline`, `simulator`, `testing`, `wwdc25-ios26`, `wwdc26-ios27`),
+`tools/codex-review.sh`.
+
+**What to do in your project:** the rule and command text arrives with the next plugin
+release or re-render. By hand, on contact: add `.claude` to `.swiftlint.yml`'s `excluded:`
+and `/.claude/launch.json` to `.gitignore`; apply the two script fixes to
+`scripts/update-legal-urls.sh`; if the legal pages are served from the private app repo,
+move them to a public `<app>-legal` repo; and replace any `stdevapps` EULA link with
+`stdeula`.
+
 ## 2026-11-04 — Build Check runs on pull requests, not on every push
 
 On a private repo, every macOS minute draws on the account's included Actions usage, and

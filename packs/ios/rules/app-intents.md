@@ -1,5 +1,5 @@
 ---
-description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap, unreliable simulator dispatch, and where shortcuts actually surface
+description: App Intents / App Shortcuts gotchas — the 10-entry build-time cap, unreliable simulator dispatch, where shortcuts surface, and running control and Live Activity buttons in the app
 globs: **/*Intent*.swift, **/*Shortcut*.swift, **/*AppShortcuts*.swift
 ---
 
@@ -66,5 +66,25 @@ a separate API. Write device test steps for the real surfaces.
 
 If a localized app exposes App Shortcuts, give it an `AppShortcuts.xcstrings` with phrases for
 each locale. Without one, the Siri phrases exist only in the development language.
+
+## Controls and Live Activity buttons that run in the app
+
+- **A control that opens the app to a destination:** give it an intent that adopts
+  `OpenIntent` and `TargetContentProvidingIntent`, compile that intent into both the app and
+  the widget extension, and use it as `ControlWidgetButton(action:)`. The scene's
+  `.onAppIntentExecution(IntentType.self) { intent in … }` receives it with its target before
+  the scene becomes active, and `perform()` runs in the app process, on cold, warm and
+  foreground taps (iOS 27.0 Simulator). Files that use `onAppIntentExecution` need
+  `import AppIntents` next to SwiftUI. Never return `OpenURLIntent` with a custom scheme from
+  a control: the URL is dropped.
+- **A button that must run through the app's own model** (Live Activity, Control Center):
+  a `LiveActivityIntent` runs in the app's process even when its button lives in the widget
+  extension, so one command path serves the app, Siri, the Lock Screen and Control Center.
+  Compile it into both targets and put its `perform` body behind an app-only compilation
+  condition (`SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) <APP>_APP"` on the app
+  target). An intent launch has no scene, so work a `.task` starts (StoreKit listener, store
+  load) must also be reachable from the intent, through an idempotent `start()`.
+- Darwin notifications don't launch or resume a suspended app, so an extension-to-app relay
+  built on them works only while the app is in the foreground.
 
 See [`simulator.md`](simulator.md) for the broader "the simulator lies" gotchas.

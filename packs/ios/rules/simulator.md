@@ -1,5 +1,5 @@
 ---
-description: Simulator build/run hygiene — install over (don't uninstall), pin one sim by UDID, and never strip entitlements via signing overrides
+description: Simulator and device-loop hygiene — install over (don't uninstall), pin and boot one sim by UDID, never strip entitlements via signing overrides, and know what the Simulator can't prove
 globs: **/*
 ---
 
@@ -7,7 +7,8 @@ globs: **/*
 
 Three traps when building or running an app on a booted simulator for verification. All are
 correctness-critical: one silently destroys hand-built sim state, one splits your work across two
-sims, and one crashes the app at launch.
+sims, and one crashes the app at launch. Shorter traps and Simulator limits have their own
+sections.
 
 ## Install over the existing build — never uninstall to redeploy
 
@@ -37,6 +38,50 @@ iOS 26.5 and 27.0, say). Name lookups then resolve per tool: `simctl … | head 
 prep one and build, install or capture on the other. Resolve the UDID once and use it
 everywhere: `simctl` takes a UDID wherever it takes a name, and `xcodebuild` takes
 `-destination 'platform=iOS Simulator,id=<UDID>'`.
+
+Boot it first: `xcrun simctl boot <UDID>; xcrun simctl bootstatus <UDID> -b`. Given a
+shut-down destination, `xcodebuild test` has sat for 10+ minutes with no output and never
+booted it. Write the full log to a file rather than piping through `grep` or `-quiet`, so a
+hang shows as an empty log instead of a slow test.
+
+On Xcode 27.1, the iOS 27.1 runtime offers only the iPhone Duo device type, so checking a fix
+on 27.1 means creating a Duo sim.
+
+## Simulator tooling traps
+
+- Regenerating with `xcodegen generate` while Xcode has the project open resets Xcode's run
+  destination, and the next Xcode or MCP run quietly uses another sim. Re-select it.
+- After one Xcode run with a `.storekit` configuration, `simctl launch` on that sim keeps the
+  local StoreKit environment and its test transactions. A clean "never purchased" state
+  needs a fresh sim.
+- A screenshot taken right after a tap can show the previous frame. Wait about a second, or
+  use `xcrun simctl io <UDID> screenshot`.
+- To capture `print` output, run `xcrun simctl launch --console <UDID> <bundle-id>` in the
+  background redirected to a file; `--stdout=<path>` wrote nothing.
+- Crash reports land in `~/Library/Logs/DiagnosticReports/<App>-<date>.ips`.
+
+## What the Simulator can't prove
+
+Seen on the iOS 27.0 and 27.1 Simulators; each looks like an app bug:
+- `RemoteMediaSession.start` (NowPlaying) throws `internalFailure`. Test it on a device.
+- Multicast discovery (SSDP over `NWConnectionGroup`) receives only its own looped-back
+  packets, never the devices' unicast replies. Test networking modules in a scratch macOS
+  SwiftPM harness that copies the module sources, then on a device.
+- A synthesized tap doesn't end a `DragGesture(minimumDistance: 0)` used as a tap target; a
+  finger on a device does.
+
+Anything that crosses app suspension (a handshake approved in another app, background
+delivery) needs a device test too: a Mac or the Simulator never suspends the app.
+
+## Device test loops
+
+- Reinstalling without changing `CFBundleVersion` can leave iOS running the old build of an
+  app extension. Pass `CURRENT_PROJECT_VERSION=$(date +%Y%m%d%H%M)` to each device build in a
+  test loop, and have probe code log its own `CFBundleVersion`.
+- An extension is suspended between system callbacks, so a log written from a detached `Task`
+  may never reach disk. Write synchronously under a lock (`Synchronization.Mutex`).
+- `devicectl device copy from --domain-type appGroupDataContainer` reads only under
+  `Library`, `Documents` or `tmp`, not the container root.
 
 ## Don't strip entitlements via signing overrides on entitlement-gated apps
 

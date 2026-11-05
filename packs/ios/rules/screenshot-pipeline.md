@@ -120,6 +120,11 @@ When you spot wrong-theme/locale captures, check which side won before touching 
 If either disagrees with what was requested, the launch args lost the race — reset state, don't
 patch code.
 
+**Apps that control hardware:** to capture "connected" states without a real device, run a
+small fake device server on the Mac's loopback (for example a Python `http.server` speaking
+the device's HTTP API on 127.0.0.1), and seed the app's store with the fake device's identity
+and address. The Simulator reaches it at 127.0.0.1.
+
 ## Gitignore policy
 
 Add this block verbatim to the project `.gitignore`:

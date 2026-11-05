@@ -96,6 +96,8 @@ Secrets.swift
 # case-insensitive macOS gitignore doesn't also catch .claude/rules/manual-tasks.md.
 /MANUAL-TASKS.md
 /WORKLOG.md
+# Desktop app preview configs hold machine-specific paths.
+/.claude/launch.json
 # Screenshot pipeline — see .claude/rules/screenshot-pipeline.md
 # All regenerable: raw + framed captures, composed ASC images, upload staging.
 fastlane/screenshots/
@@ -192,8 +194,8 @@ struct ContentView: View {
     ContentView()
 }
 CONTENTSWIFT
-# --- Create standard subdirectories ---
-mkdir -p "$APP_NAME/Models" "$APP_NAME/Views" "$APP_NAME/Services"
+# No empty source folders: XcodeGen adds them as groups in this checkout but not in a fresh
+# clone or worktree (git doesn't track empty folders), so the project file would drift.
 # --- UI test target for screenshots ---
 mkdir -p "${APP_NAME}UITests"
 cat > "${APP_NAME}UITests/ScreenshotTests.swift" << SCREENSHOTSWIFT
@@ -843,9 +845,12 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
 RELEASE
-# --- Legal docs directory (for GitHub Pages) ---
-mkdir -p docs
-cat > docs/index.html << LANDINGHTML
+# --- Legal page templates ---
+# The app repo is private, and GitHub Pages serves private repos only on paid plans, so these
+# templates move into a public "$REPO_NAME-legal" repo (see the manual steps at the end and
+# legal-urls.md). The metadata URLs below already point there.
+mkdir -p legal
+cat > legal/index.html << LANDINGHTML
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>$APP_NAME</title>
@@ -861,7 +866,7 @@ cat > docs/index.html << LANDINGHTML
 </html>
 LANDINGHTML
 # Placeholder legal docs — fill in before App Store submission
-cat > docs/privacy.html << 'PRIVACYHTML'
+cat > legal/privacy.html << 'PRIVACYHTML'
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Privacy Policy</title>
@@ -880,7 +885,7 @@ cat > docs/privacy.html << 'PRIVACYHTML'
 </body>
 </html>
 PRIVACYHTML
-cat > docs/terms.html << 'TERMSHTML'
+cat > legal/terms.html << 'TERMSHTML'
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Terms of Service</title>
@@ -918,11 +923,11 @@ METADESC
 cat > fastlane/metadata/en-US/keywords.txt << 'KEYWORDS'
 KEYWORDS
 echo "Initial release." > fastlane/metadata/en-US/release_notes.txt
-echo "https://$ORG.github.io/$REPO_NAME/privacy.html" > fastlane/metadata/en-US/privacy_url.txt
-echo "https://$ORG.github.io/$REPO_NAME/" > fastlane/metadata/en-US/support_url.txt
+echo "https://$ORG.github.io/$REPO_NAME-legal/privacy.html" > fastlane/metadata/en-US/privacy_url.txt
+echo "https://$ORG.github.io/$REPO_NAME-legal/" > fastlane/metadata/en-US/support_url.txt
 cat > fastlane/metadata/en-US/promotional_text.txt << 'PROMO'
 PROMO
-echo "https://$ORG.github.io/$REPO_NAME/" > fastlane/metadata/en-US/marketing_url.txt
+echo "https://$ORG.github.io/$REPO_NAME-legal/" > fastlane/metadata/en-US/marketing_url.txt
 # --- Fastlane Deliverfile ---
 cat > fastlane/Deliverfile << 'DELIVERFILE'
 app_identifier CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
@@ -988,6 +993,7 @@ excluded:
   - build
   - .build
   - Pods
+  - .claude                 # agent worktrees under .claude/worktrees/ hold copies of the code
 disabled_rules:
   - trailing_comma          # personal preference — allow trailing commas
   - todo                    # TODOs are fine during development
@@ -1149,6 +1155,7 @@ echo "   1. Register bundle ID in Apple Developer Portal"
 echo "   2. Create app record in App Store Connect"
 echo "   3. Create provisioning profile for $BUNDLE_ID"
 echo "   4. Add GitHub Secrets (see Phase 1 in ios-project-playbook.md)"
-echo "   5. Enable GitHub Pages (Settings → Pages → main branch, /docs folder)"
-echo "   6. Open AGENTS.md (CLAUDE.md links to it) and fill in its project-specific sections (core problem, tech stack, etc.)"
+echo "   5. Copy .env.fastlane (same ASC key values as your other apps) into the project root: fastlane and scripts/asc-query.rb need it"
+echo "   6. Create the public repo $ORG/$REPO_NAME-legal, move legal/*.html into it, and turn on GitHub Pages there (main, /)"
+echo "   7. Open AGENTS.md (CLAUDE.md links to it) and fill in its project-specific sections (core problem, tech stack, etc.)"
 echo ""

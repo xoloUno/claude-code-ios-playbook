@@ -21,7 +21,10 @@ If none are present, the universal steps stand alone.
 ## Universal steps
 
 1. `git branch --show-current` and `git status --short` — current branch + dirty state.
-2. `git log --oneline -5` — recent commits on the current branch.
+2. `git log --oneline -5` — recent commits on the current branch. Also run
+   `git worktree list`: flag worktrees marked prunable (their folder is gone; suggest
+   `git worktree prune`) and worktrees whose commit is already on the default branch. Only
+   flag them: removing a worktree with uncommitted changes needs the user.
 3. `git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null` — ahead/behind vs
    the branch's upstream. Always `@{upstream}`, never a hardcoded `origin/main`: it
    resolves to whatever this branch tracks and stays silent when there is no upstream.

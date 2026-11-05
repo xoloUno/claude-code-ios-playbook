@@ -10,6 +10,16 @@ when the host changes.
 free GitHub Pages to custom domain at launch, hosting subscription expiration, consolidating
 legal pages for multiple apps under one domain.
 
+**Host the pages in a separate public repo.** App repos are private, and GitHub Pages serves
+private repos only on paid plans, so pages in the app repo's `docs/` return 404. Bootstrap
+points the URLs at `https://<org>.github.io/<app>-legal/` and writes the page templates to
+`legal/`; move them into a public `<org>/<app>-legal` repo with Pages serving `main` `/`.
+`/preflight` checks that every URL returns 200.
+
+**Apple's Standard EULA** is `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`.
+The older `…/dev/stdevapps/` returns 404. An app with auto-renewable subscriptions needs a
+working Terms of Use (EULA) link in its description (Guideline 3.1.2).
+
 ## The pattern
 
 Two small files give a single source of truth and a one-shot migration command.
@@ -86,9 +96,11 @@ EOF
 echo "✅ wrote $SWIFT_FILE"
 
 # 2. Per-locale URL files. Iterate actual locale dirs so we don't hardcode
-#    a list that drifts from reality.
+#    a list that drifts from reality. review_information/ holds App Review
+#    notes, not a locale.
 LOCALE_COUNT=0
 for locale_dir in "$METADATA_DIR"/*/; do
+  [ "$(basename "$locale_dir")" = review_information ] && continue
   printf '%s' "$BASE_URL/privacy.html" > "$locale_dir/privacy_url.txt"
   printf '%s' "$BASE_URL/" > "$locale_dir/marketing_url.txt"
   printf '%s' "$BASE_URL/" > "$locale_dir/support_url.txt"
@@ -99,14 +111,17 @@ echo "✅ updated privacy/marketing/support URLs in $LOCALE_COUNT locales"
 # 3. description.txt — rewrite embedded privacy.html / terms.html URLs.
 #    Apple's EULA and any unrelated link is untouched because the pattern
 #    matches only URLs ending in /privacy.html or /terms.html.
+#    `-i.bak` + rm works with both BSD (macOS) and GNU (Linux, CI) sed;
+#    `-i ''` is BSD-only.
 DESC_COUNT=0
 for locale_dir in "$METADATA_DIR"/*/; do
   desc="$locale_dir/description.txt"
   [ -f "$desc" ] || continue
-  sed -E -i '' \
+  sed -E -i.bak \
     -e "s|https://[^[:space:]]+/privacy\\.html|$BASE_URL/privacy.html|g" \
     -e "s|https://[^[:space:]]+/terms\\.html|$BASE_URL/terms.html|g" \
     "$desc"
+  rm -f "$desc.bak"
   DESC_COUNT=$((DESC_COUNT + 1))
 done
 echo "✅ rewrote privacy/terms URLs inside $DESC_COUNT description.txt files"
@@ -145,3 +160,4 @@ Apple's EULA URL and unrelated marketing links are left untouched.
   edit individual files by hand.
 - **The script is idempotent** — running it twice produces no diff. Safe to re-run
   to verify state.
+- **The script must run under both BSD and GNU sed** — cloud sessions and CI use GNU.

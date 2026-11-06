@@ -39,9 +39,10 @@ Owner decisions on inbox #67 and #61.
   match. `build-deploy.md` and `ios-project-playbook.md` §6.5.
 - **Upload wrapper (#61).** Bootstrap writes `scripts/fastlane.sh <beta|release|upload_metadata|upload_screenshots>`,
   generalized from Kendibah's `testflight-upload.sh`: it runs only on a clean `main`, uses
-  Homebrew Ruby, logs to `$TMPDIR`, redacts the key ID and path from what it prints, and
-  undoes fastlane's `.pbxproj`/`Info.plist` edits. `/deploy` and `/release` call it and keep
-  the inline command for projects without it. Because it's one named script, a
+  Homebrew Ruby, logs to `$TMPDIR`, redacts the key ID and path from what it prints, keeps
+  fastlane's report and README out of the repo, and undoes fastlane's `.pbxproj` and
+  `Info.plist` edits. `/deploy` and `/release` call it and keep the inline command for
+  projects without it. Because it's one named script, a
   `Bash(scripts/fastlane.sh:*)` allow rule in `.claude/settings.local.json` stops auto mode
   prompting; the user still approves each upload in chat (`getting-started.md`). New
   projects also ignore `/.claude/settings.local.json`.

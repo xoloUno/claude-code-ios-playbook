@@ -672,6 +672,9 @@ branch="$(git branch --show-current)"
 # Homebrew Ruby: the Gemfile.lock's bundler needs it (rules/build-deploy.md).
 export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+# Keep fastlane's run report and README out of the repo, so each run leaves the tree clean
+# (a committed report.xml would otherwise change every run and block the next lane).
+export FL_REPORT_PATH="${TMPDIR:-/tmp}" FASTLANE_SKIP_DOCS=1
 set -a
 # shellcheck disable=SC1091
 source .env.fastlane
@@ -701,11 +704,6 @@ grep -E "Successfully (exported|uploaded)|\[!\]|ERROR" "$LOG" | grep -v DVTProvi
 # fastlane sets the build number and signing at archive time without committing them. The tree
 # was clean before the run, so only fastlane's edits are restored.
 git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout -- 2>/dev/null || true
-for generated in fastlane/README.md fastlane/report.xml; do
-  if [ -f "$generated" ] && ! git ls-files --error-unmatch "$generated" >/dev/null 2>&1; then
-    rm "$generated"
-  fi
-done
 [ -z "$(git status --porcelain)" ] || echo "! changes remain that aren't fastlane's: check git status" >&2
 echo "fastlane exit $status"
 exit "$status"

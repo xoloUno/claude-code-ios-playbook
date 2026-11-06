@@ -178,11 +178,17 @@
 +   Apple Developer Portal → Profiles and install them (double-click the file, or copy it to
 +   `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`).
     Offer to fall back to GitHub Actions instead.
-@@ -20,7 +25,15 @@
+@@ -18,9 +23,20 @@
+ 3. Run SwiftLint: `/opt/homebrew/bin/swiftlint lint --strict --quiet`
+-4. Run: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
++4. Run `scripts/fastlane.sh beta`. If the project has no `scripts/fastlane.sh` (projects
++   bootstrapped before 2026-11-05), run `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
++   instead.
  5. If upload succeeds, ask user if they want to tag this release
 -6. Push main with `[skip ci]` to sync remote without triggering any workflows
 -7. Update "Current State" in CLAUDE.md with the deploy
-+6. Restore fastlane's project edits. fastlane sets the build number and signing at archive
++6. Restore fastlane's project edits (`scripts/fastlane.sh` already did; check
++   `git status --porcelain`). fastlane sets the build number and signing at archive
 +   time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
 +   restore just the ones that changed:
 +   `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.
@@ -283,11 +289,24 @@
 +   Apple Developer Portal → Profiles and install them (double-click the file, or copy it to
 +   `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`).
     Offer to fall back to GitHub Actions instead.
-@@ -36,7 +41,15 @@
+@@ -27,3 +32,3 @@
+ 3. **Sync metadata** to App Store Connect:
+-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane upload_metadata`
++   `scripts/fastlane.sh upload_metadata` (no script: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane upload_metadata`)
+ 4. Verify build compiles: build for iOS Simulator via XcodeBuildMCP
+@@ -31,12 +36,21 @@
+ 6. **Build and upload binary:**
+-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane release`
++   `scripts/fastlane.sh release` (no script: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane release`)
+ 7. Ask user if screenshots need uploading. If yes and `fastlane/screenshots/` has content:
+-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane upload_screenshots`
++   `scripts/fastlane.sh upload_screenshots` (no script: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane upload_screenshots`)
+    Otherwise remind them to upload manually in App Store Connect.
  8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
 -9. Push main with `[skip ci]` to sync remote without triggering any workflows
 -10. Update "Current State" in CLAUDE.md with the release
-+9. Restore fastlane's project edits. fastlane sets the build number and signing at archive
++9. Restore fastlane's project edits (`scripts/fastlane.sh` already did; check
++   `git status --porcelain`). fastlane sets the build number and signing at archive
 +   time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
 +   restore just the ones that changed:
 +   `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.
@@ -515,15 +534,25 @@
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
  
-@@ -117,2 +131,7 @@
+@@ -107,5 +121,6 @@
+ After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
+-in `project.yml` to the next minor version. ASC closes the version train on approval —
+-new TestFlight builds will be rejected until the version is incremented. See
+-`ios-project-playbook.md` §6.5.
++in `project.yml` to the next **patch** version (2.2.1 → 2.2.2). ASC closes the version train
++on approval — new TestFlight builds will be rejected until the version is incremented. Raise
++it to the next minor or major when feature work for that release starts; ASC lets you change
++a version's number until it's submitted. See `ios-project-playbook.md` §6.5.
  
+@@ -116,2 +131,7 @@
+ **Can:** Edit Swift files, commit/push to `dev` or feature branches, plan, write features.
++
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
 +`project.pbxproj`, and CI that runs `xcodegen generate` first will hide a stale one. Regenerate
 +and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
 +`MANUAL-TASKS.md` so a local session does it before merging.
-+
- ## Available Plugins & MCP Servers
-@@ -131,3 +150,3 @@
+ 
+@@ -131,3 +151,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
 +build verification (open a PR → Build Check workflow). For API

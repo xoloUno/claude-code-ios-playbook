@@ -28,6 +28,33 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-05 — Patch bump after approval; `scripts/fastlane.sh` for uploads
+
+Owner decisions on inbox #67 and #61.
+
+- **Version Lifecycle (#67).** After an approval, bump `MARKETING_VERSION` to the next
+  **patch** (2.2.1 → 2.2.2), not the next minor, and raise it to minor or major when feature
+  work starts. ASC lets you change a version's number until it's submitted (the API's
+  `versionString` is editable, checked in Apple's docs 2026-11-05); `MARKETING_VERSION` must
+  match. `build-deploy.md` and `ios-project-playbook.md` §6.5.
+- **Upload wrapper (#61).** Bootstrap writes `scripts/fastlane.sh <beta|release|upload_metadata|upload_screenshots>`,
+  generalized from Kendibah's `testflight-upload.sh`: it runs only on a clean `main`, uses
+  Homebrew Ruby, logs to `$TMPDIR`, redacts the key ID and path from what it prints, keeps
+  fastlane's report and README out of the repo, and undoes fastlane's `.pbxproj` and
+  `Info.plist` edits. `/deploy` and `/release` call it and keep the inline command for
+  projects without it. Because it's one named script, a
+  `Bash(scripts/fastlane.sh:*)` allow rule in `.claude/settings.local.json` stops auto mode
+  prompting; the user still approves each upload in chat (`getting-started.md`). New
+  projects also ignore `/.claude/settings.local.json`.
+
+**Files affected:** `bootstrap.sh`, `getting-started.md`, `ios-project-playbook.md`,
+`packs/ios/commands/{deploy,release}.md`, `packs/ios/rules/build-deploy.md`.
+
+**What to do in your project:** follow the patch-bump rule from the next approval. To adopt
+the wrapper, copy `scripts/fastlane.sh` from a new bootstrap (or from this entry's
+`bootstrap.sh` heredoc) and optionally add the allow rule; Kendibah's `testflight-upload.sh`
+does the same job for `beta`.
+
 ## 2026-11-05 — Core: review fallback, stacked PRs, `[skip ci]`, delegation guide
 
 The guardrail half of the 2026-11-05 inbox round (#42–#75).

@@ -42,28 +42,6 @@ entry's heading reads `### #[NUMBER] — [DATE] — [PROJECT_NAME]`.
 
 ---
 
-### #67 — 2026-11-03 — Flara
-**Category:** suggestion
-**Context:** After App Review approved 2.2.1, the plan was to bump `MARKETING_VERSION` to 2.3.0, per the Version Lifecycle rule. The only change waiting was one Swift line (the legal-pages base URL), metadata URLs and a description link fix, and the app's roadmap already used 2.3.0 for a feature tier. The owner asked whether this was really 2.2.2, and it shipped as 2.2.2.
-**Lesson:** Brainstorm topic, not a settled lesson. Bumping to the next minor right after an approval guesses the next release's size before any work exists. A patch bump (2.2.1 → 2.2.2) is the smallest valid number that reopens the version train, and it can still be raised to 2.3.0 while that version is unsubmitted, once a feature lands. Bumping to minor by default can mislabel hotfixes and use up version numbers a roadmap has already assigned.
-**Suggested action:** Discuss changing `packs/ios/rules/build-deploy.md` (Version Lifecycle, line 113) and `ios-project-playbook.md` §6.5 (lines 1515 and 1529) to: bump to the next patch after approval, and raise it to minor or major when feature work starts. Check first that App Store Connect lets you change a prepared version's number before submission.
-
-### #61 — 2026-11-02 — KendibahApp
-**Category:** suggestion
-**Context:** Every `/deploy` run prompted for permission, even right after the owner approved
-the upload in chat.
-**Lesson:** The pack's deploy step is one inline command (`export PATH=… && export LC_ALL=… &&
-set -a && source .env.fastlane && set +a && bundle exec fastlane beta`). It reads credentials
-and uploads, so auto mode asks every time, and a prefix allow rule can't match it because it
-starts with `export`. A project script (`scripts/testflight-upload.sh`) that checks for a clean
-`main`, runs the lane with Homebrew Ruby, logs to `$TMPDIR`, prints the build number, and undoes
-fastlane's pbxproj and Info.plist edits can be allowed by exact name in
-`.claude/settings.local.json`. That removes the prompt and the manual restore step. The chat
-approval per upload stays.
-**Suggested action:** Have bootstrap emit `scripts/testflight-upload.sh` (and a release
-counterpart), point `packs/ios/commands/deploy.md` and `release.md` at them, and mention the
-optional local allow rule in getting-started.
-
 ### #28 — 2026-10-27 — DachipariApp
 **Category:** gap
 **Context:** `bootstrap.sh` produced an iPhone-first, portrait, iOS-only project (XcodeGen target, CI building only the iOS simulator, fastlane `platform :ios`). The spec is a tvOS + iPadOS app with Universal Purchase.
@@ -75,3 +53,10 @@ optional local allow rule in getting-started.
 **Context:** Planning a tvOS + iPadOS camera app (Continuity Camera on Apple TV). The spike plan logged results to a JSONL file in Documents and assumed the TV could use two Continuity Cameras at once.
 **Lesson:** WWDC23 session 10256 ("Discover Continuity Camera for tvOS") says `.documentDirectory` is in the tvOS headers but fails with a runtime error. tvOS apps should use only `.cachesDirectory`, which can be purged between launches. The same session says only one Continuity Camera can be connected to an Apple TV at a time. The SDK headers don't mention either limit.
 **Suggested action:** If the playbook adds tvOS guidance, include both: Caches-only file storage on tvOS (pull logs before the app quits, or move data to iCloud), and a single Continuity Camera per Apple TV.
+
+### 2026-11-05 — Flara
+
+**Category:** tooling
+**Context:** Updating frames-cli from 1.2.7 to 1.7.0 for iPhone Duo bezels from an agent session, which the playbook's Track A note describes as "update the clone, then re-run `frames setup`".
+**Lesson:** Bare `frames setup` is interactive-only and fails in an agent shell with "Run 'frames setup' in an interactive terminal, or provide a path." Instead, read the pack URL from the updated script (`grep -o 'https://cdn.macstories.net/[^"]*zip' frames`), `curl` it into a new empty folder, unzip it, and run `frames setup <that folder>/Frames`. Then `frames doctor` should report no "pack predates" note. The 4.2 pack is 51.7 MB. Downloading it needs the owner's OK under the safety rules, so ask with the URL and size.
+**Suggested action:** Add the non-interactive path to Track A's version note in `ios-project-playbook.md`.

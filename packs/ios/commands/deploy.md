@@ -21,9 +21,12 @@ Steps:
    Offer to fall back to GitHub Actions instead.
 2. Verify build compiles: build for iOS Simulator via XcodeBuildMCP
 3. Run SwiftLint: `/opt/homebrew/bin/swiftlint lint --strict --quiet`
-4. Run: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
+4. Run `scripts/fastlane.sh beta`. If the project has no `scripts/fastlane.sh` (projects
+   bootstrapped before 2026-11-05), run `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
+   instead.
 5. If upload succeeds, ask user if they want to tag this release
-6. Restore fastlane's project edits. fastlane sets the build number and signing at archive
+6. Restore fastlane's project edits (`scripts/fastlane.sh` already did; check
+   `git status --porcelain`). fastlane sets the build number and signing at archive
    time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
    restore just the ones that changed:
    `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.

@@ -96,8 +96,9 @@ Secrets.swift
 # case-insensitive macOS gitignore doesn't also catch .claude/rules/manual-tasks.md.
 /MANUAL-TASKS.md
 /WORKLOG.md
-# Desktop app preview configs hold machine-specific paths.
+# Machine-local Claude Code files: preview configs with absolute paths, personal allow rules.
 /.claude/launch.json
+/.claude/settings.local.json
 # Screenshot pipeline — see .claude/rules/screenshot-pipeline.md
 # All regenerable: raw + framed captures, composed ASC images, upload staging.
 fastlane/screenshots/
@@ -643,6 +644,73 @@ FASTFILE
 # fastlane runs a lane's own Ruby from fastlane/, so a Dir.glob("*.xcodeproj") written in the lane
 # finds nothing and the scheme turns nil. Write the literal project and scheme names instead.
 sed -i '' "s|__APP_NAME__|$APP_NAME|g" fastlane/Fastfile
+# --- Upload wrapper: one fastlane lane per call, so a local allow rule can name it exactly ---
+mkdir -p scripts
+cat > scripts/fastlane.sh << 'FASTLANESH'
+#!/usr/bin/env bash
+# Run one App Store Connect lane from a clean main, then undo fastlane's archive-time edits.
+#
+# Usage: scripts/fastlane.sh <beta|release|upload_metadata|upload_screenshots>
+#
+# The user approves each upload in chat; this is what runs after that. The full log goes to
+# $TMPDIR/<repo>-fastlane-<lane>.log; this prints the result lines and the build number.
+set -euo pipefail
+
+LANE="${1:-}"
+case "$LANE" in beta|release|upload_metadata|upload_screenshots) ;;
+  *) echo "usage: $0 <beta|release|upload_metadata|upload_screenshots>" >&2; exit 2 ;;
+esac
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+LOG="${TMPDIR:-/tmp}/$(basename "$ROOT")-fastlane-$LANE.log"
+
+branch="$(git branch --show-current)"
+[ "$branch" = "main" ] || { echo "✗ on '$branch', not main" >&2; exit 2; }
+[ -z "$(git status --porcelain)" ] || { echo "✗ working tree isn't clean" >&2; exit 2; }
+[ -f .env.fastlane ] || { echo "✗ .env.fastlane is missing" >&2; exit 2; }
+
+# Homebrew Ruby: the Gemfile.lock's bundler needs it (rules/build-deploy.md).
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+set -a
+# shellcheck disable=SC1091
+source .env.fastlane
+set +a
+
+echo "fastlane $LANE on main $(git rev-parse --short HEAD); log: $LOG"
+status=0
+bundle exec fastlane "$LANE" > "$LOG" 2>&1 || status=$?
+
+for proj in *.xcodeproj; do
+  grep -Eo "CURRENT_PROJECT_VERSION = [0-9]+;" "$proj/project.pbxproj" 2>/dev/null | head -1 \
+    | sed -E 's/.*= ([0-9]+);/Build number: \1/' || true
+done
+# A fastlane error can quote the key file's path, which names the key ID.
+redact() {
+  local line secret path="${ASC_KEY_FILEPATH:-}"
+  while IFS= read -r line; do
+    for secret in "${path/#\~/$HOME}" "$path" "${ASC_KEY_ID:-}" "${ASC_ISSUER_ID:-}"; do
+      [ -z "$secret" ] || line="${line//"$secret"/<redacted>}"
+    done
+    printf '%s\n' "$line"
+  done
+}
+grep -E "Successfully (exported|uploaded)|\[!\]|ERROR" "$LOG" | grep -v DVTProvisioningProfileManager \
+  | tail -8 | redact || true
+
+# fastlane sets the build number and signing at archive time without committing them. The tree
+# was clean before the run, so only fastlane's edits are restored.
+git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout -- 2>/dev/null || true
+for generated in fastlane/README.md fastlane/report.xml; do
+  if [ -f "$generated" ] && ! git ls-files --error-unmatch "$generated" >/dev/null 2>&1; then
+    rm "$generated"
+  fi
+done
+[ -z "$(git status --porcelain)" ] || echo "! changes remain that aren't fastlane's: check git status" >&2
+echo "fastlane exit $status"
+exit "$status"
+FASTLANESH
+chmod +x scripts/fastlane.sh
 # --- GitHub Actions workflows ---
 mkdir -p .github/workflows
 cat > .github/workflows/build-check.yml << 'BUILDCHECK'

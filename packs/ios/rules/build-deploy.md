@@ -119,9 +119,10 @@ every smaller iPhone size and 13" to 11" iPad. See `ios-project-playbook.md` §P
 ## Version Lifecycle
 
 After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
-in `project.yml` to the next minor version. ASC closes the version train on approval —
-new TestFlight builds will be rejected until the version is incremented. See
-`ios-project-playbook.md` §6.5.
+in `project.yml` to the next **patch** version (2.2.1 → 2.2.2). ASC closes the version train
+on approval — new TestFlight builds will be rejected until the version is incremented. Raise
+it to the next minor or major when feature work for that release starts; ASC lets you change
+a version's number until it's submitted. See `ios-project-playbook.md` §6.5.
 
 ## Cloud Session Limitations
 

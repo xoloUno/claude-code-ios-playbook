@@ -30,16 +30,17 @@ Steps:
    - release_notes.txt: 4000 chars max
    - promotional_text.txt: 170 chars max
 3. **Sync metadata** to App Store Connect:
-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane upload_metadata`
+   `scripts/fastlane.sh upload_metadata` (no script: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane upload_metadata`)
 4. Verify build compiles: build for iOS Simulator via XcodeBuildMCP
 5. Run SwiftLint: `/opt/homebrew/bin/swiftlint lint --strict --quiet`
 6. **Build and upload binary:**
-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane release`
+   `scripts/fastlane.sh release` (no script: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane release`)
 7. Ask user if screenshots need uploading. If yes and `fastlane/screenshots/` has content:
-   `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane upload_screenshots`
+   `scripts/fastlane.sh upload_screenshots` (no script: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && bundle exec fastlane upload_screenshots`)
    Otherwise remind them to upload manually in App Store Connect.
 8. If upload succeeds, ask user if they want to tag this release (e.g. `v1.0.0`)
-9. Restore fastlane's project edits. fastlane sets the build number and signing at archive
+9. Restore fastlane's project edits (`scripts/fastlane.sh` already did; check
+   `git status --porcelain`). fastlane sets the build number and signing at archive
    time without committing them, in `project.pbxproj` and sometimes in `Info.plist`, so
    restore just the ones that changed:
    `git diff --name-only -z -- '*.pbxproj' '*Info.plist' | xargs -0 git checkout --`.

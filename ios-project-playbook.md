@@ -1566,10 +1566,10 @@ After approval with `automatic_release: false`: manually release in ASC when rea
 ### 6.5 Post-Release Version Bump
 
 **Immediately after a version is approved and released on the App Store**, bump
-`MARKETING_VERSION` in `project.yml` to the next minor version:
+`MARKETING_VERSION` in `project.yml` to the next patch version:
 
 ```yaml
-MARKETING_VERSION: "1.1.0"  # was 1.0.0 — bump after App Store release
+MARKETING_VERSION: "1.0.1"  # was 1.0.0 — bump after App Store release
 ```
 
 **Why:** App Store Connect closes the version train once a version is approved.
@@ -1580,8 +1580,13 @@ This is a blocking error — no builds can be uploaded until the version is bump
 
 **When to bump:**
 - After App Store approval (regardless of whether you use automatic or manual release)
-- Use the next minor version (1.0.0 → 1.1.0) unless you're planning a major release
-- Commit as: `chore(version): bump to X.Y.0 for post-release development`
+- Use the next patch version (1.0.0 → 1.0.1): the smallest number that reopens the train.
+  Guessing minor right after approval sizes a release before any work exists, mislabels
+  hotfixes, and can use up a number the roadmap already assigned
+- When feature work for the release starts, raise it to the next minor or major. ASC lets
+  you change a version's number until it's submitted (the API's `versionString` is
+  editable); bump `MARKETING_VERSION` to match, since builds must carry the version's number
+- Commit as: `chore(version): bump to X.Y.Z for post-release development`
 - Add to `MANUAL-TASKS.md` if the session that triggers the release can't do it immediately
 
 ### 6.6 Common Rejection Reasons

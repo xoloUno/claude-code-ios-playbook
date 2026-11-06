@@ -347,7 +347,11 @@ ASC_KEY_FILEPATH=~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8
 - The `.p8` key lives at `~/Documents/Xcode/AuthKey_YOUR_ASC_KEY_ID.p8` (shared across all apps)
 - The Key ID and Issuer ID are the same across all your apps — only `ASC_KEY_FILEPATH` could change if you move the key
 - This enables the `/deploy` slash command to upload to TestFlight from your machine
-- To test manually: `export PATH="/opt/homebrew/opt/ruby/bin:$PATH" && export LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && set -a && source .env.fastlane && set +a && bundle exec fastlane beta`
+- To test manually: `scripts/fastlane.sh beta` (it runs only on a clean `main`, logs to `$TMPDIR`, and undoes fastlane's project edits)
+- Optional: so Claude Code's auto mode stops prompting before each upload you've already
+  approved in chat, allow the script by name in the project's gitignored
+  `.claude/settings.local.json`: `{"permissions": {"allow": ["Bash(scripts/fastlane.sh:*)"]}}`.
+  You still approve every upload in chat.
 
 **6. Publish the legal pages**
 - The app repo is private, and GitHub Pages serves private repos only on paid plans

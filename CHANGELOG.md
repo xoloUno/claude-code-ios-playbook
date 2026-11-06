@@ -39,8 +39,8 @@ keeps composing the 1.4.0 source. It's a minor release: the core block gains rul
 **What a 1.4.0 consumer gets** (the entries below have the details):
 - **Core block:** `chore(merge):` for a merge a `commit-msg` hook rejects; retarget the next
   PR before deleting a stacked base; `[skip ci]` on intermediate pushes; a CI job that fails
-  in seconds with no steps parks as a billing block; `/code-review` at high effort when Codex
-  is out; a pointer to `tools/delegating.md`; the wiring-change finding; a fresh session
+  in seconds with no steps parks as a billing block when its annotations name payments or a
+  spending limit; `/code-review` at high effort when Codex is out; a pointer to `tools/delegating.md`; the wiring-change finding; a fresh session
   after a long run's handoff.
 - **Commands:** `/deploy` and `/release` read both profile folders and call
   `scripts/fastlane.sh` when it exists; `/preflight` checks that links resolve; `/status`

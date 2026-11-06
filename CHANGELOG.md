@@ -28,6 +28,41 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-05 — Plugin `v1.5.0` — stacked PRs, review fallback, delegation guide, iOS traps
+
+Bumps `.claude-plugin/plugin.json` from `1.4.0` to `1.5.0`. After this merges, the merge
+commit gets the tag `playbook--v1.5.0`; tag and manifest versions stay equal. Cached plugin
+installs refresh only when the manifest version changes, so until then `/playbook:upgrade`
+keeps composing the 1.4.0 source. It's a minor release: the core block gains rules in "Git",
+"Autonomy", "Second opinions", "Code Review Rules" and "Session hygiene".
+
+**What a 1.4.0 consumer gets** (the entries below have the details):
+- **Core block:** `chore(merge):` for a merge a `commit-msg` hook rejects; retarget the next
+  PR before deleting a stacked base; `[skip ci]` on intermediate pushes; a CI job that fails
+  in seconds with no steps parks as a billing block; `/code-review` at high effort when Codex
+  is out; a pointer to `tools/delegating.md`; the wiring-change finding; a fresh session
+  after a long run's handoff.
+- **Commands:** `/deploy` and `/release` read both profile folders and call
+  `scripts/fastlane.sh` when it exists; `/preflight` checks that links resolve; `/status`
+  flags prunable and merged worktrees.
+- **iOS rules:** `build-deploy.md` gains the pull-request Build Check trigger, the ASC key
+  for `-allowProvisioningUpdates` and the patch bump after approval; `legal-urls.md` the
+  public `<app>-web` repo; `simulator.md`, `testing.md`, `code-style.md`, `app-intents.md`
+  and the WWDC files the 2026-11-05 traps.
+- Since 1.4.0, `bootstrap.sh`, `ios-project-playbook.md`, `getting-started.md` and `tools/`
+  changed too; they reach new projects, readers and every session through `$PLAYBOOK_HOME`,
+  not composed output.
+
+**Files affected:** `.claude-plugin/plugin.json` (`version` `1.4.0` → `1.5.0`).
+
+**What to do in your project:** iOS apps on the plugin run `/playbook:upgrade`; iOS apps on
+the pinned submodule move the pin to the tag and recompose; iOS apps composed straight from
+the playbook re-run `compose-claude.sh`; non-iOS repos re-run `bridge-symlink.sh` to refresh
+the core block. The core block changes, so review the diff, and drop any project-owned copy
+of the `[skip ci]` or stacked-merge rules.
+
+---
+
 ## 2026-11-05 — Patch bump after approval; `scripts/fastlane.sh` for uploads
 
 Owner decisions on inbox #67 and #61.

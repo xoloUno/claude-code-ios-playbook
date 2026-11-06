@@ -21,8 +21,8 @@ plan restrictions. Verifying them is not authorization to change them.
 - Attribution follows the host's settings and the user's policy. Don't hardcode a
   co-author line.
 - Parallel agent sessions in one repository each get their own worktree.
-- If a `commit-msg` hook rejects git's default merge message, run `git merge --no-commit`,
-  then `git commit -m "chore(merge): bring in <branch>"`.
+- If a `commit-msg` hook rejects git's default merge message, the merge stays in progress:
+  finish it with `git commit -m "chore(merge): bring in <branch>"`.
 - In a stack of PRs, deleting a merged PR's branch closes the PR based on it, and a closed
   PR can't change its base. Merge without `--delete-branch`, run
   `gh pr edit <next> --base main`, then delete the branch.

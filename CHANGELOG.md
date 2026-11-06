@@ -28,6 +28,24 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-05 — Plugin `v1.5.1` — finish a hook-rejected merge with `git commit`
+
+Bumps `.claude-plugin/plugin.json` from `1.5.0` to `1.5.1`; the merge commit gets the tag
+`playbook--v1.5.1`. A patch release with one core fix, found by the Codex review of the 1.5.0
+re-render round.
+
+- **Core "Git":** when a `commit-msg` hook rejects git's default merge message, git leaves the
+  merge in progress (`MERGE_HEAD` stays). 1.5.0 said to run `git merge --no-commit` next,
+  which then fails with "You have not concluded your merge". The rule now says to finish the
+  merge with `git commit -m "chore(merge): bring in <branch>"`.
+
+**Files affected:** `core/agents-core.md`, `.claude-plugin/plugin.json` (`version` `1.5.0` →
+`1.5.1`).
+
+**What to do in your project:** the same steps as 1.5.0; only the core block changes.
+
+---
+
 ## 2026-11-05 — Plugin `v1.5.0` — stacked PRs, review fallback, delegation guide, iOS traps
 
 Bumps `.claude-plugin/plugin.json` from `1.4.0` to `1.5.0`. After this merges, the merge

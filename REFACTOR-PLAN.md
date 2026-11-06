@@ -650,6 +650,14 @@ the workflow output (run `wf_e73fd29f-ed9`).
     compose in dachipari-app (#11, with its `PRIMARY_SIM`) and kendibah-app (#1), the two
     projects bootstrapped since 2026-10-22. Every core block now equals
     `core/agents-core.md`.
+  - [x] **Re-render round, 2026-11-06.** Plugin `v1.5.0` (#73 → `3de29b6`) carried #68 and
+    #70–#72. Its Codex review found that the new merge-hook step reran `git merge` on a merge
+    still in progress, so `v1.5.1` (#74 → `990c036`) fixed it before anything merged. Same
+    recipe as 2026-10-28: flara-app #106, teewye-app #6, broadsheet-app #9 (into `dev`),
+    shotsmith #10, devpulse #6, c3d-bridge-modeler #27, dachipari-app #12 and kendibah-app
+    #114. Flara, teewye, broadsheet and dachipari also moved Build Check to pull requests,
+    which the new `build-deploy.md` rule assumes. Every core block equals
+    `core/agents-core.md`.
   - **On contact** (nothing to do until a project touches it):
     - `.xcode-version` in teewye and broadsheet, which still pin Xcode 26.3 in their
       workflows: copy flara-app #65 the next time either needs a new Xcode.
@@ -666,13 +674,13 @@ the workflow output (run `wf_e73fd29f-ed9`).
       opinion on keeping it lean): 4 adopted, 3 discarded, and #26 and #28 (tvOS)
       deferred until a second tvOS or multiplatform app. Curated again 2026-11-05 (#31–#75,
       45 entries, mostly Kendibah; APIs checked against the iOS 27.1 SDK): iOS pack and
-      bootstrap fixes merged in #70; the core, deploy and delegation half is #71, waiting
-      for the owner; #61 and #67 deferred as owner decisions. Run `/curate` when the inbox
-      gets in the way again.
-    - Instruction budget: Flara's `AGENTS.md` (35.7 KB) and Kendibah's (74 KB) are past
-      Codex's 32 KiB default, and #71's core growth pushes c3d's (32.2 KB) past it too.
-      The core block is at the top, so Codex drops the project's own tail. Trim each in its
-      own project, on contact.
+      bootstrap fixes merged in #70, the core, deploy and delegation half in #71, and the
+      owner's decisions on #61 and #67 in #72. Run `/curate` when the inbox gets in the way
+      again.
+    - Instruction budget: after the 1.5.1 round, Flara's `AGENTS.md` (37.1 KB) and c3d's
+      (33.7 KB) are past Codex's 32 KiB default. The core block is at the top, so Codex
+      drops the project's own tail. Trim each in its own project, on contact, as
+      kendibah-app #113 did (74 KB → 32.2 KB, detail moved to `Research/`).
     - 3a, `loadcheck.sh` as a playbook tool: the next time an instructions-loading check is
       needed (`codex-review.sh` landed with autonomy).
     - Phase C's `/context-health` and `/preflight`, as above.

@@ -114,6 +114,7 @@ exec "$ROOT/scripts/asc-query.rb" "$@"
 | Inspect screenshot sets for a locale | `appStoreVersionLocalizations/{loc_id}/appScreenshotSets` |
 | List screenshots in a set | `appScreenshotSets/{set_id}/appScreenshots` |
 | Check age-rating answers | `apps/{app_id}/appInfos`, then `appInfos/{app_info_id}/ageRatingDeclaration` |
+| List sandbox testers (v2 only) | `../v2/sandboxTesters` from a v1 helper |
 
 Find `app_id` once via `apps?filter[bundleId]={bundle.id}` and stash it in `.env.fastlane`
 or `.env.project` for reuse.
@@ -127,6 +128,27 @@ September 2026. Older answers keep their values, but the new Boolean attributes 
 the age-rating query above: `socialMedia: null` is the missing answer, and
 `socialMediaAgeRestricted` matters only when `socialMedia` is `true`. The user answers it in App
 Store Connect → App Information → Age Rating.
+
+## In-App Event reviewed against the wrong version
+
+A review submission with no app version in it is bound to the live version. When an event's
+deep link needs a new version, add the event to that version's submission before submitting,
+and check `reviewSubmissions/{id}?include=appStoreVersionForReview`. Submissions can't be
+merged or re-pointed afterwards: cancel both (`PATCH reviewSubmissions/{id}` with
+`canceled: true`) and resubmit them together, which restarts the version's review.
+
+## App Review attachment disappears
+
+Every `deliver` run that uploads metadata deletes the App Review attachments unless
+`app_review_attachment_file` is set (fastlane 2.241.2). Set
+`DELIVER_APP_REVIEW_ATTACHMENT_FILE=<path>` on every run, or attach the file after the last
+one. Review contact details typed in App Store Connect survive, because `deliver` sends only
+non-empty `review_information/*.txt` values.
+
+## Promo codes for in-app purchases
+
+Apple stopped issuing in-app purchase promo codes on 2026-03-26. Use offer codes, which also
+cover non-consumables, to give reviewers or press a paid unlock.
 
 ## When NOT to use this
 

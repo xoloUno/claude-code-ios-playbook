@@ -38,7 +38,7 @@ Solo dev with limited hours — be strategic, not exhaustive.
 - **Parameterized tests:** Use `@Test(arguments:)` for multiple inputs with same logic
 - **No mocking persistence** — use real UserDefaults (with a test suite name) or
   in-memory SwiftData containers. Mock boundaries (network), not internals.
-- **Two Swift Testing compile traps** (Swift 6.4):
+- **Swift Testing compile traps** (Swift 6.4):
   - A `@MainActor` suite's `deinit` is nonisolated, so cleanup there can't touch the suite's
     statics. Make immutable `Sendable` constants `nonisolated static let`. Keep mutable state
     actor-isolated or behind synchronization (e.g. a `nonisolated static let` holding a
@@ -48,6 +48,11 @@ Solo dev with limited hours — be strategic, not exhaustive.
   - `#expect(try await store.load().field == value)` inside an `async throws` closure fails
     with "errors thrown from here are not handled". Hoist it:
     `let saved = try await store.load()`, then `#expect(saved.field == value)`.
+  - `#expect(value.mutatingCall())` fails with "cannot use mutating member on immutable
+    value". Call the method first and expect on the result.
+- **Don't assert a time window at its exact boundary.**
+  `start.addingTimeInterval(0.3).timeIntervalSince(start)` is 0.29999999999995453. Test with
+  a margin on each side.
 - **Express version fixtures relative to the current constant.** A literal
   `{"schemaVersion":2}` meant as "newer" becomes current after a bump, and the failure looks
   like a data-loss bug. Write `currentSchemaVersion + 1`.

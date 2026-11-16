@@ -35,7 +35,7 @@ ENV["PLAYBOOK_HOME"] = "/fixture/playbook-home"
 # Composed files changed on purpose for unmarked (legacy) projects too: the canary's
 # instructions-file wording, R3 attribution fix, worklog format and one-sentence ASC
 # addition, the 2026-10-22 autonomy policy, and the 2026-10-28 single home for the inbox
-# entry format, and the 2026-11-05 inbox round's iOS rule additions. Their exact contents are
+# entry format, and the 2026-11-05 and 2026-11-16 inbox rounds' iOS rule additions. Their exact contents are
 # pinned by LEGACY_FIXTURE.
 INTENDED_LEGACY_CHANGES = {
     os.path.join(".claude", "commands", n) for n in (
@@ -316,8 +316,8 @@ class ComposeAgentsMdTest(unittest.TestCase):
             self.assertIn(" -destination 'platform=iOS Simulator,name=iPhone 17 Pro'", x)
             self.assertEqual(y, x.replace("name=iPhone 17 Pro'", "name=iPhone Air'"))
         table = read(os.path.join(custom, ".claude", "rules", "build-deploy.md")).decode()
-        self.assertIn('| **iPhone 6.9"** | **iPhone 17 Pro Max** |', table)
-        self.assertIn('| iPhone 6.3" | iPhone 17 Pro |', table)
+        self.assertIn('| **iPhone with Dynamic Island (medium)** | **iPhone 17 Pro** |', table)
+        self.assertIn('| iPhone with Dynamic Island (large) | iPhone 17 Pro Max |', table)
 
     def conform_scheme(self, p):
         """/conform's documented sequence: load the project's .env.project, then run the resolver."""

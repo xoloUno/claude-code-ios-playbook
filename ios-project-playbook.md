@@ -828,9 +828,15 @@ covers automated capture on simulators, framing, and export at the required size
 
 ### Required Device Sizes (blocks submission if missing)
 
+> **Changed in late 2026:** Apple now requires at least one screenshot for "iPhone with
+> Dynamic Island (medium display)" (1206 × 2622 or 1179 × 2556), so the 6.3" row below is
+> required rather than rejected, and the 6.9" set is recommended. iPhone Duo has its own
+> set. The current table is in `.claude/rules/build-deploy.md`; the rest of this phase still
+> describes the 6.9" capture pipeline.
+
 Per [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/),
-ASC accepts only two submission sizes as of 2026 — and auto-scales them to every
-smaller device category. Capture the top two, let Apple scale the rest.
+ASC accepted only two submission sizes in early 2026 and auto-scaled them to every
+smaller device category.
 
 | ASC Size Label | Simulator Device | Resolution | Required? |
 |---|---|---|---|
@@ -992,6 +998,9 @@ Ensure `~/.local/bin` is in your `PATH`. Verify with `frames --version`.
 **plus** its new standard asset pack — update the clone, then re-run `frames setup`. 1.5.0
 also auto-picks the 18 Pro frame for sizes it shares with the 17 Pro, so pass
 `--device <name>` when output must stay reproducible.
+Bare `frames setup` is interactive-only and fails in an agent shell. There, read the pack URL
+from the updated script (`grep -o 'https://cdn.macstories.net/[^"]*zip' frames`), download and
+unzip it into a new empty folder with the user's OK, and run `frames setup <folder>/Frames`.
 
 **Optional Claude Code skill:** The repo ships a skill at `skill/SKILL.md`. Install
 once to `~/.claude/skills/frames-cli/SKILL.md` so Claude Code sessions have native
@@ -1499,13 +1508,16 @@ later if you need them.
 | iPhone 6.3" | iPhone 17 Pro | 1179 × 2556 | **Not accepted** — scaling target only |
 | iPad Pro 11" | iPad Pro 11-inch | 1668 × 2388 | **Not accepted** — scaling target only |
 
-Upload 6.9" + 13" iPad — ASC auto-scales these down to every smaller device.
-Uploading only 6.3" or 11" blocks "Add for Review." See **Phase 5: Screenshot
-Workflow** for the full capture-and-design pipeline.
+This table predates Apple's late-2026 change: a medium-display iPhone set (1206 × 2622 or
+1179 × 2556) is now the required one. See `.claude/rules/build-deploy.md` for the current
+sizes and **Phase 5: Screenshot Workflow** for the capture-and-design pipeline.
 
 **Build & Code:**
 - [ ] `MARKETING_VERSION` set to `1.0.0` in `project.yml`
 - [ ] App icon: 1024×1024 PNG, **no alpha channel**, in asset catalog
+  - An Icon Composer `AppIcon.icon` in the app's source folder also works: XcodeGen adds it
+    with no `project.yml` change, and Xcode uses it instead of a same-named `.appiconset`.
+    Check with `xcrun assetutil --info <App>.app/Assets.car`.
 - [ ] `ITSAppUsesNonExemptEncryption` = false (already in bootstrap project.yml)
 - [ ] All `#if DEBUG` gates verified — no test code in Release
 - [ ] No hardcoded test API keys in Release
@@ -1598,8 +1610,8 @@ This is a blocking error — no builds can be uploaded until the version is bump
 | Broken privacy/support URLs | 2.3 | Verify URLs load before submitting |
 | HealthKit not identified in UI | 2.5.1 | Show "Apple Health" text in visible UI (settings, onboarding, buttons) — not just in code |
 | Missing purpose strings | 2.5.1 | Check all Info.plist usage descriptions |
-| Debug UI visible in production | 2.3.1 | Gate behind `#if DEBUG` |
-| Placeholder content | 2.3.1 | Replace all "[YOUR NAME]" text |
+| Debug UI or a hidden feature | 2.5.19 | Gate debug UI behind `#if DEBUG`; give the exact reveal steps for any hidden feature (an Easter egg) in the review notes |
+| Placeholder content | 2.1 | Replace all "[YOUR NAME]" text |
 | App icon has alpha channel | 2.3 | Strip transparency (see Python snippet above) |
 | Content Rights not answered | 2.3 | Answer in App Information (easy to miss) |
 | Pricing not set | 3.1.1 | Explicitly select Free even for IAP apps |

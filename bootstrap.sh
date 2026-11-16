@@ -620,6 +620,7 @@ platform :ios do
     )
     deliver(
       skip_binary_upload: true,
+      skip_app_version_update: true,
       skip_screenshots: true,
       force: true
     )
@@ -634,6 +635,7 @@ platform :ios do
     )
     deliver(
       skip_binary_upload: true,
+      skip_app_version_update: true,
       skip_metadata: true,
       overwrite_screenshots: true,
       force: true

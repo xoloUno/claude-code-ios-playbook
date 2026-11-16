@@ -495,11 +495,12 @@
 +IAP without a review screenshot as `MISSING_METADATA`; the UI calls it "Prepare for
 +Submission".
  
-@@ -105,2 +115,3 @@
+@@ -105,2 +115,4 @@
  | List screenshots in a set | `appScreenshotSets/{set_id}/appScreenshots` |
 +| Check age-rating answers | `apps/{app_id}/appInfos`, then `appInfos/{app_info_id}/ageRatingDeclaration` |
++| List sandbox testers (v2 only) | `../v2/sandboxTesters` from a v1 helper |
  
-@@ -108,2 +119,12 @@
+@@ -108,2 +120,33 @@
  or `.env.project` for reuse.
 +
 +## "You must respond to the required age ratings questions"
@@ -511,10 +512,36 @@
 +the age-rating query above: `socialMedia: null` is the missing answer, and
 +`socialMediaAgeRestricted` matters only when `socialMedia` is `true`. The user answers it in App
 +Store Connect → App Information → Age Rating.
++
++## In-App Event reviewed against the wrong version
++
++A review submission with no app version in it is bound to the live version. When an event's
++deep link needs a new version, add the event to that version's submission before submitting,
++and check `reviewSubmissions/{id}?include=appStoreVersionForReview`. Submissions can't be
++merged or re-pointed afterwards: cancel both (`PATCH reviewSubmissions/{id}` with
++`canceled: true`) and resubmit them together, which restarts the version's review.
++
++## App Review attachment disappears
++
++Every `deliver` run that uploads metadata deletes the App Review attachments unless
++`app_review_attachment_file` is set (fastlane 2.241.2). Set
++`DELIVER_APP_REVIEW_ATTACHMENT_FILE=<path>` on every run, or attach the file after the last
++one. Review contact details typed in App Store Connect survive, because `deliver` sends only
++non-empty `review_information/*.txt` values.
++
++## Promo codes for in-app purchases
++
++Apple stopped issuing in-app purchase promo codes on 2026-03-26. Use offer codes, which also
++cover non-consumables, to give reviewers or press a paid unlock.
  
 --- a/.claude/rules/build-deploy.md
 +++ b/.claude/rules/build-deploy.md
-@@ -62,2 +62,11 @@
+@@ -37,2 +37,4 @@
+ xcodebuild build -scheme [APP_NAME] -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
++# A passing -quiet log can print "error: the following command failed with exit code 0 but
++# produced no further output". Judge the build by its exit status, not by grepping "error:".
+ 
+@@ -62,2 +64,11 @@
  
 +**Profiles from an agent's shell.** When a device build needs a profile refresh
 +(`-allowProvisioningUpdates`, say after Apple grants a restricted entitlement), `xcodebuild`
@@ -526,7 +553,7 @@
 +each archive, burying real signing errors.
 +
  ## App Store Release
-@@ -75,2 +84,7 @@
+@@ -75,2 +86,7 @@
  Metadata lives in `fastlane/metadata/<locale>/`. Edit those files before running `/release`.
 +
 +A lane that passes `sync_screenshots: true` to `deliver` fails unless
@@ -534,7 +561,45 @@
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
  
-@@ -107,5 +121,6 @@
+@@ -90,15 +106,27 @@
+ 
+-**Required screenshot simulators (ASC auto-scales these to smaller sizes):**
++**Screenshot sizes** (checked against [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
++on 2026-11-16; re-check it before a submission):
+ 
+-| ASC Category | Simulator | Resolution | Required? |
++| ASC category | Simulator | Resolution | Required? |
+ |---|---|---|---|
+-| **iPhone 6.9"** | **iPhone 17 Pro Max** | **1320 × 2868** | **Yes** — or 6.5" as fallback |
+-| **iPad 13"** | **iPad Pro 13-inch (M5)** | **2064 × 2752** | **Yes** if app supports iPad |
+-| iPhone 6.5" | iPhone 14 Plus | 1284 × 2778 | Fallback only |
+-| iPhone 6.3" | iPhone 17 Pro | 1179 × 2556 | **Not accepted** — scaling target |
+-| iPad Pro 11" | iPad Pro 11-inch | 1668 × 2388 | **Not accepted** — scaling target |
++| **iPhone with Dynamic Island (medium)** | **iPhone 17 Pro** | **1206 × 2622** (or 1179 × 2556) | **Yes**, at least one |
++| iPhone with Dynamic Island (large) | iPhone 17 Pro Max | 1320 × 2868 | Recommended; otherwise scaled |
++| **iPad 13"** | **iPad Pro 13-inch (M5)** | **2064 × 2752** | **Yes** if the app runs on iPad |
++| iPhone Duo | iPhone Duo | outer 1398 × 2034, inner 2007 × 2853, either orientation | From April 2027 for iOS 27.1 SDK apps; earns the Duo badge |
+ 
+-ASC accepts only 6.9" (iPhone) and 13" (iPad) as submissions per [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
+-Uploading only 6.3" or 11" blocks "Add for Review." Apple auto-scales 6.9" down to
+-every smaller iPhone size and 13" to 11" iPad. See `ios-project-playbook.md` §Phase 5.
++- Until 2026 the 6.9" set was the required one. The bootstrap capture defaults and
++  shotsmith's device registry still target 1320 × 2868, so a new submission also needs a
++  medium set.
++- Images can't carry an alpha channel, and `simctl io screenshot` PNGs do. Save as RGB before
++  uploading.
++- The Duo set needs fastlane 2.241.1 or later (`APP_IPHONE_DUO`). Use one size and
++  orientation across the set.
++- `deliver` reads only the images directly inside `screenshots/<locale>/`, and after each
++  upload it reorders every set by file name. File numbers set the product-page order, so
++  names must be unique across devices.
++- A metadata-only or screenshot-only `deliver` still reads the version from the newest
++  `*.ipa` in the project root and renames the editable App Store version to match. Pass
++  `skip_app_version_update: true` in those lanes.
++
++See `ios-project-playbook.md` §Phase 5.
+ 
+@@ -107,5 +135,6 @@
  After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
 -in `project.yml` to the next minor version. ASC closes the version train on approval —
 -new TestFlight builds will be rejected until the version is incremented. See
@@ -544,7 +609,7 @@
 +it to the next minor or major when feature work for that release starts; ASC lets you change
 +a version's number until it's submitted. See `ios-project-playbook.md` §6.5.
  
-@@ -116,2 +131,7 @@
+@@ -116,2 +145,7 @@
  **Can:** Edit Swift files, commit/push to `dev` or feature branches, plan, write features.
 +
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
@@ -552,14 +617,14 @@
 +and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
 +`MANUAL-TASKS.md` so a local session does it before merging.
  
-@@ -131,3 +151,3 @@
+@@ -131,3 +165,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
 +build verification (open a PR → Build Check workflow). For API
  verification in cloud sessions, fall back to web search on developer.apple.com.
 --- a/.claude/rules/code-style.md
 +++ b/.claude/rules/code-style.md
-@@ -15,2 +15,27 @@
+@@ -15,2 +15,34 @@
  - **SwiftLint enforced** — `.swiftlint.yml` in project root. CI fails on violations.
 +- **Callback APIs without `Sendable` annotations trap under Swift 6.** WatchConnectivity
 +  (27 SDK) calls reply and error handlers off the main thread, and a closure written inside
@@ -579,6 +644,13 @@
 +  `.moveDisabled` divider row.
 +- Apple's restricted device symbols (`appletv.fill`, `appletvremote.gen4`, …) may refer only
 +  to that Apple product. `logo.playstation` and `logo.xbox` are unrestricted.
++- A closure stored in an `@Entry` environment value redraws every reader on each parent
++  update. Wrap the handler in an `Equatable` struct with `callAsFunction`, as `OpenURLAction`
++  does.
++- `ScrollView { content.frame(minHeight: proxy.size.height) }` doesn't stretch flexible
++  children, and adding `idealHeight` cuts off taller content instead of scrolling it. Use a
++  small `Layout` that proposes `max(minimum, natural height)`, and check it at the largest
++  Dynamic Type size.
 +
 +## XcodeGen projects
 +
@@ -696,12 +768,29 @@
 +and address. The Simulator reaches it at 127.0.0.1.
 +
  ## Gitignore policy
-@@ -168,3 +173,3 @@
+@@ -161,2 +166,16 @@
+ 
++An agent in the Claude desktop app can often do the gesture itself: the iOS Simulator tool
++(`control`: tap, swipe, `touch_path`, screenshot) drives the sim without a Device Hub window.
++A long-press on the Home Screen enters edit mode, a swipe down from the top-right edge opens
++Control Center, and a control moves only after a hold of about 350 ms before the drag. A
++widget reads the App Group store, so seed that store rather than a demo mode's private one.
++The arrangement persists in the sim, so set it up once.
++
++Capture the final set from the release-candidate commit, after the last UI-changing PR has
++merged, and keep one sim booted at a time: shut each one down before booting the next.
++
++When one image shows two devices, scale them by `physicalHeight` from the frames-cli asset
++pack's `NewFrames.json`, as `frames --merge` does. Apple's marketing guidelines ask for the
++correct relative product scale.
++
+ ### Per-tuple sequence
+@@ -168,3 +187,3 @@
  xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 -open -a Simulator
 +open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
  ```
-@@ -200,2 +205,7 @@
+@@ -200,2 +219,7 @@
  widget has time to refresh.
 +
 +If the surface's UI changed since the last capture, ask the user to confirm the
@@ -709,19 +798,19 @@
 +drawing the old one. Refresh it by installing over the existing app, never by
 +uninstalling (see [`simulator.md`](simulator.md)).
  
-@@ -236,4 +246,4 @@
+@@ -236,4 +260,4 @@
  |---|---|---|
 -| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Simulator), then verify the Live Activity is rendering on the lock screen. |
 -| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock (Cmd+Shift+H twice, or swipe up), then navigate to the Home Screen page that contains the widget. |
 +| Live Activity (Lock Screen) | `90_LockScreen_LiveActivity.png` | Lock the device (Cmd+L in Device Hub), then verify the Live Activity is rendering on the lock screen. |
 +| Home Screen widget | `91_HomeScreen_Widget.png` | Unlock with Cmd+Shift+H in Device Hub, which acts as one swipe up: from the lock screen the first press reveals the open app and the second goes home. Then navigate to the Home Screen page that contains the widget. |
  | Control Center (with Control Widget) | `92_ControlCenter.png` | From any non-app screen, swipe down from the top-right corner of the simulator to invoke Control Center. |
-@@ -281,3 +291,3 @@
+@@ -281,3 +305,3 @@
  xcrun simctl bootstatus "$DEVICE" -b >/dev/null
 -open -a Simulator
 +open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
  
-@@ -414,3 +424,3 @@
+@@ -414,3 +438,3 @@
  xcrun simctl bootstatus "$WATCH_SIM" -b >/dev/null   # the trivial fix: wait for full boot
 -open -a Simulator
 +open "$(xcode-select -p)/../Applications/DeviceHub.app"   # Xcode 27 replaced Simulator.app
@@ -743,7 +832,7 @@
 +sims, and one crashes the app at launch. Shorter traps and Simulator limits have their own
 +sections.
  
-@@ -30,2 +31,55 @@
+@@ -30,2 +31,81 @@
  - Same rule for watchOS / iPadOS sims, not just iPhone.
 +
 +## Pin one simulator by UDID when names repeat
@@ -775,6 +864,26 @@
 +- To capture `print` output, run `xcrun simctl launch --console <UDID> <bundle-id>` in the
 +  background redirected to a file; `--stdout=<path>` wrote nothing.
 +- Crash reports land in `~/Library/Logs/DiagnosticReports/<App>-<date>.ips`.
++- A sim daemon's crash raises a macOS "quit unexpectedly" dialog. Its `.ips` report names the
++  sim in `coalitionName` (`com.apple.CoreSimulator.SimDevice.<UDID>`). The iOS 27.3 beta 1
++  runtime's `identityservicesd` crashes every few seconds;
++  `xcrun simctl spawn <UDID> launchctl disable system/com.apple.identityservicesd` stops it.
++- Shut down every sim you booted. The Xcode MCP's `RenderPreview` boots its own sim in a
++  separate device set, and plain `simctl shutdown` answers "Invalid device" for it:
++  `xcrun simctl --set "$HOME/Library/Developer/Xcode/UserData/Previews/Simulator Devices" shutdown <UDID>`.
++  It counts as a second sim where the project allows one at a time.
++- Tapping the Home Screen icon resumes the running process with the launch arguments it was
++  started with (a demo flag, say). For a normal launch, run
++  `xcrun simctl launch --terminate-running-process <UDID> <bundle-id>`, and tell the user
++  which mode the app is in when handing the Simulator back.
++- A sim that has never had an Xcode run has no local StoreKit environment, so `simctl launch`
++  shows no products. Run the scheme once through Xcode or the Xcode MCP (`RunProject`).
++- Driving a sim with the desktop app's iOS Simulator tool: after a pause of a few seconds the
++  first action often fails and isn't delivered, so lead with a tap on an inert spot. An
++  action that fails with "changed" was usually delivered; check the app's state before
++  retrying. Swipes don't scroll a horizontal `ScrollView`. When the user is away and can't
++  grant the device, Xcode's `DeviceInteractionStartSession` and `DeviceInteractionSynthesize`
++  need no grant.
 +
 +## What the Simulator can't prove
 +
@@ -782,7 +891,9 @@
 +- `RemoteMediaSession.start` (NowPlaying) throws `internalFailure`. Test it on a device.
 +- Multicast discovery (SSDP over `NWConnectionGroup`) receives only its own looped-back
 +  packets, never the devices' unicast replies. Test networking modules in a scratch macOS
-+  SwiftPM harness that copies the module sources, then on a device.
++  SwiftPM harness that copies the module sources, then on a device. Bonjour does work:
++  `NWBrowser` sees a service the Mac advertises with `dns-sd -R`, so a Bonjour-discovered
++  device can be emulated on the Mac.
 +- A synthesized tap doesn't end a `DragGesture(minimumDistance: 0)` used as a tap target; a
 +  finger on a device does.
 +
@@ -798,12 +909,16 @@
 +  may never reach disk. Write synchronously under a lock (`Synchronization.Mutex`).
 +- `devicectl device copy from --domain-type appGroupDataContainer` reads only under
 +  `Library`, `Documents` or `tmp`, not the container root.
++- If only the router answers on the LAN and every other host fails with `No route to host`,
++  suspect macOS Local Network privacy for the agent's process, not a VPN client. A running
++  process keeps its old decision after the toggle changes: restart the agent, or give the
++  user one command to paste into Terminal.app. Don't open Terminal yourself to get around it.
  
 --- a/.claude/rules/testing.md
 +++ b/.claude/rules/testing.md
-@@ -40,2 +40,20 @@
+@@ -40,2 +40,25 @@
    in-memory SwiftData containers. Mock boundaries (network), not internals.
-+- **Two Swift Testing compile traps** (Swift 6.4):
++- **Swift Testing compile traps** (Swift 6.4):
 +  - A `@MainActor` suite's `deinit` is nonisolated, so cleanup there can't touch the suite's
 +    statics. Make immutable `Sendable` constants `nonisolated static let`. Keep mutable state
 +    actor-isolated or behind synchronization (e.g. a `nonisolated static let` holding a
@@ -813,6 +928,11 @@
 +  - `#expect(try await store.load().field == value)` inside an `async throws` closure fails
 +    with "errors thrown from here are not handled". Hoist it:
 +    `let saved = try await store.load()`, then `#expect(saved.field == value)`.
++  - `#expect(value.mutatingCall())` fails with "cannot use mutating member on immutable
++    value". Call the method first and expect on the result.
++- **Don't assert a time window at its exact boundary.**
++  `start.addingTimeInterval(0.3).timeIntervalSince(start)` is 0.29999999999995453. Test with
++  a margin on each side.
 +- **Express version fixtures relative to the current constant.** A literal
 +  `{"schemaVersion":2}` meant as "newer" becomes current after a bump, and the failure looks
 +  like a data-loss bug. Write `currentSchemaVersion + 1`.
@@ -822,7 +942,7 @@
 +  condition. To prove a new test catches its bug, remove the fix and run it under
 +  `timeout`.
  
-@@ -55,2 +73,9 @@
+@@ -55,2 +78,9 @@
  Mock the boundary, then prove the failure behavior — not just the success behavior.
 +
 +A double must also cancel the way the real API does. `URLSessionWebSocketTask.receive()` has
@@ -832,7 +952,7 @@
 +`Task` in a FIFO chain doesn't inherit its caller's cancellation: propagate it, and check
 +for cancellation after the predecessor finishes so a cancelled queued command isn't sent.
  
-@@ -72,3 +97,3 @@
+@@ -72,3 +102,3 @@
  ```bash
 -# Via Xcode
 +# Via Xcode (boot the sim first; see simulator.md, which also covers pinning by UDID)
@@ -877,7 +997,7 @@
 -  xcrun mcpbridge run-agent skills export --output-dir <dir> --replace-existing
 +xcrun mcpbridge run-agent skills export --output-dir <dir> --replace-existing
  ```
-@@ -57,10 +56,39 @@
+@@ -57,10 +56,52 @@
  
 -`mcpbridge` is a stdio MCP bridge to a running Xcode (server name `xcode-tools`; the
 -binary also exists in Xcode 26.5, without the skills-export subcommand). Tools are
@@ -906,11 +1026,24 @@
 +Checked against the iOS 27.1 SDK:
 +- Gate Duo-only layout on `@Environment(\.toolbarVerticalEdge)` (nil wherever there's no
 +  vertical toolbar column), not on the device model. `ToolbarItem(…).axisBehavior(.verticalPreferred)`
-+  puts an item in that column.
++  puts an item in that column. iOS uses the column only when the Duo is closed or open in
++  landscape. It is the navigation bar, so `.toolbarVisibility(.hidden, for: .navigationBar)`
++  hides it, and showing it adds the bar's top inset.
 +- `GeometryProxy.reservedRegions(kind: .division)` gives the crease frame when half-open;
-+  `onHingeChange` reports hinge changes.
-+- `simctl` has no fold command: set poses in Device Hub. To capture one screen, find its ID
-+  with `xcrun simctl io <device> enumerate`, then `screenshot --display=<id>`.
++  add `options: .includeInactive` to get it while flat too (iOS 27.1+, so guard with
++  `#available` on a 27.0 target). `onHingeChange` reports hinge changes.
++- The inner display ignores the app's supported interface orientations.
++- `simctl` has no fold command: set poses with the buttons on Device Hub's bottom bar, which
++  an agent can press through computer use. Closed lights the outer display (1398 × 2034),
++  Open lays the inner display flat in landscape (2853 × 2007), and Partially Open plus Rotate
++  Right gives inner portrait (2007 × 2853). Book pose is a separate setting that moves the
++  Home Screen away from the crease.
++- To capture one screen, find its ID with `xcrun simctl io <device> enumerate`, then
++  `screenshot --display=<id>`. A Duo booted with `simctl boot` alone has no displays until
++  Device Hub shows it. Opening Device Hub can boot another recent sim, so check
++  `simctl list devices booted` afterwards.
++- Uploading Duo screenshots is what puts the iPhone Duo badge on the product page. They
++  become required in April 2027 for apps built with the iOS 27.1 SDK (see `build-deploy.md`).
 +- Framing needs frames-cli 1.5.0+ and its new asset pack (see `ios-project-playbook.md`,
 +  Track A).
 +

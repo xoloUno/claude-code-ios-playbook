@@ -164,6 +164,20 @@ canonical contract for that flow is below. This is what the
 2. For each `(locale × surface)` tuple, run the per-tuple sequence below.
 3. Print a short summary at the end listing every PNG written.
 
+An agent in the Claude desktop app can often do the gesture itself: the iOS Simulator tool
+(`control`: tap, swipe, `touch_path`, screenshot) drives the sim without a Device Hub window.
+A long-press on the Home Screen enters edit mode, a swipe down from the top-right edge opens
+Control Center, and a control moves only after a hold of about 350 ms before the drag. A
+widget reads the App Group store, so seed that store rather than a demo mode's private one.
+The arrangement persists in the sim, so set it up once.
+
+Capture the final set from the release-candidate commit, after the last UI-changing PR has
+merged, and keep one sim booted at a time: shut each one down before booting the next.
+
+When one image shows two devices, scale them by `physicalHeight` from the frames-cli asset
+pack's `NewFrames.json`, as `frames --merge` does. Apple's marketing guidelines ask for the
+correct relative product scale.
+
 ### Per-tuple sequence
 
 **Step a — Prep (automated, no user gesture).**

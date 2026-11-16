@@ -565,7 +565,7 @@
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
  
-@@ -90,15 +106,28 @@
+@@ -90,15 +106,29 @@
  
 -**Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 +**Screenshot sizes** (checked against [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
@@ -599,12 +599,13 @@
 +  tree. After each upload it reorders every set by file name. File numbers set the product-page order, so
 +  names must be unique across devices.
 +- A metadata-only or screenshot-only `deliver` still reads the version from the newest
-+  `*.ipa` in the project root and renames the editable App Store version to match. Pass
-+  `skip_app_version_update: true` in those lanes.
++  `*.ipa` in the project root and renames the editable App Store version to match. A lane
++  that passes `app_version` itself isn't affected, and needs the update to create the next
++  version. In a lane that doesn't, pass `skip_app_version_update: true`.
 +
 +See `ios-project-playbook.md` §Phase 5.
  
-@@ -107,5 +136,6 @@
+@@ -107,5 +137,6 @@
  After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
 -in `project.yml` to the next minor version. ASC closes the version train on approval —
 -new TestFlight builds will be rejected until the version is incremented. See
@@ -614,7 +615,7 @@
 +it to the next minor or major when feature work for that release starts; ASC lets you change
 +a version's number until it's submitted. See `ios-project-playbook.md` §6.5.
  
-@@ -116,2 +146,7 @@
+@@ -116,2 +147,7 @@
  **Can:** Edit Swift files, commit/push to `dev` or feature branches, plan, write features.
 +
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
@@ -622,7 +623,7 @@
 +and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
 +`MANUAL-TASKS.md` so a local session does it before merging.
  
-@@ -131,3 +166,3 @@
+@@ -131,3 +167,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
 +build verification (open a PR → Build Check workflow). For API

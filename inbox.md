@@ -24,7 +24,7 @@ In a Claude Code session in the `_playbook/` directory:
 
 ## Entry format
 
-**Next entry number:** 127
+**Next entry number:** 129
 
 Capturing sessions append new entries at the bottom of this file without a number; curation
 numbers them. Numbers are permanent IDs: never renumber an entry or reuse a removed number,

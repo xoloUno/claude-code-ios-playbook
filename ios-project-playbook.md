@@ -1612,12 +1612,20 @@ This is a blocking error — no builds can be uploaded until the version is bump
 | HealthKit not identified in UI | 2.5.1 | Show "Apple Health" text in visible UI (settings, onboarding, buttons) — not just in code |
 | Missing purpose strings | 2.5.1 | Check all Info.plist usage descriptions |
 | Debug UI or a hidden feature | 2.5.19 | Gate debug UI behind `#if DEBUG`; give the exact reveal steps for any hidden feature (an Easter egg) in the review notes |
+| Copy that calls a feature beta or untested | 2.2 | Describe it positively ("It also connects to X") and point testers to a public TestFlight; name unadvertised features in the review notes (2.5.19) |
 | Placeholder content | 2.1 | Replace all "[YOUR NAME]" text |
 | App icon has alpha channel | 2.3 | Strip transparency (see Python snippet above) |
 | Content Rights not answered | 2.3 | Answer in App Information (easy to miss) |
 | Pricing not set | 3.1.1 | Explicitly select Free even for IAP apps |
 | Missing EULA/Terms link | 3.1.2(c) | Add Terms of Use link in description AND select EULA in ASC |
 | Subscription info incomplete | 3.1.2(c) | Purchase flow must show title, length, price, Terms + Privacy links |
+
+**Public TestFlight links:**
+- In-app purchases are free in TestFlight builds, so a public link offered inside a paid app
+  gives anyone the paid unlock while betas keep shipping. Decide that knowingly, and set the
+  link's tester limit if it matters.
+- A new app's beta information (beta description, feedback email, Beta App Review contact)
+  starts empty and must be filled in App Store Connect before an external group can test.
 
 **Handling rejections:**
 - You cannot swap the build on a rejected submission — create a new submission with a new build

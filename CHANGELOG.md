@@ -28,6 +28,32 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-16 — Plugin `v1.6.0` — core batch from inbox #88–#125, and the iOS round
+
+Bumps `.claude-plugin/plugin.json` from `1.5.1` to `1.6.0`; the merge commit gets the tag
+`playbook--v1.6.0`. A minor release: the core block gains rules in "Git", "Autonomy" and
+"Handoffs and records", and installed plugins now receive the iOS pack changes in the entry
+below.
+
+- **Core "Git":** check for a running session before working in a worktree or branch you
+  didn't create (#117); keep new work out of a merge's conflict resolution, and use
+  `git show --remerge-diff` to see what a merge changed (#125); in zsh write
+  `"${REF}:path"` (#124).
+- **Core "Autonomy"** (approved by the owner on 2026-11-16): a hosted job that is never
+  picked up by a runner is capacity, so re-run it (#88); when the host refuses an allowed
+  step, ask once and don't route around it (#89); nothing wakes a session when CI passes, so
+  say the merge resumes on the user's next message and offer auto-merge (#105).
+- **Core "Handoffs and records":** a session that can't write `MANUAL-TASKS.md` or
+  `WORKLOG.md` leaves the text in its PR description or report (#116).
+
+**Files affected:** `core/agents-core.md`, `.claude-plugin/plugin.json` (`version` `1.5.1` →
+`1.6.0`).
+
+**What to do in your project:** iOS apps run `/playbook:upgrade` once the plugin is at
+1.6.0; symlink-bridged repos re-run `bridge-symlink.sh` to refresh the core block.
+
+---
+
 ## 2026-11-16 — Curate inbox #76–#126 into the iOS pack
 
 No plugin version bump: installed plugins get these rules with the next release.

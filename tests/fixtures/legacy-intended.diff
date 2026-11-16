@@ -541,7 +541,7 @@
  
 --- a/.claude/rules/build-deploy.md
 +++ b/.claude/rules/build-deploy.md
-@@ -32,2 +32,17 @@
+@@ -32,2 +32,19 @@
  
 +## Build check (the merge gate)
 +
@@ -549,7 +549,9 @@
 +PR's checkout, on its head commit, and judge each step by its exit status:
 +
 +1. `xcodegen generate`
-+2. the compile check under "Quick Commands" below
++2. the compile check under "Quick Commands" below, with
++   `-destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation` in place of
++   the named simulator, so it needs no booted or uniquely named sim
 +3. `swiftlint lint --strict --quiet`
 +
 +The hosted Build Check workflow runs only when dispatched
@@ -559,12 +561,12 @@
 +after the local check.
 +
  ## Quick Commands (local)
-@@ -37,2 +52,4 @@
+@@ -37,2 +54,4 @@
  xcodebuild build -scheme [APP_NAME] -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
 +# A passing -quiet log can print "error: the following command failed with exit code 0 but
 +# produced no further output". Judge the build by its exit status, not by grepping "error:".
  
-@@ -62,2 +79,11 @@
+@@ -62,2 +81,11 @@
  
 +**Profiles from an agent's shell.** When a device build needs a profile refresh
 +(`-allowProvisioningUpdates`, say after Apple grants a restricted entitlement), `xcodebuild`
@@ -576,7 +578,7 @@
 +each archive, burying real signing errors.
 +
  ## App Store Release
-@@ -75,2 +101,7 @@
+@@ -75,2 +103,7 @@
  Metadata lives in `fastlane/metadata/<locale>/`. Edit those files before running `/release`.
 +
 +A lane that passes `sync_screenshots: true` to `deliver` fails unless
@@ -584,7 +586,7 @@
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
  
-@@ -90,15 +121,29 @@
+@@ -90,15 +123,29 @@
  
 -**Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 +**Screenshot sizes** (checked against [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
@@ -624,7 +626,7 @@
 +
 +See `ios-project-playbook.md` §Phase 5.
  
-@@ -107,5 +152,6 @@
+@@ -107,5 +154,6 @@
  After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
 -in `project.yml` to the next minor version. ASC closes the version train on approval —
 -new TestFlight builds will be rejected until the version is incremented. See
@@ -634,7 +636,7 @@
 +it to the next minor or major when feature work for that release starts; ASC lets you change
 +a version's number until it's submitted. See `ios-project-playbook.md` §6.5.
  
-@@ -116,2 +162,7 @@
+@@ -116,2 +164,7 @@
  **Can:** Edit Swift files, commit/push to `dev` or feature branches, plan, write features.
 +
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
@@ -642,7 +644,7 @@
 +and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
 +`MANUAL-TASKS.md` so a local session does it before merging.
  
-@@ -131,3 +182,3 @@
+@@ -131,3 +184,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
 +build verification (dispatch the Build Check workflow; see "Build check"). For API

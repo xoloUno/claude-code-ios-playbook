@@ -36,7 +36,9 @@ The local build check is this project's merge gate (core merge checklist). Run i
 PR's checkout, on its head commit, and judge each step by its exit status:
 
 1. `xcodegen generate`
-2. the compile check under "Quick Commands" below
+2. the compile check under "Quick Commands" below, with
+   `-destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation` in place of
+   the named simulator, so it needs no booted or uniquely named sim
 3. `swiftlint lint --strict --quiet`
 
 The hosted Build Check workflow runs only when dispatched

@@ -74,11 +74,24 @@ See `build-deploy.md` for how this relates to the third-party MCP servers.
 Checked against the iOS 27.1 SDK:
 - Gate Duo-only layout on `@Environment(\.toolbarVerticalEdge)` (nil wherever there's no
   vertical toolbar column), not on the device model. `ToolbarItem(…).axisBehavior(.verticalPreferred)`
-  puts an item in that column.
+  puts an item in that column. iOS uses the column only when the Duo is closed or open in
+  landscape. It is the navigation bar, so `.toolbarVisibility(.hidden, for: .navigationBar)`
+  hides it, and showing it adds the bar's top inset.
 - `GeometryProxy.reservedRegions(kind: .division)` gives the crease frame when half-open;
-  `onHingeChange` reports hinge changes.
-- `simctl` has no fold command: set poses in Device Hub. To capture one screen, find its ID
-  with `xcrun simctl io <device> enumerate`, then `screenshot --display=<id>`.
+  add `options: .includeInactive` to get it while flat too (iOS 27.1+, so guard with
+  `#available` on a 27.0 target). `onHingeChange` reports hinge changes.
+- The inner display ignores the app's supported interface orientations.
+- `simctl` has no fold command: set poses with the buttons on Device Hub's bottom bar, which
+  an agent can press through computer use. Closed lights the outer display (1398 × 2034),
+  Open lays the inner display flat in landscape (2853 × 2007), and Partially Open plus Rotate
+  Right gives inner portrait (2007 × 2853). Book pose is a separate setting that moves the
+  Home Screen away from the crease.
+- To capture one screen, find its ID with `xcrun simctl io <device> enumerate`, then
+  `screenshot --display=<id>`. A Duo booted with `simctl boot` alone has no displays until
+  Device Hub shows it. Opening Device Hub can boot another recent sim, so check
+  `simctl list devices booted` afterwards.
+- Uploading Duo screenshots is what puts the iPhone Duo badge on the product page. They
+  become required in April 2027 for apps built with the iOS 27.1 SDK (see `build-deploy.md`).
 - Framing needs frames-cli 1.5.0+ and its new asset pack (see `ios-project-playbook.md`,
   Track A).
 

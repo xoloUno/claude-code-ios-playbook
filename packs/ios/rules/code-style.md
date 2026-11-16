@@ -31,6 +31,13 @@ globs: **/*.swift
   `.moveDisabled` divider row.
 - Apple's restricted device symbols (`appletv.fill`, `appletvremote.gen4`, …) may refer only
   to that Apple product. `logo.playstation` and `logo.xbox` are unrestricted.
+- A closure stored in an `@Entry` environment value redraws every reader on each parent
+  update. Wrap the handler in an `Equatable` struct with `callAsFunction`, as `OpenURLAction`
+  does.
+- `ScrollView { content.frame(minHeight: proxy.size.height) }` doesn't stretch flexible
+  children, and adding `idealHeight` cuts off taller content instead of scrolling it. Use a
+  small `Layout` that proposes `max(minimum, natural height)`, and check it at the largest
+  Dynamic Type size.
 
 ## XcodeGen projects
 

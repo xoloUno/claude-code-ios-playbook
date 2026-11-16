@@ -35,6 +35,8 @@ system Ruby 2.6 bundles) — if it prints the wrong one, your PATH is resolving 
 ```bash
 # Compile check
 xcodebuild build -scheme [APP_NAME] -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
+# A passing -quiet log can print "error: the following command failed with exit code 0 but
+# produced no further output". Judge the build by its exit status, not by grepping "error:".
 
 # TestFlight upload  (needs Homebrew Ruby on PATH — see "Ruby & bundler environment")
 bundle exec fastlane beta
@@ -102,19 +104,32 @@ Install Shotsmith once per machine: `pipx install git+https://github.com/xoloUno
 > Apps still on the older frames-cli `screenshots`/`frame_screenshots` lanes should migrate to
 > Shotsmith (the standard) — it's a superset (gradient + captions on top of device bezels).
 
-**Required screenshot simulators (ASC auto-scales these to smaller sizes):**
+**Screenshot sizes** (checked against [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
+on 2026-11-16; re-check it before a submission):
 
-| ASC Category | Simulator | Resolution | Required? |
+| ASC category | Simulator | Resolution | Required? |
 |---|---|---|---|
-| **iPhone 6.9"** | **iPhone 17 Pro Max** | **1320 × 2868** | **Yes** — or 6.5" as fallback |
-| **iPad 13"** | **iPad Pro 13-inch (M5)** | **2064 × 2752** | **Yes** if app supports iPad |
-| iPhone 6.5" | iPhone 14 Plus | 1284 × 2778 | Fallback only |
-| iPhone 6.3" | iPhone 17 Pro | 1179 × 2556 | **Not accepted** — scaling target |
-| iPad Pro 11" | iPad Pro 11-inch | 1668 × 2388 | **Not accepted** — scaling target |
+| **iPhone with Dynamic Island (medium)** | **iPhone 17 Pro** | **1206 × 2622** (or 1179 × 2556) | **Yes**, at least one |
+| iPhone with Dynamic Island (large) | iPhone 17 Pro Max | 1320 × 2868 | Recommended; otherwise scaled |
+| **iPad 13"** | **iPad Pro 13-inch (M5)** | **2064 × 2752** | **Yes** if the app runs on iPad |
+| iPhone Duo | iPhone Duo | outer 1398 × 2034, inner 2007 × 2853, either orientation | From April 2027 for iOS 27.1 SDK apps; earns the Duo badge |
 
-ASC accepts only 6.9" (iPhone) and 13" (iPad) as submissions per [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
-Uploading only 6.3" or 11" blocks "Add for Review." Apple auto-scales 6.9" down to
-every smaller iPhone size and 13" to 11" iPad. See `ios-project-playbook.md` §Phase 5.
+- Until 2026 the 6.9" set was the required one. The bootstrap capture defaults and
+  shotsmith's device registry still target 1320 × 2868, so a new submission also needs a
+  medium set.
+- Images can't carry an alpha channel, and `simctl io screenshot` PNGs do. Save as RGB before
+  uploading.
+- The Duo set needs fastlane 2.241.1 or later (`APP_IPHONE_DUO`). Use one size and
+  orientation across the set.
+- `deliver` reads only the images directly inside `<screenshots_path>/<locale>/`, so upload
+  from a flat staging folder (`fastlane/shotsmith/upload-staging`), not the per-device
+  tree. After each upload it reorders every set by file name. File numbers set the product-page order, so
+  names must be unique across devices.
+- A metadata-only or screenshot-only `deliver` still reads the version from the newest
+  `*.ipa` in the project root and renames the editable App Store version to match. Pass
+  `skip_app_version_update: true` in those lanes.
+
+See `ios-project-playbook.md` §Phase 5.
 
 ## Version Lifecycle
 

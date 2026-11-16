@@ -59,6 +59,26 @@ on 27.1 means creating a Duo sim.
 - To capture `print` output, run `xcrun simctl launch --console <UDID> <bundle-id>` in the
   background redirected to a file; `--stdout=<path>` wrote nothing.
 - Crash reports land in `~/Library/Logs/DiagnosticReports/<App>-<date>.ips`.
+- A sim daemon's crash raises a macOS "quit unexpectedly" dialog. Its `.ips` report names the
+  sim in `coalitionName` (`com.apple.CoreSimulator.SimDevice.<UDID>`). The iOS 27.3 beta 1
+  runtime's `identityservicesd` crashes every few seconds;
+  `xcrun simctl spawn <UDID> launchctl disable system/com.apple.identityservicesd` stops it.
+- Shut down every sim you booted. The Xcode MCP's `RenderPreview` boots its own sim in a
+  separate device set, and plain `simctl shutdown` answers "Invalid device" for it:
+  `xcrun simctl --set "$HOME/Library/Developer/Xcode/UserData/Previews/Simulator Devices" shutdown <UDID>`.
+  It counts as a second sim where the project allows one at a time.
+- Tapping the Home Screen icon resumes the running process with the launch arguments it was
+  started with (a demo flag, say). For a normal launch, run
+  `xcrun simctl launch --terminate-running-process <UDID> <bundle-id>`, and tell the user
+  which mode the app is in when handing the Simulator back.
+- A sim that has never had an Xcode run has no local StoreKit environment, so `simctl launch`
+  shows no products. Run the scheme once through Xcode or the Xcode MCP (`RunProject`).
+- Driving a sim with the desktop app's iOS Simulator tool: after a pause of a few seconds the
+  first action often fails and isn't delivered, so lead with a tap on an inert spot. An
+  action that fails with "changed" was usually delivered; check the app's state before
+  retrying. Swipes don't scroll a horizontal `ScrollView`. When the user is away and can't
+  grant the device, Xcode's `DeviceInteractionStartSession` and `DeviceInteractionSynthesize`
+  need no grant.
 
 ## What the Simulator can't prove
 
@@ -66,7 +86,9 @@ Seen on the iOS 27.0 and 27.1 Simulators; each looks like an app bug:
 - `RemoteMediaSession.start` (NowPlaying) throws `internalFailure`. Test it on a device.
 - Multicast discovery (SSDP over `NWConnectionGroup`) receives only its own looped-back
   packets, never the devices' unicast replies. Test networking modules in a scratch macOS
-  SwiftPM harness that copies the module sources, then on a device.
+  SwiftPM harness that copies the module sources, then on a device. Bonjour does work:
+  `NWBrowser` sees a service the Mac advertises with `dns-sd -R`, so a Bonjour-discovered
+  device can be emulated on the Mac.
 - A synthesized tap doesn't end a `DragGesture(minimumDistance: 0)` used as a tap target; a
   finger on a device does.
 
@@ -82,6 +104,10 @@ delivery) needs a device test too: a Mac or the Simulator never suspends the app
   may never reach disk. Write synchronously under a lock (`Synchronization.Mutex`).
 - `devicectl device copy from --domain-type appGroupDataContainer` reads only under
   `Library`, `Documents` or `tmp`, not the container root.
+- If only the router answers on the LAN and every other host fails with `No route to host`,
+  suspect macOS Local Network privacy for the agent's process, not a VPN client. A running
+  process keeps its old decision after the toggle changes: restart the agent, or give the
+  user one command to paste into Terminal.app. Don't open Terminal yourself to get around it.
 
 ## Don't strip entitlements via signing overrides on entitlement-gated apps
 

@@ -30,6 +30,9 @@ copy-pasting terminal output or switching windows.
   inside Claude Code. Stored in `~/.claude/`.
 - **MCP servers** = connections to external tools (GitHub, Xcode, etc.). Added
   via `claude mcp add` in your terminal. Claude Code auto-discovers them.
+  The default `--scope local` is keyed to the exact folder, so git worktrees don't get the
+  server: use `--scope user` for machine-local tools. A running session never picks up a new
+  server; start a new one.
 - **Skills** = markdown instruction files that teach Claude Code when and how
   to use specific tools. Often bundled inside plugins.
 

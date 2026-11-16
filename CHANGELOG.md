@@ -28,6 +28,36 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-16 — Curate inbox #76–#126 into the iOS pack
+
+No plugin version bump: installed plugins get these rules with the next release.
+
+- **Screenshot sizes corrected** (`build-deploy.md`, `ios-project-playbook.md`): Apple now
+  requires an "iPhone with Dynamic Island (medium display)" set (1206 × 2622 or 1179 × 2556);
+  the 6.9" set is recommended, and iPhone Duo has its own set. Screenshots can't carry an
+  alpha channel. The bootstrap capture defaults and shotsmith still target 6.9".
+- **`deliver` traps** (`build-deploy.md`, `asc-troubleshooting.md`, `bootstrap.sh`): the
+  bootstrap metadata and screenshot lanes now pass `skip_app_version_update: true`, so a
+  leftover `.ipa` can't rename the App Store version. `deliver` reorders screenshots by file
+  name and deletes App Review attachments on each metadata upload.
+- **App Store Connect** (`asc-troubleshooting.md`): an In-App Event submitted alone is
+  reviewed against the live version; offer codes replace in-app purchase promo codes.
+- **Review guideline numbers** (`ios-project-playbook.md` §6.6): hidden features are 2.5.19
+  and need reveal steps in the review notes.
+- **Simulator, iPhone Duo, SwiftUI and Swift Testing traps** (`simulator.md`,
+  `wwdc26-ios27.md`, `code-style.md`, `testing.md`, `screenshot-pipeline.md`).
+- **Setup notes:** non-interactive `frames setup` and an Icon Composer `.icon` as the app
+  icon (`ios-project-playbook.md`); `--scope user` for local MCP servers
+  (`claude-code-plugins-setup.md`).
+
+**Files affected:** the files named above, plus `tests/` for the compose fixture.
+
+**What to do in your project:** add `skip_app_version_update: true` to the `upload_metadata`
+and `upload_screenshots` lanes, and plan a medium-display screenshot set for the next
+submission. The rules arrive with the next `/playbook:upgrade` after a plugin release.
+
+---
+
 ## 2026-11-05 — Plugin `v1.5.1` — finish a hook-rejected merge with `git commit`
 
 Bumps `.claude-plugin/plugin.json` from `1.5.0` to `1.5.1`; the merge commit gets the tag

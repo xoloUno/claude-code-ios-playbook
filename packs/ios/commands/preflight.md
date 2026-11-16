@@ -8,6 +8,7 @@ Steps:
 
 1. **Simulator availability** — Run `xcrun simctl list devices available` and confirm
    the project's required simulators exist. Standard set:
+   - iPhone medium-display screenshots (required since late 2026): iPhone 17 Pro
    - iPhone 6.9" screenshots: iPhone 17 Pro Max
    - iPad 13" screenshots: iPad Pro 13-inch (M5)
    - Build/run target: __PRIMARY_SIM__

@@ -20,7 +20,15 @@ plan restrictions. Verifying them is not authorization to change them.
 - Stage explicit paths. Never `git add .` blindly.
 - Attribution follows the host's settings and the user's policy. Don't hardcode a
   co-author line.
-- Parallel agent sessions in one repository each get their own worktree.
+- Parallel agent sessions in one repository each get their own worktree. A clean worktree
+  isn't an idle one: before editing, merging into or building in a worktree or branch you
+  didn't create, check for a running session on it (`list_sessions` in the Claude desktop
+  app), and work in your own worktree until it's idle.
+- Keep new work out of a merge's conflict resolution, where no log, PR diff or earlier review
+  shows it; commit it after the merge. `git show --remerge-diff <merge>` lists what a merge
+  changed beyond the automatic result.
+- In zsh, write `git show "${REF}:path"`. A colon after a bare `$REF` is read as a modifier
+  and mangles the path.
 - If a `commit-msg` hook rejects git's default merge message, the merge stays in progress:
   finish it with `git commit -m "chore(merge): bring in <branch>"`.
 - In a stack of PRs, deleting a merged PR's branch closes the PR based on it, and a closed
@@ -67,7 +75,15 @@ plan restrictions. Verifying them is not authorization to change them.
   For playbook shared source, `pytest` must also pass, and a compose diff must show only
   the intended downstream changes. If any item fails, park the PR. A CI job that fails in
   seconds with no steps may be a billing block: if its check-run annotations name payments
-  or a spending limit, park with one note to the user rather than debugging.
+  or a spending limit, park with one note to the user rather than debugging. A hosted job
+  that ends after about 15 minutes with no steps, with an annotation saying it "was not
+  acquired by Runner", is runner capacity, not code: re-run it.
+- If the host refuses a step this section allows, ask the user once and carry on with
+  independent work. Don't retry the step or route around the refusal.
+- Nothing wakes a session when CI passes. When a merge or a step after it waits only on CI,
+  say that it resumes on the user's next message. Offer GitHub auto-merge as the user's
+  choice only where the repo's required checks cover every check on the PR, because
+  auto-merge waits for required checks alone.
 - These always need the user:
   - device testing;
   - App Store Connect and Developer Portal actions;
@@ -128,6 +144,9 @@ plan restrictions. Verifying them is not authorization to change them.
     write to `AGENTS.md` itself
 - `MANUAL-TASKS.md` and `WORKLOG.md` are local scratchpads. Check the project's ignore rules
   before treating their contents as untracked.
+  A session that can't write them (a worktree session, when they live in the main checkout)
+  puts the exact text in its PR description or final report and says so; the next session in
+  the main checkout applies it before other work.
 
 ### Grok Bot
 - "Grok Bot" is xAI and Cursor's computer-use agent. It operates a real browser on a

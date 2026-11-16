@@ -126,8 +126,9 @@ on 2026-11-16; re-check it before a submission):
   tree. After each upload it reorders every set by file name. File numbers set the product-page order, so
   names must be unique across devices.
 - A metadata-only or screenshot-only `deliver` still reads the version from the newest
-  `*.ipa` in the project root and renames the editable App Store version to match. Pass
-  `skip_app_version_update: true` in those lanes.
+  `*.ipa` in the project root and renames the editable App Store version to match. A lane
+  that passes `app_version` itself isn't affected, and needs the update to create the next
+  version. In a lane that doesn't, pass `skip_app_version_update: true`.
 
 See `ios-project-playbook.md` §Phase 5.
 

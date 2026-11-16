@@ -28,6 +28,26 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-16 — Plugin `v1.6.1` — `skip_app_version_update` only where `app_version` is unset
+
+Bumps `.claude-plugin/plugin.json` from `1.6.0` to `1.6.1`; the merge commit gets the tag
+`playbook--v1.6.1`. A patch release with one iOS rule fix, found by the Codex review of
+Flara's 1.6.0 re-render.
+
+- **`build-deploy.md`:** 1.6.0 said to pass `skip_app_version_update: true` in every
+  metadata-only and screenshot-only lane. A lane that passes `app_version` explicitly never
+  reads the version from an `.ipa`, and needs the update to create the next version after a
+  release (fastlane 2.241.2, `deliver/lib/deliver/runner.rb` and `detect_values.rb`). The rule
+  now asks for the flag only in lanes that don't pass `app_version`.
+
+**Files affected:** `packs/ios/rules/build-deploy.md`, `.claude-plugin/plugin.json` (`version`
+`1.6.0` → `1.6.1`).
+
+**What to do in your project:** the same steps as 1.6.0. Leave a lane that passes
+`app_version` as it is.
+
+---
+
 ## 2026-11-16 — Plugin `v1.6.0` — core batch from inbox #88–#125, and the iOS round
 
 Bumps `.claude-plugin/plugin.json` from `1.5.1` to `1.6.0`; the merge commit gets the tag
@@ -79,8 +99,8 @@ No plugin version bump: installed plugins get these rules with the next release.
 
 **Files affected:** the files named above, plus `tests/` for the compose fixture.
 
-**What to do in your project:** add `skip_app_version_update: true` to the `upload_metadata`
-and `upload_screenshots` lanes, and plan a medium-display screenshot set for the next
+**What to do in your project:** add `skip_app_version_update: true` to `upload_metadata`
+and `upload_screenshots` lanes that don't pass `app_version` (see 1.6.1), and plan a medium-display screenshot set for the next
 submission. The rules arrive with the next `/playbook:upgrade` after a plugin release.
 
 ---

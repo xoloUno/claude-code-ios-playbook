@@ -772,7 +772,7 @@ This project has the following Claude Code extensions available in local session
   etc.) when training data may be stale.
 
 Cloud sessions do not have access to these tools. Use GitHub Actions for
-build verification in cloud sessions (open a PR → Build Check workflow).
+build verification in cloud sessions (`gh workflow run build-check.yml --ref <branch>`).
 
 **Telegram channel:** Start with `claude --channels plugin:telegram@claude-plugins-official`
 to enable mobile monitoring of long-running sessions via Telegram DM.

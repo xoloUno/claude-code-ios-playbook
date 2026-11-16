@@ -39,9 +39,10 @@ about 75 seconds then fails after 15 minutes with no steps ("The job was not acq
 Runner of type hosted"). Kendibah had four such failures in a row on 2026-11-16, and Flara
 had a run wait 27 hours. Nothing wakes a session when CI passes, so merges sat waiting.
 
-- **Core "Autonomy" merge checklist:** the CI item now applies when the repo's CI runs on
-  pull requests. Where the project names a local build check instead, run it on the PR's
-  head commit and report the result in the PR.
+- **Core "Autonomy" merge checklist:** the CI item gains one exception. Where the
+  project's rules name a local build check as its merge gate, run it on the PR's head
+  commit and report the result in the PR; a CI check that did run must still not have
+  failed. Every other project keeps the CI gate.
 - **`build-deploy.md`:** a new "Build check (the merge gate)" section with the three
   steps (`xcodegen generate`, the existing compile check, `swiftlint lint --strict`).
 - **`bootstrap.sh`:** the Build Check workflow is `workflow_dispatch` only, kept for
@@ -301,6 +302,10 @@ move them to a public `<app>-web` repo; and replace any `stdevapps` EULA link wi
 `stdeula`.
 
 ## 2026-11-04 — Build Check runs on pull requests, not on every push
+
+> **Partially superseded by:** 2026-11-16 — Plugin `v1.7.0`. Build Check is now
+> `workflow_dispatch` only and the local build check is the merge gate; ignore this entry's
+> `pull_request` trigger. Its billing notes still apply.
 
 On a private repo, every macOS minute draws on the account's included Actions usage, and
 macOS runners cost about ten times Linux per minute (GitHub Free, checked 2026-11-04: $12 a

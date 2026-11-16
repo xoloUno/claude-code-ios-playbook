@@ -60,10 +60,11 @@ plan restrictions. Verifying them is not authorization to change them.
 - Merge checklist:
   - the work is finished, not a checkpoint;
   - the project's tests and lint pass on the PR's latest commit;
-  - if the repo's CI runs on pull requests, at least one check ran on that commit and every
-    check passed, so leave `[skip ci]` off the last push. Where the project names a local
-    build check instead, run it on the PR's head commit with nothing uncommitted, and
-    report the result in the PR;
+  - if the repo has CI, at least one check ran on that commit and every check passed, so
+    leave `[skip ci]` off the last push. One exception: where the project's rules name a
+    local build check as its merge gate, run that on the PR's head commit with nothing
+    uncommitted and report the result in the PR. No CI run is needed then, but a check
+    that did run on that commit must not have failed;
   - the branch contains the current `main`;
   - after one local Codex review, no open finding meets the bar in "Code Review Rules".
     That review is the merge review: run it on the PR's changes as "Second opinions" says,

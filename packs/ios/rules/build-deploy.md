@@ -121,8 +121,9 @@ on 2026-11-16; re-check it before a submission):
   uploading.
 - The Duo set needs fastlane 2.241.1 or later (`APP_IPHONE_DUO`). Use one size and
   orientation across the set.
-- `deliver` reads only the images directly inside `screenshots/<locale>/`, and after each
-  upload it reorders every set by file name. File numbers set the product-page order, so
+- `deliver` reads only the images directly inside `<screenshots_path>/<locale>/`, so upload
+  from a flat staging folder (`fastlane/shotsmith/upload-staging`), not the per-device
+  tree. After each upload it reorders every set by file name. File numbers set the product-page order, so
   names must be unique across devices.
 - A metadata-only or screenshot-only `deliver` still reads the version from the newest
   `*.ipa` in the project root and renames the editable App Store version to match. Pass

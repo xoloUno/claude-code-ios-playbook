@@ -846,10 +846,10 @@ smaller device category.
 | iPhone 6.3" | iPhone 17 Pro | 1179 × 2556 | **Not accepted** — scaling target only |
 | iPad Pro 11" | iPad Pro 11-inch | 1668 × 2388 | **Not accepted** — scaling target only |
 
-**Important:** ASC auto-scales 6.9" submissions down to 6.5", 6.3", 6.1", and older
-sizes. A 13" iPad submission auto-scales to 11" iPad. **iPhone 6.3" (1179×2556) and
-iPad Pro 11" (1668×2388) are NOT accepted as submissions** — uploading only those
-sizes blocks "Add for Review." Capture on iPhone 17 Pro Max and iPad Pro 13-inch
+**Important (early-2026 rules, see the note above):** ASC auto-scaled 6.9" submissions
+down to 6.5", 6.3", 6.1", and older sizes, and a 13" iPad submission to 11" iPad. The
+"Not accepted" rows above no longer hold for iPhone 6.3", which is now the required
+size; add an iPhone 17 Pro set to the capture below. Capture on iPhone 17 Pro Max and iPad Pro 13-inch
 (M5); these are the only two simulators required.
 
 **If you need iPhone 17 Pro or iPad Pro 11" specifically as your marketing frame**
@@ -1405,6 +1405,7 @@ your primary 6.3" size, then 1 each for 6.5" and iPad 13".
 lane :upload_screenshots do
   deliver(
     skip_binary_upload: true,
+    skip_app_version_update: true,  # a leftover .ipa would otherwise rename the version
     skip_metadata: true,
     overwrite_screenshots: true,
     screenshots_path: "./fastlane/screenshots"

@@ -246,13 +246,17 @@
  
 --- a/.claude/commands/preflight.md
 +++ b/.claude/commands/preflight.md
-@@ -35,3 +35,4 @@
+@@ -10,2 +10,3 @@
+    the project's required simulators exist. Standard set:
++   - iPhone medium-display screenshots (required since late 2026): iPhone 17 Pro
+    - iPhone 6.9" screenshots: iPhone 17 Pro Max
+@@ -35,3 +36,4 @@
     - `git status` must be clean (warn if untracked files)
 -   - Current branch must NOT be `main` — should be `dev`, `release/*`, or feature/*
 +   - `/deploy` and `/release` run from `main`: on `main` this passes; on any other branch,
 +     WARN that its PR must merge first
     - Branch should be pushed and up-to-date with origin
-@@ -44,2 +45,8 @@
+@@ -44,2 +46,8 @@
     number likely needs a bump.
 +
 +7. **Links resolve** — Collect every unique `https://` URL from the `*_url.txt` files and
@@ -261,7 +265,7 @@
 +   must print 200. FAIL on anything else and list the URL: a private repo's GitHub Pages and
 +   Apple's retired `stdevapps` EULA path both return 404 (see `legal-urls.md`).
  
-@@ -58,2 +65,3 @@
+@@ -58,2 +66,3 @@
  | Build number | ✅ PASS | 71 (no existing tag) |
 +| Links | ✅ PASS | 4 unique URLs return 200 |
  
@@ -561,7 +565,7 @@
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
  
-@@ -90,15 +106,27 @@
+@@ -90,15 +106,28 @@
  
 -**Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 +**Screenshot sizes** (checked against [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
@@ -590,8 +594,9 @@
 +  uploading.
 +- The Duo set needs fastlane 2.241.1 or later (`APP_IPHONE_DUO`). Use one size and
 +  orientation across the set.
-+- `deliver` reads only the images directly inside `screenshots/<locale>/`, and after each
-+  upload it reorders every set by file name. File numbers set the product-page order, so
++- `deliver` reads only the images directly inside `<screenshots_path>/<locale>/`, so upload
++  from a flat staging folder (`fastlane/shotsmith/upload-staging`), not the per-device
++  tree. After each upload it reorders every set by file name. File numbers set the product-page order, so
 +  names must be unique across devices.
 +- A metadata-only or screenshot-only `deliver` still reads the version from the newest
 +  `*.ipa` in the project root and renames the editable App Store version to match. Pass
@@ -599,7 +604,7 @@
 +
 +See `ios-project-playbook.md` §Phase 5.
  
-@@ -107,5 +135,6 @@
+@@ -107,5 +136,6 @@
  After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
 -in `project.yml` to the next minor version. ASC closes the version train on approval —
 -new TestFlight builds will be rejected until the version is incremented. See
@@ -609,7 +614,7 @@
 +it to the next minor or major when feature work for that release starts; ASC lets you change
 +a version's number until it's submitted. See `ios-project-playbook.md` §6.5.
  
-@@ -116,2 +145,7 @@
+@@ -116,2 +146,7 @@
  **Can:** Edit Swift files, commit/push to `dev` or feature branches, plan, write features.
 +
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
@@ -617,7 +622,7 @@
 +and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
 +`MANUAL-TASKS.md` so a local session does it before merging.
  
-@@ -131,3 +165,3 @@
+@@ -131,3 +166,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
 +build verification (open a PR → Build Check workflow). For API

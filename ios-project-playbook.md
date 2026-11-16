@@ -149,18 +149,17 @@ profile secrets change per app. Use GitHub Organization secrets for the shared o
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| **Build Check** | Pull request opened or updated, or run by hand (`gh workflow run build-check.yml --ref <branch>`) | Simulator compile check — catches errors in cloud sessions |
+| **Build Check** | Manual dispatch only (`gh workflow run build-check.yml --ref <branch>`) | Simulator compile check for sessions without Xcode; the merge gate is the local build check in `.claude/rules/build-deploy.md` |
 | **TestFlight Deploy** | Manual dispatch only (`workflow_dispatch`) | Emergency fallback — normally use `/deploy` locally |
 
 **Local sessions deploy locally.** Use the `/deploy` slash command to build, sign, and
 upload to TestFlight from your machine. This is faster than CI and costs zero GitHub
-Actions credits. A push to a branch with no open PR runs no workflow. On a branch with an
-open PR, local sessions put `[skip ci]` in the commit message of every push but the last
-(they verify builds locally and deploy locally); under the core "Autonomy" rules, leave it
-off the last push before a merge, so CI checks the PR's final commit. GitHub also skips
-`pull_request` runs for a head commit marked `[skip ci]`.
+Actions credits. Since playbook 1.7.0 no push or pull request runs a workflow: GitHub's
+`xcode-27` preview runners often never picked a job up, so a 75-second check failed after
+15 minutes. Projects whose Build Check still runs on pull requests keep the older rule:
+`[skip ci]` on every push but the last before a merge.
 
-**Why pull requests only:** on a private repo, every macOS minute draws on the account's
+**Why not on every push** (the reason it was pull requests only before 1.7.0): on a private repo, every macOS minute draws on the account's
 included Actions usage, and macOS runners cost about ten times Linux per minute (GitHub
 Free, checked 2026-11-04: $12 a month, about 190 minutes at $0.062). Triggering on every
 branch push, an autonomous run pushing ten stacked PRs and their merge commits used a
@@ -168,9 +167,9 @@ month's allowance in four days; later runs were blocked with a "payments have fa
 your spending limit" annotation. Set an Actions budget in Settings → Billing and plans →
 Budgets and alerts, with "Stop usage when budget limit is reached", to cap any overage.
 
-**Cloud sessions rely on Build Check.** Cloud sessions cannot build or deploy. They
-must NOT include `[skip ci]` — the Build Check workflow is their only compilation
-verification, so they open a PR (a draft is fine) to get a build. Cloud sessions should
+**Cloud sessions rely on Build Check.** Cloud sessions cannot build or deploy. The Build
+Check workflow is their only compilation verification, so they dispatch it for their
+branch, and a local session runs the local build check before the PR merges. Cloud sessions should
 never push to `main`.
 
 **Triggering TestFlight from CLI:** If local Fastlane fails or you need to deploy
@@ -497,7 +496,7 @@ settings and your policy (don't hardcode a co-author trailer).
 **Local sessions:** Include `[skip ci]` in commit message to skip all CI workflows.
 Local sessions verify builds via XcodeBuildMCP and deploy via `/deploy` — no CI needed.
 Under the core "Autonomy" rules, leave it off the last push before a merge.
-**Cloud sessions:** Do NOT include `[skip ci]` — Build Check must verify their code compiles.
+**Cloud sessions:** dispatch Build Check for the branch to verify the code compiles.
 
 **Gotcha — 72 char limit includes `[skip ci]`:** The Lefthook conventional commit regex
 validates the full subject line including the `[skip ci]` suffix (11 chars). This leaves

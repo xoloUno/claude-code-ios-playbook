@@ -30,6 +30,21 @@ doesn't ship it. Two gotchas make this bite, and a bare `bundle exec` is how the
 Sanity check before a long lane: `bundle -v` should print `4.0.3` (not `1.17.2`, the version
 system Ruby 2.6 bundles) — if it prints the wrong one, your PATH is resolving the wrong Ruby.
 
+## Build check (the merge gate)
+
+The local build check is this project's merge gate (core merge checklist). Run it in the
+PR's checkout, on its head commit, and judge each step by its exit status:
+
+1. `xcodegen generate`
+2. the compile check under "Quick Commands" below
+3. `swiftlint lint --strict --quiet`
+
+The hosted Build Check workflow runs only when dispatched
+(`gh workflow run build-check.yml --ref <branch>`). GitHub's `xcode-27` preview runners
+often never pick a job up, and it then fails after 15 minutes with no steps. A session
+without Xcode (a cloud session) dispatches it, and its PR is merged from a local session
+after the local check.
+
 ## Quick Commands (local)
 
 ```bash
@@ -165,5 +180,5 @@ with the playbook plugin, or read it at
 https://github.com/xoloUno/claude-code-ios-playbook/blob/main/claude-code-plugins-setup.md.
 
 Cloud sessions do not have access to MCP tools. Use GitHub Actions for
-build verification (open a PR → Build Check workflow). For API
+build verification (dispatch the Build Check workflow; see "Build check"). For API
 verification in cloud sessions, fall back to web search on developer.apple.com.

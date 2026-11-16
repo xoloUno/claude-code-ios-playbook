@@ -28,6 +28,37 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-16 — Plugin `v1.7.0` — the local build check is the iOS merge gate
+
+Bumps `.claude-plugin/plugin.json` from `1.6.1` to `1.7.0`; the merge commit gets the tag
+`playbook--v1.7.0`. Approved by the owner on 2026-11-16, because it changes the merge
+checklist.
+
+GitHub's `xcode-27` preview runners often never pick a job up: a Build Check that takes
+about 75 seconds then fails after 15 minutes with no steps ("The job was not acquired by
+Runner of type hosted"). Kendibah had four such failures in a row on 2026-11-16, and Flara
+had a run wait 27 hours. Nothing wakes a session when CI passes, so merges sat waiting.
+
+- **Core "Autonomy" merge checklist:** the CI item now applies when the repo's CI runs on
+  pull requests. Where the project names a local build check instead, run it on the PR's
+  head commit and report the result in the PR.
+- **`build-deploy.md`:** a new "Build check (the merge gate)" section with the three
+  steps (`xcodegen generate`, the existing compile check, `swiftlint lint --strict`).
+- **`bootstrap.sh`:** the Build Check workflow is `workflow_dispatch` only, kept for
+  sessions without Xcode.
+- **`command-profile.md`, `ios-project-playbook.md`:** `[skip ci]` and cloud-session notes
+  follow.
+
+**Files affected:** `core/agents-core.md`, `packs/ios/rules/build-deploy.md`,
+`packs/ios/command-profile.md`, `bootstrap.sh`, `ios-project-playbook.md`,
+`.claude-plugin/plugin.json` (`version` `1.6.1` → `1.7.0`).
+
+**What to do in your project:** recompose (`/playbook:upgrade`), then remove the
+`pull_request:` trigger from `.github/workflows/build-check.yml`, in the same PR. An app
+that keeps the trigger keeps the old rule: CI must pass on the PR's last push.
+
+---
+
 ## 2026-11-16 — Plugin `v1.6.1` — `skip_app_version_update` only where `app_version` is unset
 
 Bumps `.claude-plugin/plugin.json` from `1.6.0` to `1.6.1`; the merge commit gets the tag

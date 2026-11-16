@@ -65,6 +65,7 @@ Slot these into the universal flow at the stage named — not in list order.
 
 - **`[skip ci]`.** On a **local** session, append `[skip ci]` to the commit subject unless
   the user says otherwise. On a **cloud** session, do **not** — let CI run. When autonomy
-  applies (core "Autonomy"; never without that section), leave it off the last push before
-  a merge, so CI checks the PR's final commit (core merge checklist). (This is the
+  applies (core "Autonomy"; never without that section) and the project's CI runs on pull
+  requests, leave it off the last push before a merge, so CI checks the PR's final commit
+  (core merge checklist). (This is the
   iOS-specific rule the universal skeleton deliberately stays silent about.)

@@ -715,10 +715,9 @@ chmod +x scripts/fastlane.sh
 mkdir -p .github/workflows
 cat > .github/workflows/build-check.yml << 'BUILDCHECK'
 name: Build Check
-# Pull requests only: on a private repo every macOS minute draws on the account's included
-# Actions usage. Run it on a branch without a PR with `gh workflow run build-check.yml --ref <branch>`.
+# Manual only: the merge gate is the local build check in .claude/rules/build-deploy.md.
+# Run this for a session without Xcode: `gh workflow run build-check.yml --ref <branch>`.
 on:
-  pull_request:
   workflow_dispatch:
 concurrency:
   group: build-${{ github.ref }}

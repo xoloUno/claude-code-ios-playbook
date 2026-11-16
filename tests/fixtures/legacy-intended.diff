@@ -32,12 +32,13 @@
 +- **Scope items.** If the instructions file's project-owned part has a scope/checklist
 +  section, check off any items this session completed.
  
-@@ -62,3 +66,5 @@
+@@ -62,3 +66,6 @@
  - **`[skip ci]`.** On a **local** session, append `[skip ci]` to the commit subject unless
 -  the user says otherwise. On a **cloud** session, do **not** — let CI run. (This is the
 +  the user says otherwise. On a **cloud** session, do **not** — let CI run. When autonomy
-+  applies (core "Autonomy"; never without that section), leave it off the last push before
-+  a merge, so CI checks the PR's final commit (core merge checklist). (This is the
++  applies (core "Autonomy"; never without that section) and the project's CI runs on pull
++  requests, leave it off the last push before a merge, so CI checks the PR's final commit
++  (core merge checklist). (This is the
    iOS-specific rule the universal skeleton deliberately stays silent about.)
 --- a/.claude/commands/capture-manual-surfaces.md
 +++ b/.claude/commands/capture-manual-surfaces.md
@@ -540,12 +541,30 @@
  
 --- a/.claude/rules/build-deploy.md
 +++ b/.claude/rules/build-deploy.md
-@@ -37,2 +37,4 @@
+@@ -32,2 +32,17 @@
+ 
++## Build check (the merge gate)
++
++The local build check is this project's merge gate (core merge checklist). Run it in the
++PR's checkout, on its head commit, and judge each step by its exit status:
++
++1. `xcodegen generate`
++2. the compile check under "Quick Commands" below
++3. `swiftlint lint --strict --quiet`
++
++The hosted Build Check workflow runs only when dispatched
++(`gh workflow run build-check.yml --ref <branch>`). GitHub's `xcode-27` preview runners
++often never pick a job up, and it then fails after 15 minutes with no steps. A session
++without Xcode (a cloud session) dispatches it, and its PR is merged from a local session
++after the local check.
++
+ ## Quick Commands (local)
+@@ -37,2 +52,4 @@
  xcodebuild build -scheme [APP_NAME] -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
 +# A passing -quiet log can print "error: the following command failed with exit code 0 but
 +# produced no further output". Judge the build by its exit status, not by grepping "error:".
  
-@@ -62,2 +64,11 @@
+@@ -62,2 +79,11 @@
  
 +**Profiles from an agent's shell.** When a device build needs a profile refresh
 +(`-allowProvisioningUpdates`, say after Apple grants a restricted entitlement), `xcodebuild`
@@ -557,7 +576,7 @@
 +each archive, burying real signing errors.
 +
  ## App Store Release
-@@ -75,2 +86,7 @@
+@@ -75,2 +101,7 @@
  Metadata lives in `fastlane/metadata/<locale>/`. Edit those files before running `/release`.
 +
 +A lane that passes `sync_screenshots: true` to `deliver` fails unless
@@ -565,7 +584,7 @@
 +Set `ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "1"` inside the lane, or export it
 +when invoking.
  
-@@ -90,15 +106,29 @@
+@@ -90,15 +121,29 @@
  
 -**Required screenshot simulators (ASC auto-scales these to smaller sizes):**
 +**Screenshot sizes** (checked against [Apple's spec](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
@@ -605,7 +624,7 @@
 +
 +See `ios-project-playbook.md` §Phase 5.
  
-@@ -107,5 +137,6 @@
+@@ -107,5 +152,6 @@
  After any version is approved on the App Store, immediately bump `MARKETING_VERSION`
 -in `project.yml` to the next minor version. ASC closes the version train on approval —
 -new TestFlight builds will be rejected until the version is incremented. See
@@ -615,7 +634,7 @@
 +it to the next minor or major when feature work for that release starts; ASC lets you change
 +a version's number until it's submitted. See `ios-project-playbook.md` §6.5.
  
-@@ -116,2 +147,7 @@
+@@ -116,2 +162,7 @@
  **Can:** Edit Swift files, commit/push to `dev` or feature branches, plan, write features.
 +
 +**XcodeGen projects:** adding, removing or renaming a source file changes the tracked
@@ -623,10 +642,10 @@
 +and commit the result before merge. If the session can't run XcodeGen, say so in the PR body and
 +`MANUAL-TASKS.md` so a local session does it before merging.
  
-@@ -131,3 +167,3 @@
+@@ -131,3 +182,3 @@
  Cloud sessions do not have access to MCP tools. Use GitHub Actions for
 -build verification (push to branch → Build Check workflow). For API
-+build verification (open a PR → Build Check workflow). For API
++build verification (dispatch the Build Check workflow; see "Build check"). For API
  verification in cloud sessions, fall back to web search on developer.apple.com.
 --- a/.claude/rules/code-style.md
 +++ b/.claude/rules/code-style.md

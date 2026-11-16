@@ -28,6 +28,22 @@ signal during multi-version skips.
 
 ---
 
+## 2026-11-16 — Plugin `v1.7.1` — the build gate uses the generic simulator destination
+
+Bumps `.claude-plugin/plugin.json` from `1.7.0` to `1.7.1`; the merge commit gets the tag
+`playbook--v1.7.1`. A patch release with one fix, found on the gate's first run.
+
+- **`build-deploy.md`:** the gate's compile step named the project's simulator, and
+  `xcodebuild` exits 70 when that name isn't on the Mac or isn't unique. It now uses
+  `generic/platform=iOS Simulator`, as the hosted Build Check does.
+
+**Files affected:** `packs/ios/rules/build-deploy.md`, `.claude-plugin/plugin.json`
+(`version` `1.7.0` → `1.7.1`).
+
+**What to do in your project:** the same steps as 1.7.0.
+
+---
+
 ## 2026-11-16 — Plugin `v1.7.0` — the local build check is the iOS merge gate
 
 Bumps `.claude-plugin/plugin.json` from `1.6.1` to `1.7.0`; the merge commit gets the tag

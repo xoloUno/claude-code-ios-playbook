@@ -42,7 +42,8 @@ below.
 - **Core "Autonomy"** (approved by the owner on 2026-11-16): a hosted job that is never
   picked up by a runner is capacity, so re-run it (#88); when the host refuses an allowed
   step, ask once and don't route around it (#89); nothing wakes a session when CI passes, so
-  say the merge resumes on the user's next message and offer auto-merge (#105).
+  say the merge resumes on the user's next message, and offer auto-merge only where required
+  checks cover every check (#105).
 - **Core "Handoffs and records":** a session that can't write `MANUAL-TASKS.md` or
   `WORKLOG.md` leaves the text in its PR description or report (#116).
 

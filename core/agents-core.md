@@ -81,8 +81,9 @@ plan restrictions. Verifying them is not authorization to change them.
 - If the host refuses a step this section allows, ask the user once and carry on with
   independent work. Don't retry the step or route around the refusal.
 - Nothing wakes a session when CI passes. When a merge or a step after it waits only on CI,
-  say that it resumes on the user's next message, and offer GitHub auto-merge for that PR
-  as the user's choice.
+  say that it resumes on the user's next message. Offer GitHub auto-merge as the user's
+  choice only where the repo's required checks cover every check on the PR, because
+  auto-merge waits for required checks alone.
 - These always need the user:
   - device testing;
   - App Store Connect and Developer Portal actions;
